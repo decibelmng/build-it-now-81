@@ -1,10 +1,10 @@
-import { Home, Wrench, FileText, LogOut, Menu, X } from "lucide-react";
+import { Home, Wrench, FileText, TrendingUp, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
-type Section = "properties" | "maintenance" | "documents";
+type Section = "properties" | "maintenance" | "documents" | "savings";
 
 interface DashboardSidebarProps {
   activeSection: Section;
@@ -17,6 +17,7 @@ const navItems: { id: Section; label: string; icon: React.ElementType }[] = [
   { id: "properties", label: "Properties", icon: Home },
   { id: "maintenance", label: "Maintenance", icon: Wrench },
   { id: "documents", label: "Documents", icon: FileText },
+  { id: "savings", label: "Savings", icon: TrendingUp },
 ];
 
 const SidebarContent = ({
