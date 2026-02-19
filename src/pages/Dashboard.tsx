@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Home, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import PropertyCards from "@/components/dashboard/PropertyCards";
+import MaintenanceLogSection from "@/components/dashboard/MaintenanceLog";
+import DocumentVault from "@/components/dashboard/DocumentVault";
+
+type Section = "properties" | "maintenance" | "documents";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ display_name: string | null; persona: string | null } | null>(null);
+  const [activeSection, setActiveSection] = useState<Section>("properties");
 
   useEffect(() => {
     if (!user) return;
@@ -32,32 +37,20 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Home className="h-6 w-6 text-accent" />
-            <span className="font-display text-xl font-bold">HomeLog</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="font-body text-sm text-muted-foreground">
-              {profile?.display_name}
-            </span>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="flex h-screen bg-background">
+      <DashboardSidebar
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+        onSignOut={handleSignOut}
+        displayName={profile?.display_name ?? null}
+      />
 
-      <main className="container mx-auto px-6 py-12">
-        <h1 className="mb-2 font-display text-3xl font-bold">
-          Welcome, {profile?.display_name ?? "there"}! 👋
-        </h1>
-        <p className="font-body text-muted-foreground">
-          Your {profile?.persona} dashboard is ready. Start building your home's digital passport.
-        </p>
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-5xl px-8 py-8">
+          {activeSection === "properties" && <PropertyCards />}
+          {activeSection === "maintenance" && <MaintenanceLogSection />}
+          {activeSection === "documents" && <DocumentVault />}
+        </div>
       </main>
     </div>
   );
