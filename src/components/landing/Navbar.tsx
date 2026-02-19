@@ -1,4 +1,5 @@
 import { Home } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Navbar = () => {
   return (
@@ -24,18 +25,18 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <a
-            href="#"
+          <Link
+            to="/auth"
             className="hidden font-body text-sm font-medium text-primary-foreground/80 transition-colors hover:text-primary-foreground sm:block"
           >
             Log In
-          </a>
-          <a
-            href="#"
+          </Link>
+          <Link
+            to="/auth"
             className="rounded-full bg-accent px-5 py-2 font-body text-sm font-semibold text-accent-foreground transition-colors hover:bg-accent/90"
           >
             Get Started
-          </a>
+          </Link>
         </div>
       </div>
     </nav>
