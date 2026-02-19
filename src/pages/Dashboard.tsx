@@ -6,8 +6,9 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import PropertyCards from "@/components/dashboard/PropertyCards";
 import MaintenanceLogSection from "@/components/dashboard/MaintenanceLog";
 import DocumentVault from "@/components/dashboard/DocumentVault";
+import SavingsTracking from "@/components/dashboard/SavingsTracking";
 
-type Section = "properties" | "maintenance" | "documents";
+type Section = "properties" | "maintenance" | "documents" | "savings";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -50,6 +51,7 @@ const Dashboard = () => {
           {activeSection === "properties" && <PropertyCards />}
           {activeSection === "maintenance" && <MaintenanceLogSection />}
           {activeSection === "documents" && <DocumentVault />}
+          {activeSection === "savings" && <SavingsTracking />}
         </div>
       </main>
     </div>
