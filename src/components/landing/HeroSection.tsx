@@ -52,8 +52,8 @@ const HeroSection = () => {
             </Button>
             <Button
               size="lg"
-              variant="outline"
-              className="border-primary-foreground/60 text-primary-foreground hover:bg-primary-foreground/10 font-body font-medium text-base px-8 py-6 rounded-full backdrop-blur-sm"
+              variant="ghost"
+              className="border border-white/60 text-white hover:bg-white/10 hover:text-white font-body font-medium text-base px-8 py-6 rounded-full backdrop-blur-sm"
             >
               See How It Works
             </Button>
