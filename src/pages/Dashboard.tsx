@@ -7,8 +7,9 @@ import PropertyCards from "@/components/dashboard/PropertyCards";
 import MaintenanceLogSection from "@/components/dashboard/MaintenanceLog";
 import DocumentVault from "@/components/dashboard/DocumentVault";
 import SavingsTracking from "@/components/dashboard/SavingsTracking";
+import HomeContacts from "@/components/dashboard/HomeContacts";
 
-type Section = "properties" | "maintenance" | "documents" | "savings";
+type Section = "properties" | "maintenance" | "documents" | "savings" | "contacts";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -52,6 +53,7 @@ const Dashboard = () => {
           {activeSection === "maintenance" && <MaintenanceLogSection />}
           {activeSection === "documents" && <DocumentVault />}
           {activeSection === "savings" && <SavingsTracking />}
+          {activeSection === "contacts" && <HomeContacts />}
         </div>
       </main>
     </div>
