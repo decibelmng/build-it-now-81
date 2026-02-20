@@ -10,12 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Camera, Image as ImageIcon, Users } from "lucide-react";
+import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Camera, Image as ImageIcon, Users, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 
-type MaintenanceLog = Tables<"maintenance_logs">;
 type Property = Tables<"properties">;
 
 const categories = [
@@ -45,20 +44,53 @@ const vendorRoles = [
   { value: "other", label: "Other" },
 ];
 
+const emptyForm = { title: "", description: "", category: "general", property_id: "", cost: "", scheduled_date: "", contact_id: "", status: "pending" };
+
 const MaintenanceLogSection = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [showNewVendor, setShowNewVendor] = useState(false);
   const [newVendor, setNewVendor] = useState({ name: "", role: "other", company: "", phone: "", email: "" });
-  const [form, setForm] = useState({
-    title: "", description: "", category: "general", property_id: "",
-    cost: "", scheduled_date: "", contact_id: "",
-  });
+  const [form, setForm] = useState({ ...emptyForm });
+
+  const resetForm = () => {
+    setForm({ ...emptyForm });
+    setEditingId(null);
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setShowNewVendor(false);
+    setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" });
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setOpen(true);
+  };
+
+  const openEdit = (log: any) => {
+    setForm({
+      title: log.title,
+      description: log.description || "",
+      category: log.category,
+      property_id: log.property_id,
+      cost: log.cost ? String(log.cost) : "",
+      scheduled_date: log.scheduled_date || "",
+      contact_id: log.contact_id || "",
+      status: log.status,
+    });
+    setEditingId(log.id);
+    setPhotoPreview(log.image_url || null);
+    setPhotoFile(null);
+    setShowNewVendor(false);
+    setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" });
+    setOpen(true);
+  };
 
   const { data: properties = [] } = useQuery({
     queryKey: ["properties", user?.id],
@@ -103,11 +135,12 @@ const MaintenanceLogSection = () => {
     }
   };
 
-  const addLog = useMutation({
+  const saveMutation = useMutation({
     mutationFn: async () => {
-      let image_url: string | null = null;
+      let image_url: string | null | undefined = undefined; // undefined = don't change
       let contact_id: string | null = form.contact_id || null;
 
+      // Upload new photo if selected
       if (photoFile && user) {
         const filePath = `${user.id}/${Date.now()}_${photoFile.name}`;
         const { error: uploadError } = await supabase.storage.from("maintenance-photos").upload(filePath, photoFile);
@@ -116,7 +149,7 @@ const MaintenanceLogSection = () => {
         image_url = urlData.publicUrl;
       }
 
-      // If creating a new vendor inline, insert contact first
+      // If creating a new vendor inline
       if (showNewVendor && newVendor.name && form.property_id) {
         const { data: newContact, error: contactError } = await supabase
           .from("home_contacts")
@@ -135,29 +168,50 @@ const MaintenanceLogSection = () => {
         contact_id = newContact.id;
       }
 
-      const { error } = await supabase.from("maintenance_logs").insert({
-        user_id: user!.id,
+      const payload: Record<string, unknown> = {
         property_id: form.property_id,
         title: form.title,
         description: form.description || null,
         category: form.category,
         cost: form.cost ? parseFloat(form.cost) : null,
         scheduled_date: form.scheduled_date || null,
-        image_url,
         contact_id,
-      });
-      if (error) throw error;
+        status: form.status,
+      };
+
+      if (image_url !== undefined) payload.image_url = image_url;
+
+      // Update completed_date based on status
+      if (form.status === "completed") {
+        // Only set completed_date if not already set (for new completions)
+        if (!editingId) payload.completed_date = new Date().toISOString().split("T")[0];
+      }
+
+      if (editingId) {
+        const { error } = await supabase.from("maintenance_logs").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("maintenance_logs").insert({
+          user_id: user!.id,
+          property_id: form.property_id,
+          title: form.title,
+          description: form.description || null,
+          category: form.category,
+          cost: form.cost ? parseFloat(form.cost) : null,
+          scheduled_date: form.scheduled_date || null,
+          contact_id,
+          image_url: image_url !== undefined ? image_url : null,
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["maintenance_logs"] });
       queryClient.invalidateQueries({ queryKey: ["home_contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["maintenance_logs_for_contacts"] });
       setOpen(false);
-      setForm({ title: "", description: "", category: "general", property_id: "", cost: "", scheduled_date: "", contact_id: "" });
-      setPhotoFile(null);
-      setPhotoPreview(null);
-      setShowNewVendor(false);
-      setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" });
-      toast({ title: "Maintenance log added!" });
+      resetForm();
+      toast({ title: editingId ? "Maintenance log updated!" : "Maintenance log added!" });
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -183,146 +237,162 @@ const MaintenanceLogSection = () => {
           <h2 className="font-display text-2xl font-bold">Maintenance Log</h2>
           <p className="font-body text-sm text-muted-foreground">Track repairs, upgrades, and scheduled maintenance</p>
         </div>
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setShowNewVendor(false); setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" }); } }}>
-          <DialogTrigger asChild>
-            <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0}>
-              <Plus className="mr-2 h-4 w-4" /> Add Entry
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="font-display">Log Maintenance</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={(e) => { e.preventDefault(); addLog.mutate(); }} className="space-y-4">
+        <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0} onClick={openCreate}>
+          <Plus className="mr-2 h-4 w-4" /> Add Entry
+        </Button>
+      </div>
+
+      {/* Add/Edit dialog */}
+      <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); setOpen(v); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display">{editingId ? "Edit Maintenance Log" : "Log Maintenance"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="font-body">Property *</Label>
+              <Select value={form.property_id} onValueChange={(v) => setForm({ ...form, property_id: v })}>
+                <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
+                <SelectContent>
+                  {properties.map((p) => (
+                    <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-body">Title *</Label>
+              <Input placeholder="Fix leaky faucet" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required className="font-body" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-body">Description</Label>
+              <Textarea placeholder="Details about the maintenance..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="font-body" />
+            </div>
+
+            {/* Vendor / Contact selector */}
+            <div className="space-y-2">
+              <Label className="font-body flex items-center gap-1"><Users className="h-3.5 w-3.5" /> Vendor / Contractor</Label>
+              {!showNewVendor ? (
+                <div className="space-y-2">
+                  <Select value={form.contact_id} onValueChange={(v) => setForm({ ...form, contact_id: v })}>
+                    <SelectTrigger className="font-body"><SelectValue placeholder="Select vendor (optional)" /></SelectTrigger>
+                    <SelectContent>
+                      {contacts.map((c) => (
+                        <SelectItem key={c.id} value={c.id} className="font-body">
+                          {c.name}{c.company ? ` · ${c.company}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" variant="outline" size="sm" className="font-body text-xs" onClick={() => { setShowNewVendor(true); setForm({ ...form, contact_id: "" }); }}>
+                    <Plus className="mr-1 h-3 w-3" /> Add New Vendor
+                  </Button>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-border/50 p-3 space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <span className="font-body text-xs font-medium text-muted-foreground">New Vendor</span>
+                    <Button type="button" variant="ghost" size="sm" className="font-body text-xs h-6" onClick={() => { setShowNewVendor(false); setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" }); }}>
+                      Cancel
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="font-body text-xs">Name *</Label>
+                      <Input placeholder="John Smith" value={newVendor.name} onChange={(e) => setNewVendor({ ...newVendor, name: e.target.value })} className="font-body h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="font-body text-xs">Role</Label>
+                      <Select value={newVendor.role} onValueChange={(v) => setNewVendor({ ...newVendor, role: v })}>
+                        <SelectTrigger className="font-body h-8 text-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {vendorRoles.map((r) => (
+                            <SelectItem key={r.value} value={r.value} className="font-body text-sm">{r.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="font-body text-xs">Company</Label>
+                    <Input placeholder="ABC Plumbing" value={newVendor.company} onChange={(e) => setNewVendor({ ...newVendor, company: e.target.value })} className="font-body h-8 text-sm" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="font-body text-xs">Phone</Label>
+                      <Input placeholder="(555) 123-4567" value={newVendor.phone} onChange={(e) => setNewVendor({ ...newVendor, phone: e.target.value })} className="font-body h-8 text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="font-body text-xs">Email</Label>
+                      <Input type="email" placeholder="john@example.com" value={newVendor.email} onChange={(e) => setNewVendor({ ...newVendor, email: e.target.value })} className="font-body h-8 text-sm" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Photo attachment */}
+            <div className="space-y-2">
+              <Label className="font-body flex items-center gap-1"><Camera className="h-3.5 w-3.5" /> Photo (optional)</Label>
+              <div
+                className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border/50 p-4 transition-colors hover:border-accent/40"
+                onClick={() => photoInputRef.current?.click()}
+              >
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Preview" className="h-32 w-full rounded-lg object-cover" />
+                ) : (
+                  <>
+                    <Camera className="mb-1 h-6 w-6 text-muted-foreground" />
+                    <p className="font-body text-xs text-muted-foreground">Click to attach a photo</p>
+                  </>
+                )}
+                <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-2">
-                <Label className="font-body">Property *</Label>
-                <Select value={form.property_id} onValueChange={(v) => setForm({ ...form, property_id: v })}>
-                  <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
+                <Label className="font-body">Category</Label>
+                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                  <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {properties.map((p) => (
-                      <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c.value} value={c.value} className="font-body">{c.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="font-body">Title *</Label>
-                <Input placeholder="Fix leaky faucet" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required className="font-body" />
+                <Label className="font-body">Cost ($)</Label>
+                <Input type="number" step="0.01" placeholder="150" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} className="font-body" />
               </div>
               <div className="space-y-2">
-                <Label className="font-body">Description</Label>
-                <Textarea placeholder="Details about the maintenance..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="font-body" />
+                <Label className="font-body">Scheduled</Label>
+                <Input type="date" value={form.scheduled_date} onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })} className="font-body" />
               </div>
+            </div>
 
-              {/* Vendor / Contact selector */}
+            {/* Status selector (visible when editing) */}
+            {editingId && (
               <div className="space-y-2">
-                <Label className="font-body flex items-center gap-1"><Users className="h-3.5 w-3.5" /> Vendor / Contractor</Label>
-                {!showNewVendor ? (
-                  <div className="space-y-2">
-                    <Select value={form.contact_id} onValueChange={(v) => setForm({ ...form, contact_id: v })}>
-                      <SelectTrigger className="font-body"><SelectValue placeholder="Select vendor (optional)" /></SelectTrigger>
-                      <SelectContent>
-                        {contacts.map((c) => (
-                          <SelectItem key={c.id} value={c.id} className="font-body">
-                            {c.name}{c.company ? ` · ${c.company}` : ""}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button type="button" variant="outline" size="sm" className="font-body text-xs" onClick={() => { setShowNewVendor(true); setForm({ ...form, contact_id: "" }); }}>
-                      <Plus className="mr-1 h-3 w-3" /> Add New Vendor
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-border/50 p-3 space-y-3 bg-muted/30">
-                    <div className="flex items-center justify-between">
-                      <span className="font-body text-xs font-medium text-muted-foreground">New Vendor</span>
-                      <Button type="button" variant="ghost" size="sm" className="font-body text-xs h-6" onClick={() => { setShowNewVendor(false); setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" }); }}>
-                        Cancel
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="font-body text-xs">Name *</Label>
-                        <Input placeholder="John Smith" value={newVendor.name} onChange={(e) => setNewVendor({ ...newVendor, name: e.target.value })} className="font-body h-8 text-sm" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="font-body text-xs">Role</Label>
-                        <Select value={newVendor.role} onValueChange={(v) => setNewVendor({ ...newVendor, role: v })}>
-                          <SelectTrigger className="font-body h-8 text-sm"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {vendorRoles.map((r) => (
-                              <SelectItem key={r.value} value={r.value} className="font-body text-sm">{r.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="font-body text-xs">Company</Label>
-                      <Input placeholder="ABC Plumbing" value={newVendor.company} onChange={(e) => setNewVendor({ ...newVendor, company: e.target.value })} className="font-body h-8 text-sm" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="font-body text-xs">Phone</Label>
-                        <Input placeholder="(555) 123-4567" value={newVendor.phone} onChange={(e) => setNewVendor({ ...newVendor, phone: e.target.value })} className="font-body h-8 text-sm" />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="font-body text-xs">Email</Label>
-                        <Input type="email" placeholder="john@example.com" value={newVendor.email} onChange={(e) => setNewVendor({ ...newVendor, email: e.target.value })} className="font-body h-8 text-sm" />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <Label className="font-body">Status</Label>
+                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                  <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending" className="font-body">Pending</SelectItem>
+                    <SelectItem value="in_progress" className="font-body">In Progress</SelectItem>
+                    <SelectItem value="completed" className="font-body">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+            )}
 
-              {/* Photo attachment */}
-              <div className="space-y-2">
-                <Label className="font-body flex items-center gap-1"><Camera className="h-3.5 w-3.5" /> Photo (optional)</Label>
-                <div
-                  className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border/50 p-4 transition-colors hover:border-accent/40"
-                  onClick={() => photoInputRef.current?.click()}
-                >
-                  {photoPreview ? (
-                    <img src={photoPreview} alt="Preview" className="h-32 w-full rounded-lg object-cover" />
-                  ) : (
-                    <>
-                      <Camera className="mb-1 h-6 w-6 text-muted-foreground" />
-                      <p className="font-body text-xs text-muted-foreground">Click to attach a photo</p>
-                    </>
-                  )}
-                  <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-2">
-                  <Label className="font-body">Category</Label>
-                  <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                    <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {categories.map((c) => (
-                        <SelectItem key={c.value} value={c.value} className="font-body">{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-body">Cost ($)</Label>
-                  <Input type="number" step="0.01" placeholder="150" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} className="font-body" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="font-body">Scheduled</Label>
-                  <Input type="date" value={form.scheduled_date} onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })} className="font-body" />
-                </div>
-              </div>
-              <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={addLog.isPending || !form.property_id || (showNewVendor && !newVendor.name)}>
-                {addLog.isPending ? "Adding..." : "Add Entry"}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+            <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={saveMutation.isPending || !form.property_id || (showNewVendor && !newVendor.name)}>
+              {saveMutation.isPending ? "Saving..." : editingId ? "Save Changes" : "Add Entry"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Photo preview dialog */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
@@ -396,6 +466,9 @@ const MaintenanceLogSection = () => {
                         <ImageIcon className="h-4 w-4" />
                       </Button>
                     )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(log)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
                     <Badge variant={cfg.variant} className="font-body text-xs">
                       <StatusIcon className="mr-1 h-3 w-3" />{cfg.label}
                     </Badge>
