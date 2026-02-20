@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,14 +18,21 @@ const Auth = () => {
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { user, loading: authLoading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // If already logged in, redirect to dashboard
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/auth`,
     });
     if (error) {
       toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });
