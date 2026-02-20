@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Camera, Image as ImageIcon } from "lucide-react";
+import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Camera, Image as ImageIcon, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
@@ -34,6 +34,17 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; var
   completed: { label: "Completed", icon: CheckCircle2, variant: "default" },
 };
 
+const vendorRoles = [
+  { value: "plumber", label: "Plumber" },
+  { value: "electrician", label: "Electrician" },
+  { value: "hvac", label: "HVAC Tech" },
+  { value: "roofer", label: "Roofer" },
+  { value: "landscaper", label: "Landscaper" },
+  { value: "handyman", label: "Handyman" },
+  { value: "painter", label: "Painter" },
+  { value: "other", label: "Other" },
+];
+
 const MaintenanceLogSection = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -42,9 +53,11 @@ const MaintenanceLogSection = () => {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [showNewVendor, setShowNewVendor] = useState(false);
+  const [newVendor, setNewVendor] = useState({ name: "", role: "other", company: "", phone: "", email: "" });
   const [form, setForm] = useState({
     title: "", description: "", category: "general", property_id: "",
-    cost: "", scheduled_date: "",
+    cost: "", scheduled_date: "", contact_id: "",
   });
 
   const { data: properties = [] } = useQuery({
@@ -57,12 +70,22 @@ const MaintenanceLogSection = () => {
     enabled: !!user,
   });
 
+  const { data: contacts = [] } = useQuery({
+    queryKey: ["home_contacts", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("home_contacts").select("id, name, company, role").order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["maintenance_logs", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("maintenance_logs")
-        .select("*, properties(name)")
+        .select("*, properties(name), home_contacts(name, company)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -83,6 +106,7 @@ const MaintenanceLogSection = () => {
   const addLog = useMutation({
     mutationFn: async () => {
       let image_url: string | null = null;
+      let contact_id: string | null = form.contact_id || null;
 
       if (photoFile && user) {
         const filePath = `${user.id}/${Date.now()}_${photoFile.name}`;
@@ -90,6 +114,25 @@ const MaintenanceLogSection = () => {
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from("maintenance-photos").getPublicUrl(filePath);
         image_url = urlData.publicUrl;
+      }
+
+      // If creating a new vendor inline, insert contact first
+      if (showNewVendor && newVendor.name && form.property_id) {
+        const { data: newContact, error: contactError } = await supabase
+          .from("home_contacts")
+          .insert({
+            user_id: user!.id,
+            property_id: form.property_id,
+            name: newVendor.name,
+            role: newVendor.role,
+            company: newVendor.company || null,
+            phone: newVendor.phone || null,
+            email: newVendor.email || null,
+          })
+          .select("id")
+          .single();
+        if (contactError) throw contactError;
+        contact_id = newContact.id;
       }
 
       const { error } = await supabase.from("maintenance_logs").insert({
@@ -101,15 +144,19 @@ const MaintenanceLogSection = () => {
         cost: form.cost ? parseFloat(form.cost) : null,
         scheduled_date: form.scheduled_date || null,
         image_url,
+        contact_id,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["maintenance_logs"] });
+      queryClient.invalidateQueries({ queryKey: ["home_contacts"] });
       setOpen(false);
-      setForm({ title: "", description: "", category: "general", property_id: "", cost: "", scheduled_date: "" });
+      setForm({ title: "", description: "", category: "general", property_id: "", cost: "", scheduled_date: "", contact_id: "" });
       setPhotoFile(null);
       setPhotoPreview(null);
+      setShowNewVendor(false);
+      setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" });
       toast({ title: "Maintenance log added!" });
     },
     onError: (err: Error) => {
@@ -127,7 +174,6 @@ const MaintenanceLogSection = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["maintenance_logs"] }),
   });
 
-  // Photo preview dialog
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   return (
@@ -137,13 +183,13 @@ const MaintenanceLogSection = () => {
           <h2 className="font-display text-2xl font-bold">Maintenance Log</h2>
           <p className="font-body text-sm text-muted-foreground">Track repairs, upgrades, and scheduled maintenance</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setShowNewVendor(false); setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" }); } }}>
           <DialogTrigger asChild>
             <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0}>
               <Plus className="mr-2 h-4 w-4" /> Add Entry
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-display">Log Maintenance</DialogTitle>
             </DialogHeader>
@@ -166,6 +212,68 @@ const MaintenanceLogSection = () => {
               <div className="space-y-2">
                 <Label className="font-body">Description</Label>
                 <Textarea placeholder="Details about the maintenance..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="font-body" />
+              </div>
+
+              {/* Vendor / Contact selector */}
+              <div className="space-y-2">
+                <Label className="font-body flex items-center gap-1"><Users className="h-3.5 w-3.5" /> Vendor / Contractor</Label>
+                {!showNewVendor ? (
+                  <div className="space-y-2">
+                    <Select value={form.contact_id} onValueChange={(v) => setForm({ ...form, contact_id: v })}>
+                      <SelectTrigger className="font-body"><SelectValue placeholder="Select vendor (optional)" /></SelectTrigger>
+                      <SelectContent>
+                        {contacts.map((c) => (
+                          <SelectItem key={c.id} value={c.id} className="font-body">
+                            {c.name}{c.company ? ` · ${c.company}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" variant="outline" size="sm" className="font-body text-xs" onClick={() => { setShowNewVendor(true); setForm({ ...form, contact_id: "" }); }}>
+                      <Plus className="mr-1 h-3 w-3" /> Add New Vendor
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-border/50 p-3 space-y-3 bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <span className="font-body text-xs font-medium text-muted-foreground">New Vendor</span>
+                      <Button type="button" variant="ghost" size="sm" className="font-body text-xs h-6" onClick={() => { setShowNewVendor(false); setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" }); }}>
+                        Cancel
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="font-body text-xs">Name *</Label>
+                        <Input placeholder="John Smith" value={newVendor.name} onChange={(e) => setNewVendor({ ...newVendor, name: e.target.value })} className="font-body h-8 text-sm" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="font-body text-xs">Role</Label>
+                        <Select value={newVendor.role} onValueChange={(v) => setNewVendor({ ...newVendor, role: v })}>
+                          <SelectTrigger className="font-body h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {vendorRoles.map((r) => (
+                              <SelectItem key={r.value} value={r.value} className="font-body text-sm">{r.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="font-body text-xs">Company</Label>
+                      <Input placeholder="ABC Plumbing" value={newVendor.company} onChange={(e) => setNewVendor({ ...newVendor, company: e.target.value })} className="font-body h-8 text-sm" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="font-body text-xs">Phone</Label>
+                        <Input placeholder="(555) 123-4567" value={newVendor.phone} onChange={(e) => setNewVendor({ ...newVendor, phone: e.target.value })} className="font-body h-8 text-sm" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="font-body text-xs">Email</Label>
+                        <Input type="email" placeholder="john@example.com" value={newVendor.email} onChange={(e) => setNewVendor({ ...newVendor, email: e.target.value })} className="font-body h-8 text-sm" />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Photo attachment */}
@@ -208,7 +316,7 @@ const MaintenanceLogSection = () => {
                   <Input type="date" value={form.scheduled_date} onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })} className="font-body" />
                 </div>
               </div>
-              <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={addLog.isPending || !form.property_id}>
+              <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={addLog.isPending || !form.property_id || (showNewVendor && !newVendor.name)}>
                 {addLog.isPending ? "Adding..." : "Add Entry"}
               </Button>
             </form>
@@ -269,6 +377,12 @@ const MaintenanceLogSection = () => {
                         {log.properties?.name} · {categories.find((c) => c.value === log.category)?.label ?? log.category}
                         {log.cost ? ` · $${Number(log.cost).toFixed(2)}` : ""}
                       </p>
+                      {log.home_contacts && (
+                        <p className="font-body text-xs text-accent">
+                          <Users className="mr-1 inline h-3 w-3" />
+                          {log.home_contacts.name}{log.home_contacts.company ? ` · ${log.home_contacts.company}` : ""}
+                        </p>
+                      )}
                       {log.scheduled_date && (
                         <p className="mt-0.5 font-body text-xs text-muted-foreground">
                           Scheduled: {format(new Date(log.scheduled_date), "MMM d, yyyy")}
