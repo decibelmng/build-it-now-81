@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Camera, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
@@ -39,6 +39,9 @@ const MaintenanceLogSection = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: "", description: "", category: "general", property_id: "",
     cost: "", scheduled_date: "",
@@ -67,8 +70,28 @@ const MaintenanceLogSection = () => {
     enabled: !!user,
   });
 
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
   const addLog = useMutation({
     mutationFn: async () => {
+      let image_url: string | null = null;
+
+      if (photoFile && user) {
+        const filePath = `${user.id}/${Date.now()}_${photoFile.name}`;
+        const { error: uploadError } = await supabase.storage.from("maintenance-photos").upload(filePath, photoFile);
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage.from("maintenance-photos").getPublicUrl(filePath);
+        image_url = urlData.publicUrl;
+      }
+
       const { error } = await supabase.from("maintenance_logs").insert({
         user_id: user!.id,
         property_id: form.property_id,
@@ -77,6 +100,7 @@ const MaintenanceLogSection = () => {
         category: form.category,
         cost: form.cost ? parseFloat(form.cost) : null,
         scheduled_date: form.scheduled_date || null,
+        image_url,
       });
       if (error) throw error;
     },
@@ -84,6 +108,8 @@ const MaintenanceLogSection = () => {
       queryClient.invalidateQueries({ queryKey: ["maintenance_logs"] });
       setOpen(false);
       setForm({ title: "", description: "", category: "general", property_id: "", cost: "", scheduled_date: "" });
+      setPhotoFile(null);
+      setPhotoPreview(null);
       toast({ title: "Maintenance log added!" });
     },
     onError: (err: Error) => {
@@ -100,6 +126,9 @@ const MaintenanceLogSection = () => {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["maintenance_logs"] }),
   });
+
+  // Photo preview dialog
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   return (
     <div>
@@ -138,6 +167,26 @@ const MaintenanceLogSection = () => {
                 <Label className="font-body">Description</Label>
                 <Textarea placeholder="Details about the maintenance..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="font-body" />
               </div>
+
+              {/* Photo attachment */}
+              <div className="space-y-2">
+                <Label className="font-body flex items-center gap-1"><Camera className="h-3.5 w-3.5" /> Photo (optional)</Label>
+                <div
+                  className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border/50 p-4 transition-colors hover:border-accent/40"
+                  onClick={() => photoInputRef.current?.click()}
+                >
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Preview" className="h-32 w-full rounded-lg object-cover" />
+                  ) : (
+                    <>
+                      <Camera className="mb-1 h-6 w-6 text-muted-foreground" />
+                      <p className="font-body text-xs text-muted-foreground">Click to attach a photo</p>
+                    </>
+                  )}
+                  <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
+                </div>
+              </div>
+
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-2">
                   <Label className="font-body">Category</Label>
@@ -167,6 +216,13 @@ const MaintenanceLogSection = () => {
         </Dialog>
       </div>
 
+      {/* Photo preview dialog */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-2xl p-2">
+          {previewImage && <img src={previewImage} alt="Maintenance photo" className="w-full rounded-lg" />}
+        </DialogContent>
+      </Dialog>
+
       {properties.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-16">
@@ -195,9 +251,18 @@ const MaintenanceLogSection = () => {
               <Card key={log.id} className="border-border/50 transition-shadow hover:shadow-card-hover">
                 <CardContent className="flex items-center justify-between p-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
-                      <Wrench className="h-5 w-5 text-muted-foreground" />
-                    </div>
+                    {log.image_url ? (
+                      <img
+                        src={log.image_url}
+                        alt={log.title}
+                        className="h-10 w-10 shrink-0 rounded-xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setPreviewImage(log.image_url)}
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                        <Wrench className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
                     <div>
                       <h4 className="font-display text-sm font-semibold">{log.title}</h4>
                       <p className="font-body text-xs text-muted-foreground">
@@ -212,6 +277,11 @@ const MaintenanceLogSection = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {log.image_url && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewImage(log.image_url)}>
+                        <ImageIcon className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Badge variant={cfg.variant} className="font-body text-xs">
                       <StatusIcon className="mr-1 h-3 w-3" />{cfg.label}
                     </Badge>
