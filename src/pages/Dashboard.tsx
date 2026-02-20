@@ -15,8 +15,10 @@ import ProfileSettings from "@/components/dashboard/ProfileSettings";
 import DashboardSearch from "@/components/dashboard/DashboardSearch";
 import OnboardingWizard from "@/components/dashboard/OnboardingWizard";
 import RecurringTemplates from "@/components/dashboard/RecurringTemplates";
+import PropertySharing from "@/components/dashboard/PropertySharing";
+import ExportReports from "@/components/dashboard/ExportReports";
 
-type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "timeline" | "recurring" | "settings" | "search";
+type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "timeline" | "recurring" | "sharing" | "export" | "settings" | "search";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -90,6 +92,8 @@ const Dashboard = () => {
           {activeSection === "contacts" && <HomeContacts />}
           {activeSection === "timeline" && <PropertyTimeline />}
           {activeSection === "recurring" && <RecurringTemplates />}
+          {activeSection === "sharing" && <PropertySharing />}
+          {activeSection === "export" && <ExportReports />}
           {activeSection === "settings" && <ProfileSettings />}
           {activeSection === "search" && <DashboardSearch />}
         </div>
