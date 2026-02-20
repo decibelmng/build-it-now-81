@@ -1,10 +1,10 @@
-import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, Clock, Settings, Search, LayoutDashboard, RefreshCw, Share2, Download } from "lucide-react";
+import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, Clock, Settings, Search, LayoutDashboard, RefreshCw, Share2, Download, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
-type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "timeline" | "recurring" | "sharing" | "export" | "settings" | "search";
+type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search";
 
 interface DashboardSidebarProps {
   activeSection: Section;
@@ -24,6 +24,7 @@ const navItems: { id: Section; label: string; icon: React.ElementType }[] = [
   { id: "recurring", label: "Recurring", icon: RefreshCw },
   { id: "sharing", label: "Sharing", icon: Share2 },
   { id: "export", label: "Export", icon: Download },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "search", label: "Search", icon: Search },
 ];
 

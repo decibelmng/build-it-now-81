@@ -17,8 +17,9 @@ import OnboardingWizard from "@/components/dashboard/OnboardingWizard";
 import RecurringTemplates from "@/components/dashboard/RecurringTemplates";
 import PropertySharing from "@/components/dashboard/PropertySharing";
 import ExportReports from "@/components/dashboard/ExportReports";
+import AnalyticsInsights from "@/components/dashboard/AnalyticsInsights";
 
-type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "timeline" | "recurring" | "sharing" | "export" | "settings" | "search";
+type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -83,7 +84,7 @@ const Dashboard = () => {
       />
 
       <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
-        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
+        <div className="mx-auto max-w-5xl px-3 py-4 sm:px-8 sm:py-8">
           {activeSection === "overview" && <DashboardOverview />}
           {activeSection === "properties" && <PropertyCards />}
           {activeSection === "maintenance" && <MaintenanceLogSection />}
@@ -94,6 +95,7 @@ const Dashboard = () => {
           {activeSection === "recurring" && <RecurringTemplates />}
           {activeSection === "sharing" && <PropertySharing />}
           {activeSection === "export" && <ExportReports />}
+          {activeSection === "analytics" && <AnalyticsInsights />}
           {activeSection === "settings" && <ProfileSettings />}
           {activeSection === "search" && <DashboardSearch />}
         </div>
