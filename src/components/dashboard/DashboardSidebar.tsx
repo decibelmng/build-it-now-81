@@ -1,10 +1,10 @@
-import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, X, Clock } from "lucide-react";
+import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, Clock, Settings, Search, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
-type Section = "properties" | "maintenance" | "documents" | "savings" | "contacts" | "timeline";
+type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "timeline" | "settings" | "search";
 
 interface DashboardSidebarProps {
   activeSection: Section;
@@ -14,12 +14,14 @@ interface DashboardSidebarProps {
 }
 
 const navItems: { id: Section; label: string; icon: React.ElementType }[] = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "properties", label: "Properties", icon: Home },
   { id: "maintenance", label: "Maintenance", icon: Wrench },
   { id: "documents", label: "Documents", icon: FileText },
   { id: "savings", label: "Savings", icon: TrendingUp },
   { id: "contacts", label: "Contacts", icon: Users },
   { id: "timeline", label: "Timeline", icon: Clock },
+  { id: "search", label: "Search", icon: Search },
 ];
 
 const SidebarContent = ({
@@ -53,6 +55,18 @@ const SidebarContent = ({
     </nav>
 
     <div className="border-t border-border px-3 py-4">
+      <button
+        onClick={() => onSectionChange("settings")}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 font-body text-sm font-medium transition-colors mb-2",
+          activeSection === "settings"
+            ? "bg-accent/10 text-accent"
+            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+        )}
+      >
+        <Settings className="h-4 w-4" />
+        Settings
+      </button>
       <div className="mb-3 px-3">
         <p className="font-body text-sm font-medium text-foreground truncate">{displayName}</p>
         <p className="font-body text-xs text-muted-foreground">Homeowner</p>
