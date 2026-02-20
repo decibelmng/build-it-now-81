@@ -67,7 +67,7 @@ const HomeContacts = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("maintenance_logs")
-        .select("id, title, cost, category, status, completed_date, created_at, contact_id, properties(name)")
+        .select("id, title, cost, category, status, completed_date, created_at, contact_id, reference_code, properties(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -280,7 +280,12 @@ const HomeContacts = () => {
                       {stats.logs.map((log: any) => (
                         <div key={log.id} className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2">
                           <div>
-                            <p className="font-body text-xs font-medium">{log.title}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-body text-xs font-medium">{log.title}</p>
+                              {log.reference_code && (
+                                <span className="font-mono text-[10px] bg-background px-1.5 py-0.5 rounded text-muted-foreground">{log.reference_code}</span>
+                              )}
+                            </div>
                             <p className="font-body text-xs text-muted-foreground">
                               {log.properties?.name} · {log.category}
                               {log.completed_date ? ` · ${format(new Date(log.completed_date), "MMM d, yyyy")}` : ""}
