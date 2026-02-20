@@ -116,7 +116,10 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          image_url: string | null
+          is_recurring: boolean | null
           property_id: string
+          recurrence_interval: string | null
           scheduled_date: string | null
           status: string
           title: string
@@ -130,7 +133,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
+          is_recurring?: boolean | null
           property_id: string
+          recurrence_interval?: string | null
           scheduled_date?: string | null
           status?: string
           title: string
@@ -144,7 +150,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
+          is_recurring?: boolean | null
           property_id?: string
+          recurrence_interval?: string | null
           scheduled_date?: string | null
           status?: string
           title?: string
@@ -247,6 +256,62 @@ export type Database = {
           zip?: string | null
         }
         Relationships: []
+      }
+      recurring_templates: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          description: string | null
+          estimated_cost: number | null
+          id: string
+          interval_months: number
+          last_created_at: string | null
+          next_due_date: string
+          property_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          estimated_cost?: number | null
+          id?: string
+          interval_months?: number
+          last_created_at?: string | null
+          next_due_date: string
+          property_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          estimated_cost?: number | null
+          id?: string
+          interval_months?: number
+          last_created_at?: string | null
+          next_due_date?: string
+          property_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_templates_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

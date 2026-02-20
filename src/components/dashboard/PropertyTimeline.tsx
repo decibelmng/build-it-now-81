@@ -5,9 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   Home, Wrench, Droplets, Zap, Wind, Hammer, TreePine, Cog,
-  CheckCircle2, Clock, AlertTriangle, Building,
+  CheckCircle2, Clock, AlertTriangle, Building, DollarSign, TrendingUp,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
@@ -40,11 +42,13 @@ interface TimelineEvent {
   cost: number | null;
   status?: string;
   propertyName?: string;
+  image_url?: string | null;
 }
 
 const PropertyTimeline = () => {
   const { user } = useAuth();
   const [selectedProperty, setSelectedProperty] = useState<string>("all");
+  const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
 
   const { data: properties = [] } = useQuery({
     queryKey: ["properties", user?.id],
@@ -71,8 +75,6 @@ const PropertyTimeline = () => {
 
   // Build timeline events
   const events: TimelineEvent[] = [];
-
-  // Add construction events from properties
   const propsToShow = selectedProperty === "all" ? properties : properties.filter((p) => p.id === selectedProperty);
 
   propsToShow.forEach((prop) => {
@@ -90,7 +92,6 @@ const PropertyTimeline = () => {
     }
   });
 
-  // Add maintenance events
   const filteredLogs = selectedProperty === "all" ? logs : logs.filter((l: any) => l.property_id === selectedProperty);
 
   filteredLogs.forEach((log: any) => {
@@ -105,14 +106,29 @@ const PropertyTimeline = () => {
       cost: log.cost ? Number(log.cost) : null,
       status: log.status,
       propertyName: log.properties?.name,
+      image_url: log.image_url,
     });
   });
 
-  // Sort chronologically (oldest first)
   events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  // Find max cost for bar scaling
   const maxCost = Math.max(...events.map((e) => e.cost ?? 0), 1);
+
+  // Cumulative cost summary
+  const totalCost = events.reduce((sum, e) => sum + (e.cost ?? 0), 0);
+  const maintenanceEvents = events.filter((e) => e.type === "maintenance");
+  const avgCost = maintenanceEvents.filter((e) => e.cost).length > 0
+    ? totalCost / maintenanceEvents.filter((e) => e.cost).length
+    : 0;
+  const topCategory = (() => {
+    const map = new Map<string, number>();
+    maintenanceEvents.forEach((e) => {
+      if (e.cost) map.set(e.category, (map.get(e.category) ?? 0) + e.cost);
+    });
+    let top = { cat: "", val: 0 };
+    map.forEach((v, k) => { if (v > top.val) top = { cat: k, val: v }; });
+    return top;
+  })();
 
   return (
     <div>
@@ -138,6 +154,97 @@ const PropertyTimeline = () => {
         )}
       </div>
 
+      {/* Cumulative Cost Summary */}
+      {totalCost > 0 && (
+        <div className="mb-6 grid grid-cols-3 gap-4">
+          <Card className="border-border/50">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                <DollarSign className="h-5 w-5 text-accent" />
+              </div>
+              <div>
+                <p className="font-body text-xs text-muted-foreground">Total Spent</p>
+                <p className="font-display text-lg font-bold">${totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                <TrendingUp className="h-5 w-5 text-sage" />
+              </div>
+              <div>
+                <p className="font-body text-xs text-muted-foreground">Avg per Task</p>
+                <p className="font-display text-lg font-bold">${avgCost.toFixed(0)}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                <Wrench className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-body text-xs text-muted-foreground">Top Category</p>
+                <p className="font-display text-sm font-bold capitalize">{topCategory.cat || "—"}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Event Detail Dialog */}
+      <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">{selectedEvent?.title}</DialogTitle>
+          </DialogHeader>
+          {selectedEvent && (
+            <div className="space-y-4">
+              {selectedEvent.image_url && (
+                <img src={selectedEvent.image_url} alt={selectedEvent.title} className="w-full rounded-lg object-cover max-h-48" />
+              )}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-body text-xs text-muted-foreground">Date:</span>
+                  <span className="font-body text-sm">{format(new Date(selectedEvent.date), "MMM d, yyyy")}</span>
+                </div>
+                {selectedEvent.propertyName && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-body text-xs text-muted-foreground">Property:</span>
+                    <span className="font-body text-sm">{selectedEvent.propertyName}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <span className="font-body text-xs text-muted-foreground">Category:</span>
+                  <span className="font-body text-sm capitalize">{selectedEvent.category}</span>
+                </div>
+                {selectedEvent.status && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-body text-xs text-muted-foreground">Status:</span>
+                    <Badge variant={statusConfig[selectedEvent.status]?.variant ?? "secondary"} className="font-body text-xs">
+                      {statusConfig[selectedEvent.status]?.label ?? selectedEvent.status}
+                    </Badge>
+                  </div>
+                )}
+                {selectedEvent.cost != null && selectedEvent.cost > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-body text-xs text-muted-foreground">Cost:</span>
+                    <span className="font-display text-sm font-bold">${selectedEvent.cost.toLocaleString()}</span>
+                  </div>
+                )}
+                {selectedEvent.description && (
+                  <div>
+                    <span className="font-body text-xs text-muted-foreground">Description:</span>
+                    <p className="font-body text-sm mt-1">{selectedEvent.description}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -158,7 +265,7 @@ const PropertyTimeline = () => {
         </Card>
       ) : (
         <div className="relative ml-4 border-l-2 border-border pl-8">
-          {events.map((event, idx) => {
+          {events.map((event) => {
             const isConstruction = event.type === "construction";
             const cat = isConstruction
               ? { label: "Construction", icon: Building, color: "bg-accent/20 text-accent" }
@@ -169,15 +276,19 @@ const PropertyTimeline = () => {
             const costBarWidth = event.cost ? Math.max((event.cost / maxCost) * 100, 8) : 0;
 
             return (
-              <div key={event.id} className="relative mb-8 last:mb-0">
+              <div
+                key={event.id}
+                className="relative mb-8 last:mb-0 cursor-pointer group"
+                onClick={() => setSelectedEvent(event)}
+              >
                 {/* Dot on the timeline */}
                 <div
-                  className={`absolute -left-[calc(2rem+5px)] flex h-10 w-10 items-center justify-center rounded-full border-2 border-background ${cat.color}`}
+                  className={`absolute -left-[calc(2rem+5px)] flex h-10 w-10 items-center justify-center rounded-full border-2 border-background ${cat.color} group-hover:scale-110 transition-transform`}
                 >
                   <CatIcon className="h-4 w-4" />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 rounded-lg p-2 -ml-2 transition-colors group-hover:bg-secondary/50">
                   {/* Date */}
                   <p className="font-body text-xs font-medium text-muted-foreground">
                     {format(new Date(event.date), isConstruction ? "yyyy" : "MMM d, yyyy")}
@@ -186,8 +297,13 @@ const PropertyTimeline = () => {
                     )}
                   </p>
 
-                  {/* Title */}
-                  <h4 className="font-display text-sm font-semibold leading-snug">{event.title}</h4>
+                  {/* Title + thumbnail */}
+                  <div className="flex items-center gap-3">
+                    <h4 className="font-display text-sm font-semibold leading-snug">{event.title}</h4>
+                    {event.image_url && (
+                      <img src={event.image_url} alt="" className="h-8 w-8 rounded object-cover shrink-0" />
+                    )}
+                  </div>
 
                   {/* Description */}
                   {event.description && (

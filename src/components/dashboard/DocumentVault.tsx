@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FileText, Upload, Trash2, Download } from "lucide-react";
+import { Plus, FileText, Upload, Trash2, Download, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
@@ -27,6 +27,8 @@ const docCategories = [
   { value: "other", label: "Other" },
 ];
 
+const previewableTypes = ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp", "application/pdf"];
+
 const DocumentVault = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -35,6 +37,7 @@ const DocumentVault = () => {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [form, setForm] = useState({ name: "", property_id: "", category: "other" });
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; type: string; name: string } | null>(null);
 
   const { data: properties = [] } = useQuery({
     queryKey: ["properties", user?.id],
@@ -110,12 +113,25 @@ const DocumentVault = () => {
     URL.revokeObjectURL(url);
   };
 
+  const openPreview = async (doc: any) => {
+    if (!doc.file_type || !previewableTypes.includes(doc.file_type)) {
+      toast({ title: "Preview not available", description: "This file type cannot be previewed. Try downloading instead." });
+      return;
+    }
+    const { data, error } = await supabase.storage.from("documents").download(doc.file_path);
+    if (error || !data) { toast({ title: "Preview failed", variant: "destructive" }); return; }
+    const url = URL.createObjectURL(data);
+    setPreviewDoc({ url, type: doc.file_type, name: doc.name });
+  };
+
   const formatSize = (bytes: number | null) => {
     if (!bytes) return "";
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / 1048576).toFixed(1)} MB`;
   };
+
+  const isPreviewable = (fileType: string | null) => fileType && previewableTypes.includes(fileType);
 
   return (
     <div>
@@ -184,6 +200,20 @@ const DocumentVault = () => {
         </Dialog>
       </div>
 
+      {/* Document Preview Dialog */}
+      <Dialog open={!!previewDoc} onOpenChange={() => { if (previewDoc) { URL.revokeObjectURL(previewDoc.url); setPreviewDoc(null); } }}>
+        <DialogContent className="max-w-3xl max-h-[85vh] p-4">
+          <DialogHeader>
+            <DialogTitle className="font-display text-base">{previewDoc?.name}</DialogTitle>
+          </DialogHeader>
+          {previewDoc?.type === "application/pdf" ? (
+            <iframe src={previewDoc.url} className="w-full h-[70vh] rounded-lg border border-border" />
+          ) : previewDoc?.type?.startsWith("image/") ? (
+            <img src={previewDoc.url} alt={previewDoc.name} className="w-full max-h-[70vh] rounded-lg object-contain" />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
       {properties.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-16">
@@ -223,6 +253,11 @@ const DocumentVault = () => {
                   <Badge variant="secondary" className="font-body text-xs">
                     {docCategories.find((c) => c.value === doc.category)?.label ?? doc.category}
                   </Badge>
+                  {isPreviewable(doc.file_type) && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openPreview(doc)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadDoc(doc)}>
                     <Download className="h-4 w-4" />
                   </Button>
