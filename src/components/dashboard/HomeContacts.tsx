@@ -10,8 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Phone, Mail, Trash2, Building2 } from "lucide-react";
+import { Plus, Users, Phone, Mail, Trash2, Building2, Wrench, DollarSign, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 const roles = [
   { value: "plumber", label: "Plumber" },
@@ -32,6 +33,7 @@ const HomeContacts = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [expandedContact, setExpandedContact] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "", role: "other", company: "", phone: "", email: "", notes: "", property_id: "",
   });
@@ -53,6 +55,20 @@ const HomeContacts = () => {
         .from("home_contacts")
         .select("*, properties(name)")
         .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Fetch all maintenance logs to compute per-contact stats
+  const { data: allLogs = [] } = useQuery({
+    queryKey: ["maintenance_logs_for_contacts", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("maintenance_logs")
+        .select("id, title, cost, category, status, completed_date, created_at, contact_id, properties(name)")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -96,6 +112,13 @@ const HomeContacts = () => {
   });
 
   const getRoleLabel = (value: string) => roles.find((r) => r.value === value)?.label ?? value;
+
+  // Compute per-contact stats
+  const getContactStats = (contactId: string) => {
+    const linked = allLogs.filter((l: any) => l.contact_id === contactId);
+    const totalSpend = linked.reduce((sum: number, l: any) => sum + (l.cost || 0), 0);
+    return { jobs: linked.length, totalSpend, logs: linked };
+  };
 
   return (
     <div>
@@ -190,47 +213,90 @@ const HomeContacts = () => {
         </Card>
       ) : (
         <div className="space-y-3">
-          {contacts.map((contact: any) => (
-            <Card key={contact.id} className="border-border/50 transition-shadow hover:shadow-card-hover">
-              <CardContent className="flex items-center justify-between p-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
-                    <Users className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <h4 className="font-display text-sm font-semibold">{contact.name}</h4>
-                    <p className="font-body text-xs text-muted-foreground">
-                      {contact.properties?.name}
-                      {contact.company && (
-                        <span className="inline-flex items-center gap-1 ml-2"><Building2 className="h-3 w-3" />{contact.company}</span>
-                      )}
-                    </p>
-                    <div className="mt-1 flex flex-wrap gap-3 font-body text-xs text-muted-foreground">
-                      {contact.phone && (
-                        <a href={`tel:${contact.phone}`} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
-                          <Phone className="h-3 w-3" />{contact.phone}
-                        </a>
-                      )}
-                      {contact.email && (
-                        <a href={`mailto:${contact.email}`} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
-                          <Mail className="h-3 w-3" />{contact.email}
-                        </a>
-                      )}
+          {contacts.map((contact: any) => {
+            const stats = getContactStats(contact.id);
+            const isExpanded = expandedContact === contact.id;
+            return (
+              <Card key={contact.id} className="border-border/50 transition-shadow hover:shadow-card-hover">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <h4 className="font-display text-sm font-semibold">{contact.name}</h4>
+                        <p className="font-body text-xs text-muted-foreground">
+                          {contact.properties?.name}
+                          {contact.company && (
+                            <span className="inline-flex items-center gap-1 ml-2"><Building2 className="h-3 w-3" />{contact.company}</span>
+                          )}
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-3 font-body text-xs text-muted-foreground">
+                          {contact.phone && (
+                            <a href={`tel:${contact.phone}`} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                              <Phone className="h-3 w-3" />{contact.phone}
+                            </a>
+                          )}
+                          {contact.email && (
+                            <a href={`mailto:${contact.email}`} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                              <Mail className="h-3 w-3" />{contact.email}
+                            </a>
+                          )}
+                        </div>
+                        {/* Linked stats */}
+                        {stats.jobs > 0 && (
+                          <div className="mt-1.5 flex items-center gap-3 font-body text-xs">
+                            <span className="inline-flex items-center gap-1 text-accent font-medium">
+                              <Wrench className="h-3 w-3" />{stats.jobs} job{stats.jobs !== 1 ? "s" : ""}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-accent font-medium">
+                              <DollarSign className="h-3 w-3" />${stats.totalSpend.toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                        {contact.notes && (
+                          <p className="mt-1 font-body text-xs text-muted-foreground/70 line-clamp-1">{contact.notes}</p>
+                        )}
+                      </div>
                     </div>
-                    {contact.notes && (
-                      <p className="mt-1 font-body text-xs text-muted-foreground/70 line-clamp-1">{contact.notes}</p>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="font-body text-xs">{getRoleLabel(contact.role)}</Badge>
+                      {stats.jobs > 0 && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setExpandedContact(isExpanded ? null : contact.id)}>
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteContact.mutate(contact.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="font-body text-xs">{getRoleLabel(contact.role)}</Badge>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteContact.mutate(contact.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+
+                  {/* Expanded repair history */}
+                  {isExpanded && stats.jobs > 0 && (
+                    <div className="mt-3 border-t border-border/50 pt-3 space-y-2">
+                      <p className="font-body text-xs font-medium text-muted-foreground">Repair History</p>
+                      {stats.logs.map((log: any) => (
+                        <div key={log.id} className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2">
+                          <div>
+                            <p className="font-body text-xs font-medium">{log.title}</p>
+                            <p className="font-body text-xs text-muted-foreground">
+                              {log.properties?.name} · {log.category}
+                              {log.completed_date ? ` · ${format(new Date(log.completed_date), "MMM d, yyyy")}` : ""}
+                            </p>
+                          </div>
+                          {log.cost && (
+                            <span className="font-body text-xs font-medium">${Number(log.cost).toLocaleString()}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

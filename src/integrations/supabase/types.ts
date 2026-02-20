@@ -112,6 +112,7 @@ export type Database = {
         Row: {
           category: string
           completed_date: string | null
+          contact_id: string | null
           cost: number | null
           created_at: string
           description: string | null
@@ -129,6 +130,7 @@ export type Database = {
         Insert: {
           category?: string
           completed_date?: string | null
+          contact_id?: string | null
           cost?: number | null
           created_at?: string
           description?: string | null
@@ -146,6 +148,7 @@ export type Database = {
         Update: {
           category?: string
           completed_date?: string | null
+          contact_id?: string | null
           cost?: number | null
           created_at?: string
           description?: string | null
@@ -161,6 +164,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "maintenance_logs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "home_contacts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "maintenance_logs_property_id_fkey"
             columns: ["property_id"]
