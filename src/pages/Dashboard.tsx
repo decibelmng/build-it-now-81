@@ -45,7 +45,7 @@ const Dashboard = () => {
   }, [user, navigate]);
 
   // Check if user has any properties — show onboarding if not
-  const { data: properties = [] } = useQuery({
+  const { data: properties, isSuccess: propertiesLoaded } = useQuery({
     queryKey: ["properties_onboarding", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.from("properties").select("id").limit(1);
@@ -56,10 +56,10 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    if (profile && properties.length === 0) {
+    if (propertiesLoaded && properties && properties.length === 0) {
       setShowOnboarding(true);
     }
-  }, [profile, properties]);
+  }, [propertiesLoaded, properties]);
 
   const handleSignOut = async () => {
     await signOut();
