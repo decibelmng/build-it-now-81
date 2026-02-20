@@ -442,7 +442,12 @@ const MaintenanceLogSection = () => {
                       </div>
                     )}
                     <div>
-                      <h4 className="font-display text-sm font-semibold">{log.title}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-display text-sm font-semibold">{log.title}</h4>
+                        {log.reference_code && (
+                          <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{log.reference_code}</span>
+                        )}
+                      </div>
                       <p className="font-body text-xs text-muted-foreground">
                         {log.properties?.name} · {categories.find((c) => c.value === log.category)?.label ?? log.category}
                         {log.cost ? ` · $${Number(log.cost).toFixed(2)}` : ""}

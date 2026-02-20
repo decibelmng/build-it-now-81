@@ -121,6 +121,7 @@ export type Database = {
           is_recurring: boolean | null
           property_id: string
           recurrence_interval: string | null
+          reference_code: string | null
           scheduled_date: string | null
           status: string
           title: string
@@ -139,6 +140,7 @@ export type Database = {
           is_recurring?: boolean | null
           property_id: string
           recurrence_interval?: string | null
+          reference_code?: string | null
           scheduled_date?: string | null
           status?: string
           title: string
@@ -157,6 +159,7 @@ export type Database = {
           is_recurring?: boolean | null
           property_id?: string
           recurrence_interval?: string | null
+          reference_code?: string | null
           scheduled_date?: string | null
           status?: string
           title?: string
@@ -393,6 +396,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      extract_house_number: { Args: { addr: string }; Returns: string }
       has_property_access: {
         Args: { p_property_id: string; p_user_id: string }
         Returns: boolean
@@ -404,6 +408,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      trade_code: { Args: { category: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

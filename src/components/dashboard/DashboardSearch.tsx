@@ -41,7 +41,7 @@ const DashboardSearch = () => {
 
     const [props, logs, docs, contacts] = await Promise.all([
       supabase.from("properties").select("id, name, address, city").ilike("name", term).limit(5),
-      supabase.from("maintenance_logs").select("id, title, category, status").ilike("title", term).limit(5),
+      supabase.from("maintenance_logs").select("id, title, category, status, reference_code").ilike("title", term).limit(5),
       supabase.from("documents").select("id, name, category").ilike("name", term).limit(5),
       supabase.from("home_contacts").select("id, name, role, company").ilike("name", term).limit(5),
     ]);
@@ -53,11 +53,11 @@ const DashboardSearch = () => {
         title: p.name,
         subtitle: `${p.address}${p.city ? `, ${p.city}` : ""}`,
       })),
-      ...(logs.data ?? []).map((l) => ({
+      ...(logs.data ?? []).map((l: any) => ({
         type: "maintenance" as const,
         id: l.id,
         title: l.title,
-        subtitle: `${l.category} · ${l.status}`,
+        subtitle: `${l.reference_code ? l.reference_code + ' · ' : ''}${l.category} · ${l.status}`,
       })),
       ...(docs.data ?? []).map((d) => ({
         type: "document" as const,
