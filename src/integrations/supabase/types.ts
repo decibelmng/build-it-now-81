@@ -257,6 +257,50 @@ export type Database = {
         }
         Relationships: []
       }
+      property_shares: {
+        Row: {
+          created_at: string
+          id: string
+          owner_id: string
+          permission: string
+          property_id: string
+          shared_with_email: string
+          shared_with_user_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owner_id: string
+          permission?: string
+          property_id: string
+          shared_with_email: string
+          shared_with_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_id?: string
+          permission?: string
+          property_id?: string
+          shared_with_email?: string
+          shared_with_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_shares_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recurring_templates: {
         Row: {
           active: boolean
@@ -318,7 +362,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_property_access: {
+        Args: { p_property_id: string; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       user_persona: "homeowner" | "agent" | "inspector"
