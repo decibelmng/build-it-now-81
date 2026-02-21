@@ -15,7 +15,7 @@ interface DashboardSidebarProps {
 
 const navItems: { id: Section; label: string; icon: React.ElementType }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "properties", label: "Properties", icon: Home },
+  { id: "properties", label: "My Home", icon: Home },
   { id: "maintenance", label: "Maintenance", icon: Wrench },
   { id: "documents", label: "Documents", icon: FileText },
   { id: "savings", label: "Savings", icon: TrendingUp },
