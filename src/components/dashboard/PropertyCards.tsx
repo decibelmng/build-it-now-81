@@ -6,10 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, MapPin, BedDouble, Bath, Ruler, Calendar, Loader2, ArrowRightLeft, Copy, Check } from "lucide-react";
+import { Plus, MapPin, BedDouble, Bath, Ruler, Calendar, Loader2, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
 import type { Tables } from "@/integrations/supabase/types";
@@ -29,10 +29,6 @@ const PropertyCards = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [transferOpen, setTransferOpen] = useState(false);
-  const [transferStep, setTransferStep] = useState<"email" | "confirm">("email");
-  const [transferPropertyId, setTransferPropertyId] = useState<string | null>(null);
-  const [transferEmail, setTransferEmail] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "", address: "", city: "", state: "", zip: "",
@@ -95,38 +91,6 @@ const PropertyCards = () => {
       setOpen(false);
       setForm({ name: "", address: "", city: "", state: "", zip: "", property_type: "single_family", bedrooms: "", bathrooms: "", sqft: "", year_built: "", latitude: null, longitude: null });
       toast({ title: "Property added!" });
-    },
-    onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    },
-  });
-
-  const initiateTransfer = useMutation({
-    mutationFn: async () => {
-      if (!transferPropertyId || !transferEmail) return;
-      // Look up recipient user by email
-      const { data: recipientProfile } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("display_name", transferEmail)
-        .maybeSingle();
-
-      // We store the email; to_user_id will be matched by email in auth
-      const { error } = await supabase.from("property_transfers").insert({
-        property_id: transferPropertyId,
-        from_user_id: user!.id,
-        to_email: transferEmail,
-        to_user_id: recipientProfile?.user_id || null,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["properties"] });
-      setTransferOpen(false);
-      setTransferEmail("");
-      setTransferPropertyId(null);
-      setTransferStep("email");
-      toast({ title: "Transfer initiated", description: "The recipient will need to accept the transfer." });
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -336,71 +300,6 @@ const PropertyCards = () => {
         </div>
       )}
 
-      {/* Transfer dialog — two-step */}
-      <Dialog open={transferOpen} onOpenChange={(v) => { setTransferOpen(v); if (!v) { setTransferStep("email"); setTransferEmail(""); } }}>
-        <DialogContent className="max-w-sm">
-          {transferStep === "email" ? (
-            <>
-              <DialogHeader>
-                <DialogTitle className="font-display">Transfer Property</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={(e) => { e.preventDefault(); setTransferStep("confirm"); }} className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="font-body">Recipient Email *</Label>
-                  <Input
-                    type="email"
-                    placeholder="newowner@example.com"
-                    value={transferEmail}
-                    onChange={(e) => setTransferEmail(e.target.value)}
-                    required
-                    className="font-body"
-                  />
-                  <p className="font-body text-xs text-muted-foreground">
-                    The recipient must have an account. They'll need to accept the transfer.
-                  </p>
-                </div>
-                <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold">
-                  Continue
-                </Button>
-              </form>
-            </>
-          ) : (
-            <>
-              <DialogHeader>
-                <DialogTitle className="font-display text-destructive">⚠ Confirm Transfer</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-2">
-                  <p className="font-body text-sm font-semibold text-destructive">This action cannot be undone.</p>
-                  <p className="font-body text-sm text-muted-foreground">
-                    You are about to permanently transfer ownership of this property and all associated data — maintenance logs, documents, contacts, and recurring templates — to <strong className="text-foreground">{transferEmail}</strong>.
-                  </p>
-                  <p className="font-body text-sm text-muted-foreground">
-                    Once the recipient accepts, you will no longer have access to this property or its records.
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 rounded-full font-body"
-                    onClick={() => setTransferStep("email")}
-                  >
-                    Go Back
-                  </Button>
-                  <Button
-                    className="flex-1 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-body font-semibold"
-                    onClick={() => initiateTransfer.mutate()}
-                    disabled={initiateTransfer.isPending}
-                  >
-                    {initiateTransfer.isPending ? "Sending..." : "Transfer Property"}
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
@@ -430,21 +329,7 @@ const PropertyCards = () => {
                 <MapPin className="h-10 w-10 text-accent/60" />
               </div>
               <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-1">
-                  <h3 className="font-display text-lg font-semibold">{property.name}</h3>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                    title="Transfer property"
-                    onClick={() => {
-                      setTransferPropertyId(property.id);
-                      setTransferOpen(true);
-                    }}
-                  >
-                    <ArrowRightLeft className="h-4 w-4" />
-                  </Button>
-                </div>
+                <h3 className="mb-1 font-display text-lg font-semibold">{property.name}</h3>
                 {/* Property Code */}
                 {(property as any).property_code && (
                   <button
