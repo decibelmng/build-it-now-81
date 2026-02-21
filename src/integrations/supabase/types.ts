@@ -512,6 +512,7 @@ export type Database = {
         Row: {
           active: boolean
           category: string
+          contact_id: string | null
           created_at: string
           description: string | null
           estimated_cost: number | null
@@ -527,6 +528,7 @@ export type Database = {
         Insert: {
           active?: boolean
           category?: string
+          contact_id?: string | null
           created_at?: string
           description?: string | null
           estimated_cost?: number | null
@@ -542,6 +544,7 @@ export type Database = {
         Update: {
           active?: boolean
           category?: string
+          contact_id?: string | null
           created_at?: string
           description?: string | null
           estimated_cost?: number | null
@@ -555,6 +558,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "recurring_templates_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "home_contacts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "recurring_templates_property_id_fkey"
             columns: ["property_id"]

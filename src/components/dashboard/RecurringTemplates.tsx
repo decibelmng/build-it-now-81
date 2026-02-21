@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, RefreshCw, Trash2, Calendar } from "lucide-react";
+import { Plus, RefreshCw, Trash2, Calendar, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, addMonths } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
@@ -30,6 +30,7 @@ const categories = [
 
 const intervals = [
   { value: 1, label: "Monthly" },
+  { value: 2, label: "Every 2 Months" },
   { value: 3, label: "Quarterly" },
   { value: 6, label: "Semi-Annual" },
   { value: 12, label: "Annual" },
@@ -44,7 +45,7 @@ const RecurringTemplates = () => {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     title: "", description: "", category: "general", property_id: "",
-    estimated_cost: "", interval_months: "12", next_due_date: "",
+    estimated_cost: "", interval_months: "12", next_due_date: "", contact_id: "",
   });
 
   const { data: properties = [] } = useQuery({
@@ -53,6 +54,35 @@ const RecurringTemplates = () => {
       const { data, error } = await supabase.from("properties").select("*").order("name");
       if (error) throw error;
       return data as Property[];
+    },
+    enabled: !!user,
+  });
+
+  // Fetch contacts for the selected property
+  const { data: contacts = [] } = useQuery({
+    queryKey: ["home_contacts", form.property_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("home_contacts")
+        .select("*")
+        .eq("property_id", form.property_id)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && !!form.property_id,
+  });
+
+  // Fetch all contacts for display on template cards
+  const { data: allContacts = [] } = useQuery({
+    queryKey: ["all_home_contacts", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("home_contacts")
+        .select("id, name, role, company")
+        .order("name");
+      if (error) throw error;
+      return data;
     },
     enabled: !!user,
   });
@@ -81,13 +111,14 @@ const RecurringTemplates = () => {
         estimated_cost: form.estimated_cost ? parseFloat(form.estimated_cost) : null,
         interval_months: parseInt(form.interval_months),
         next_due_date: form.next_due_date,
+        contact_id: form.contact_id || null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["recurring_templates"] });
       setOpen(false);
-      setForm({ title: "", description: "", category: "general", property_id: "", estimated_cost: "", interval_months: "12", next_due_date: "" });
+      setForm({ title: "", description: "", category: "general", property_id: "", estimated_cost: "", interval_months: "12", next_due_date: "", contact_id: "" });
       toast({ title: "Recurring template created!" });
     },
     onError: (err: Error) => {
@@ -116,7 +147,6 @@ const RecurringTemplates = () => {
 
   const createLogFromTemplate = useMutation({
     mutationFn: async (template: any) => {
-      // Create the maintenance log
       const { error: logError } = await supabase.from("maintenance_logs").insert({
         user_id: user!.id,
         property_id: template.property_id,
@@ -125,10 +155,10 @@ const RecurringTemplates = () => {
         category: template.category,
         cost: template.estimated_cost,
         scheduled_date: template.next_due_date,
+        contact_id: template.contact_id || null,
       });
       if (logError) throw logError;
 
-      // Advance the next_due_date
       const nextDate = addMonths(new Date(template.next_due_date), template.interval_months);
       const { error: updateError } = await supabase.from("recurring_templates").update({
         next_due_date: format(nextDate, "yyyy-MM-dd"),
@@ -148,12 +178,21 @@ const RecurringTemplates = () => {
 
   const isDue = (dateStr: string) => new Date(dateStr) <= new Date();
 
+  const getContactName = (contactId: string | null) => {
+    if (!contactId) return null;
+    const contact = allContacts.find((c: any) => c.id === contactId);
+    if (!contact) return null;
+    return contact.company ? `${contact.name} (${contact.company})` : contact.name;
+  };
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="font-display text-2xl font-bold">Recurring Maintenance</h2>
-          <p className="font-body text-sm text-muted-foreground">Set up templates for recurring tasks</p>
+          <p className="font-body text-sm text-muted-foreground">
+            Automated templates that create maintenance logs on schedule
+          </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -161,14 +200,14 @@ const RecurringTemplates = () => {
               <Plus className="mr-2 h-4 w-4" /> Add Template
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-display">Create Recurring Template</DialogTitle>
             </DialogHeader>
             <form onSubmit={(e) => { e.preventDefault(); addTemplate.mutate(); }} className="space-y-4">
               <div className="space-y-2">
                 <Label className="font-body">Property *</Label>
-                <Select value={form.property_id} onValueChange={(v) => setForm({ ...form, property_id: v })}>
+                <Select value={form.property_id} onValueChange={(v) => setForm({ ...form, property_id: v, contact_id: "" })}>
                   <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
                   <SelectContent>
                     {properties.map((p) => (
@@ -179,7 +218,7 @@ const RecurringTemplates = () => {
               </div>
               <div className="space-y-2">
                 <Label className="font-body">Task Title *</Label>
-                <Input placeholder="HVAC filter replacement" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required className="font-body" />
+                <Input placeholder="e.g. Lawn mowing, HVAC filter replacement" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required className="font-body" />
               </div>
               <div className="space-y-2">
                 <Label className="font-body">Description</Label>
@@ -213,6 +252,26 @@ const RecurringTemplates = () => {
                   </Select>
                 </div>
               </div>
+              {/* Contractor selection */}
+              <div className="space-y-2">
+                <Label className="font-body">Assigned Contractor</Label>
+                <Select value={form.contact_id} onValueChange={(v) => setForm({ ...form, contact_id: v })}>
+                  <SelectTrigger className="font-body">
+                    <SelectValue placeholder={form.property_id ? "Select contractor (optional)" : "Select a property first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="font-body text-muted-foreground">No contractor</SelectItem>
+                    {contacts.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id} className="font-body">
+                        {c.name}{c.company ? ` — ${c.company}` : ""} ({c.role})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.property_id && contacts.length === 0 && (
+                  <p className="font-body text-xs text-muted-foreground">No contacts for this property yet. Add them in Contacts.</p>
+                )}
+              </div>
               <div className="space-y-2">
                 <Label className="font-body">Next Due Date *</Label>
                 <Input type="date" value={form.next_due_date} onChange={(e) => setForm({ ...form, next_due_date: e.target.value })} required className="font-body" />
@@ -224,6 +283,16 @@ const RecurringTemplates = () => {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Automation info banner */}
+      <Card className="mb-4 border-accent/20 bg-accent/5">
+        <CardContent className="flex items-center gap-3 p-3">
+          <RefreshCw className="h-5 w-5 text-accent shrink-0" />
+          <p className="font-body text-xs text-muted-foreground">
+            <strong className="text-foreground">Automated:</strong> Active templates automatically create maintenance logs when due. No manual action needed.
+          </p>
+        </CardContent>
+      </Card>
 
       {properties.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
@@ -249,6 +318,7 @@ const RecurringTemplates = () => {
           {templates.map((tmpl: any) => {
             const due = isDue(tmpl.next_due_date);
             const intervalLabel = intervals.find((i) => i.value === tmpl.interval_months)?.label ?? `Every ${tmpl.interval_months}mo`;
+            const contactName = getContactName(tmpl.contact_id);
             return (
               <Card key={tmpl.id} className={`border-border/50 transition-shadow hover:shadow-card-hover ${due && tmpl.active ? "border-l-4 border-l-accent" : ""}`}>
                 <CardContent className="flex items-center justify-between p-4">
@@ -262,6 +332,11 @@ const RecurringTemplates = () => {
                         {tmpl.properties?.name} · {categories.find((c) => c.value === tmpl.category)?.label ?? tmpl.category}
                         {tmpl.estimated_cost ? ` · ~$${Number(tmpl.estimated_cost).toFixed(0)}` : ""}
                       </p>
+                      {contactName && (
+                        <p className="mt-0.5 font-body text-xs text-muted-foreground flex items-center gap-1">
+                          <User className="h-3 w-3" /> {contactName}
+                        </p>
+                      )}
                       <p className="mt-0.5 font-body text-xs text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         Next: {format(new Date(tmpl.next_due_date), "MMM d, yyyy")} · {intervalLabel}
@@ -277,11 +352,14 @@ const RecurringTemplates = () => {
                         onClick={() => createLogFromTemplate.mutate(tmpl)}
                         disabled={createLogFromTemplate.isPending}
                       >
-                        Create Log
+                        Create Now
                       </Button>
                     )}
                     {due && tmpl.active && (
                       <Badge variant="destructive" className="font-body text-xs">Due</Badge>
+                    )}
+                    {!tmpl.active && (
+                      <Badge variant="outline" className="font-body text-xs text-muted-foreground">Paused</Badge>
                     )}
                     <Switch
                       checked={tmpl.active}
