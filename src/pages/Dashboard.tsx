@@ -18,9 +18,10 @@ import RecurringTemplates from "@/components/dashboard/RecurringTemplates";
 import PropertySharing from "@/components/dashboard/PropertySharing";
 import ExportReports from "@/components/dashboard/ExportReports";
 import AnalyticsInsights from "@/components/dashboard/AnalyticsInsights";
+import PropertyUtilities from "@/components/dashboard/PropertyUtilities";
 
 
-type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search";
+type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -92,6 +93,7 @@ const Dashboard = () => {
           {activeSection === "documents" && <DocumentVault />}
           {activeSection === "savings" && <SavingsTracking />}
           {activeSection === "contacts" && <HomeContacts />}
+          {activeSection === "utilities" && <PropertyUtilities />}
           {activeSection === "timeline" && <PropertyTimeline />}
           {activeSection === "recurring" && <RecurringTemplates />}
           {activeSection === "sharing" && <PropertySharing />}

@@ -508,6 +508,65 @@ export type Database = {
           },
         ]
       }
+      property_utilities: {
+        Row: {
+          account_number: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          monthly_cost: number | null
+          notes: string | null
+          property_id: string
+          provider_name: string
+          service_type: string
+          updated_at: string
+          user_id: string
+          vendor_url: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          monthly_cost?: number | null
+          notes?: string | null
+          property_id: string
+          provider_name: string
+          service_type?: string
+          updated_at?: string
+          user_id: string
+          vendor_url?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          monthly_cost?: number | null
+          notes?: string | null
+          property_id?: string
+          provider_name?: string
+          service_type?: string
+          updated_at?: string
+          user_id?: string
+          vendor_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_utilities_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recurring_templates: {
         Row: {
           active: boolean
