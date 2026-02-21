@@ -18,9 +18,9 @@ import RecurringTemplates from "@/components/dashboard/RecurringTemplates";
 import PropertySharing from "@/components/dashboard/PropertySharing";
 import ExportReports from "@/components/dashboard/ExportReports";
 import AnalyticsInsights from "@/components/dashboard/AnalyticsInsights";
-import PropertyMap from "@/components/dashboard/PropertyMap";
 
-type Section = "overview" | "properties" | "map" | "maintenance" | "documents" | "savings" | "contacts" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search";
+
+type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -88,7 +88,6 @@ const Dashboard = () => {
         <div className="mx-auto max-w-5xl px-3 py-4 sm:px-8 sm:py-8">
           {activeSection === "overview" && <DashboardOverview />}
           {activeSection === "properties" && <PropertyCards />}
-          {activeSection === "map" && <PropertyMap />}
           {activeSection === "maintenance" && <MaintenanceLogSection />}
           {activeSection === "documents" && <DocumentVault />}
           {activeSection === "savings" && <SavingsTracking />}
