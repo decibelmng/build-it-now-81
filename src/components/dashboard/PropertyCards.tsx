@@ -138,8 +138,8 @@ const PropertyCards = () => {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="font-display text-2xl font-bold">My Properties</h2>
-          <p className="font-body text-sm text-muted-foreground">Manage your homes and properties</p>
+          <h2 className="font-display text-2xl font-bold">My Home</h2>
+          <p className="font-body text-sm text-muted-foreground">Manage your home</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
