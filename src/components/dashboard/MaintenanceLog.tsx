@@ -27,6 +27,12 @@ const categories = [
   { value: "general", label: "General" },
 ];
 
+const scopes = [
+  { value: "routine", label: "Routine" },
+  { value: "major_repair", label: "Major Repair" },
+  { value: "improvement", label: "Improvement" },
+];
+
 const statusConfig: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Pending", icon: Clock, variant: "secondary" },
   in_progress: { label: "In Progress", icon: AlertTriangle, variant: "outline" },
@@ -44,7 +50,7 @@ const vendorRoles = [
   { value: "other", label: "Other" },
 ];
 
-const emptyForm = { title: "", description: "", category: "general", property_id: "", cost: "", scheduled_date: "", contact_id: "", status: "pending" };
+const emptyForm = { title: "", description: "", category: "general", property_id: "", cost: "", scheduled_date: "", contact_id: "", status: "pending", scope: "routine" };
 
 const MaintenanceLogSection = () => {
   const { user } = useAuth();
@@ -83,6 +89,7 @@ const MaintenanceLogSection = () => {
       scheduled_date: log.scheduled_date || "",
       contact_id: log.contact_id || "",
       status: log.status,
+      scope: log.scope || "routine",
     });
     setEditingId(log.id);
     setPhotoPreview(log.image_url || null);
@@ -177,6 +184,7 @@ const MaintenanceLogSection = () => {
         scheduled_date: form.scheduled_date || null,
         contact_id,
         status: form.status,
+        scope: form.scope,
       };
 
       if (image_url !== undefined) payload.image_url = image_url;
@@ -201,6 +209,7 @@ const MaintenanceLogSection = () => {
           scheduled_date: form.scheduled_date || null,
           contact_id,
           image_url: image_url !== undefined ? image_url : null,
+          scope: form.scope,
         });
         if (error) throw error;
       }
@@ -372,6 +381,18 @@ const MaintenanceLogSection = () => {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label className="font-body">Scope</Label>
+              <Select value={form.scope} onValueChange={(v) => setForm({ ...form, scope: v })}>
+                <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {scopes.map((s) => (
+                    <SelectItem key={s.value} value={s.value} className="font-body">{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Status selector (visible when editing) */}
             {editingId && (
               <div className="space-y-2">
@@ -444,6 +465,11 @@ const MaintenanceLogSection = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="font-display text-sm font-semibold">{log.title}</h4>
+                        {log.scope && log.scope !== "routine" && (
+                          <Badge variant={log.scope === "major_repair" ? "destructive" : "outline"} className="font-body text-[10px] px-1.5 py-0">
+                            {scopes.find((s) => s.value === log.scope)?.label ?? log.scope}
+                          </Badge>
+                        )}
                         {log.reference_code && (
                           <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{log.reference_code}</span>
                         )}
