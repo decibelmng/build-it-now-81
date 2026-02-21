@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -53,6 +54,19 @@ const PropertyTimeline = () => {
   const { user } = useAuth();
   const [selectedProperty, setSelectedProperty] = useState<string>("all");
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
+  const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(["construction", "maintenance", "inventory", "utility"]));
+
+  const toggleType = (type: string) => {
+    setVisibleTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        if (next.size > 1) next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  };
 
   const { data: properties = [] } = useQuery({
     queryKey: ["properties", user?.id],
@@ -192,11 +206,14 @@ const PropertyTimeline = () => {
 
   events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const maxCost = Math.max(...events.map((e) => e.cost ?? 0), 1);
+  // Apply type filter
+  const filteredEvents = events.filter((e) => visibleTypes.has(e.type));
+
+  const maxCost = Math.max(...filteredEvents.map((e) => e.cost ?? 0), 1);
 
   // Cumulative cost summary
-  const totalCost = events.reduce((sum, e) => sum + (e.cost ?? 0), 0);
-  const maintenanceEvents = events.filter((e) => e.type === "maintenance");
+  const totalCost = filteredEvents.reduce((sum, e) => sum + (e.cost ?? 0), 0);
+  const maintenanceEvents = filteredEvents.filter((e) => e.type === "maintenance");
   const avgCost = maintenanceEvents.filter((e) => e.cost).length > 0
     ? totalCost / maintenanceEvents.filter((e) => e.cost).length
     : 0;
@@ -232,6 +249,35 @@ const PropertyTimeline = () => {
             </SelectContent>
           </Select>
         )}
+      </div>
+
+      {/* Category Filters */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        {[
+          { type: "construction", label: "Construction", icon: Building },
+          { type: "maintenance", label: "Maintenance", icon: Wrench },
+          { type: "inventory", label: "Inventory", icon: Cog },
+          { type: "utility", label: "Utilities", icon: PlugZap },
+        ].map(({ type, label, icon: Icon }) => {
+          const active = visibleTypes.has(type);
+          const count = events.filter((e) => e.type === type).length;
+          return (
+            <button
+              key={type}
+              onClick={() => toggleType(type)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-body text-xs font-medium transition-colors border",
+                active
+                  ? "bg-accent/10 text-accent border-accent/30"
+                  : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+              )}
+            >
+              <Icon className="h-3 w-3" />
+              {label}
+              <span className={cn("rounded-full px-1.5 py-0.5 text-[10px]", active ? "bg-accent/20" : "bg-muted")}>{count}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Cumulative Cost Summary */}
@@ -333,7 +379,7 @@ const PropertyTimeline = () => {
             </Card>
           ))}
         </div>
-      ) : events.length === 0 ? (
+      ) : filteredEvents.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Home className="mb-4 h-10 w-10 text-muted-foreground" />
@@ -353,7 +399,7 @@ const PropertyTimeline = () => {
             <p className="font-body text-xs font-semibold text-accent pt-2.5">Today</p>
           </div>
 
-          {events.map((event) => {
+          {filteredEvents.map((event) => {
             const isConstruction = event.type === "construction";
             const cat = isConstruction
               ? { label: "Construction", icon: Building, color: "bg-accent/20 text-accent" }
