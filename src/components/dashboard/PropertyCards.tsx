@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, MapPin, BedDouble, Bath, Ruler, Calendar } from "lucide-react";
+import { Plus, MapPin, BedDouble, Bath, Ruler, Calendar, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties">;
@@ -30,7 +31,11 @@ const PropertyCards = () => {
   const [form, setForm] = useState({
     name: "", address: "", city: "", state: "", zip: "",
     property_type: "single_family", bedrooms: "", bathrooms: "", sqft: "", year_built: "",
+    latitude: null as number | null, longitude: null as number | null,
   });
+  const { predictions, loading: acLoading, search: acSearch, getDetails, clear: acClear } = useAddressAutocomplete();
+  const [showPredictions, setShowPredictions] = useState(false);
+  const addressWrapperRef = useRef<HTMLDivElement>(null);
 
   const { data: properties = [], isLoading } = useQuery({
     queryKey: ["properties", user?.id],
@@ -59,13 +64,15 @@ const PropertyCards = () => {
         bathrooms: form.bathrooms ? parseFloat(form.bathrooms) : null,
         sqft: form.sqft ? parseInt(form.sqft) : null,
         year_built: form.year_built ? parseInt(form.year_built) : null,
+        latitude: form.latitude,
+        longitude: form.longitude,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       setOpen(false);
-      setForm({ name: "", address: "", city: "", state: "", zip: "", property_type: "single_family", bedrooms: "", bathrooms: "", sqft: "", year_built: "" });
+      setForm({ name: "", address: "", city: "", state: "", zip: "", property_type: "single_family", bedrooms: "", bathrooms: "", sqft: "", year_built: "", latitude: null, longitude: null });
       toast({ title: "Property added!" });
     },
     onError: (err: Error) => {
@@ -100,9 +107,56 @@ const PropertyCards = () => {
                 <Label className="font-body">Property Name *</Label>
                 <Input placeholder="My Home" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="font-body" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 relative" ref={addressWrapperRef}>
                 <Label className="font-body">Address *</Label>
-                <Input placeholder="123 Main St" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required className="font-body" />
+                <div className="relative">
+                  <Input
+                    placeholder="Start typing an address..."
+                    value={form.address}
+                    onChange={(e) => {
+                      setForm({ ...form, address: e.target.value });
+                      acSearch(e.target.value);
+                      setShowPredictions(true);
+                    }}
+                    onFocus={() => predictions.length > 0 && setShowPredictions(true)}
+                    onBlur={() => setTimeout(() => setShowPredictions(false), 200)}
+                    required
+                    className="font-body"
+                  />
+                  {acLoading && <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
+                {showPredictions && predictions.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-md">
+                    {predictions.map((p) => (
+                      <button
+                        key={p.place_id}
+                        type="button"
+                        className="w-full px-3 py-2 text-left font-body text-sm hover:bg-accent/10 transition-colors first:rounded-t-md last:rounded-b-md"
+                        onMouseDown={async () => {
+                          const details = await getDetails(p.place_id);
+                          if (details) {
+                            setForm((prev) => ({
+                              ...prev,
+                              address: details.address,
+                              city: details.city,
+                              state: details.state,
+                              zip: details.zip,
+                              latitude: details.latitude,
+                              longitude: details.longitude,
+                            }));
+                          }
+                          acClear();
+                          setShowPredictions(false);
+                        }}
+                      >
+                        <span className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          {p.description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-2">

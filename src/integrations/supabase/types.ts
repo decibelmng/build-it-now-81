@@ -225,6 +225,8 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          latitude: number | null
+          longitude: number | null
           name: string
           property_type: string
           sqft: number | null
@@ -242,6 +244,8 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          latitude?: number | null
+          longitude?: number | null
           name: string
           property_type?: string
           sqft?: number | null
@@ -259,6 +263,8 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           property_type?: string
           sqft?: number | null
