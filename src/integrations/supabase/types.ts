@@ -228,6 +228,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           name: string
+          property_code: string | null
           property_type: string
           sqft: number | null
           state: string | null
@@ -247,6 +248,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name: string
+          property_code?: string | null
           property_type?: string
           sqft?: number | null
           state?: string | null
@@ -266,6 +268,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name?: string
+          property_code?: string | null
           property_type?: string
           sqft?: number | null
           state?: string | null
@@ -313,6 +316,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "property_shares_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_transfers: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          id: string
+          property_id: string
+          status: string
+          to_email: string
+          to_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          id?: string
+          property_id: string
+          status?: string
+          to_email: string
+          to_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          property_id?: string
+          status?: string
+          to_email?: string
+          to_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_transfers_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
@@ -402,6 +446,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_property_transfer: {
+        Args: { p_transfer_id: string }
+        Returns: undefined
+      }
       extract_house_number: { Args: { addr: string }; Returns: string }
       has_property_access: {
         Args: { p_property_id: string; p_user_id: string }
