@@ -38,6 +38,18 @@ const intervals = [
   { value: 60, label: "Every 5 Years" },
 ];
 
+const contactRoles = [
+  { value: "plumber", label: "Plumber" },
+  { value: "electrician", label: "Electrician" },
+  { value: "hvac_tech", label: "HVAC Technician" },
+  { value: "roofer", label: "Roofer" },
+  { value: "landscaper", label: "Landscaper" },
+  { value: "handyman", label: "Handyman" },
+  { value: "contractor", label: "General Contractor" },
+  { value: "inspector", label: "Inspector" },
+  { value: "other", label: "Other" },
+];
+
 const RecurringTemplates = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -47,6 +59,8 @@ const RecurringTemplates = () => {
     title: "", description: "", category: "general", property_id: "",
     estimated_cost: "", interval_months: "12", next_due_date: "", contact_id: "",
   });
+  const [showNewContact, setShowNewContact] = useState(false);
+  const [newContact, setNewContact] = useState({ name: "", role: "other", company: "", phone: "", email: "" });
 
   const { data: properties = [] } = useQuery({
     queryKey: ["properties", user?.id],
@@ -102,6 +116,26 @@ const RecurringTemplates = () => {
 
   const addTemplate = useMutation({
     mutationFn: async () => {
+      let targetContactId = form.contact_id === "none" ? null : form.contact_id || null;
+
+      if (showNewContact && newContact.name.trim()) {
+        const { data: contact, error: contactError } = await supabase
+          .from("home_contacts")
+          .insert({
+            user_id: user!.id,
+            property_id: form.property_id,
+            name: newContact.name.trim(),
+            role: newContact.role,
+            company: newContact.company.trim() || null,
+            phone: newContact.phone.trim() || null,
+            email: newContact.email.trim() || null,
+          })
+          .select("id")
+          .single();
+        if (contactError) throw contactError;
+        targetContactId = contact.id;
+      }
+
       const { error } = await supabase.from("recurring_templates").insert({
         user_id: user!.id,
         property_id: form.property_id,
@@ -111,14 +145,18 @@ const RecurringTemplates = () => {
         estimated_cost: form.estimated_cost ? parseFloat(form.estimated_cost) : null,
         interval_months: parseInt(form.interval_months),
         next_due_date: form.next_due_date,
-        contact_id: form.contact_id || null,
+        contact_id: targetContactId,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["recurring_templates"] });
+      queryClient.invalidateQueries({ queryKey: ["home_contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["all_home_contacts"] });
       setOpen(false);
       setForm({ title: "", description: "", category: "general", property_id: "", estimated_cost: "", interval_months: "12", next_due_date: "", contact_id: "" });
+      setShowNewContact(false);
+      setNewContact({ name: "", role: "other", company: "", phone: "", email: "" });
       toast({ title: "Recurring template created!" });
     },
     onError: (err: Error) => {
@@ -255,28 +293,98 @@ const RecurringTemplates = () => {
               {/* Contractor selection */}
               <div className="space-y-2">
                 <Label className="font-body">Assigned Contractor</Label>
-                <Select value={form.contact_id} onValueChange={(v) => setForm({ ...form, contact_id: v })}>
-                  <SelectTrigger className="font-body">
-                    <SelectValue placeholder={form.property_id ? "Select contractor (optional)" : "Select a property first"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none" className="font-body text-muted-foreground">No contractor</SelectItem>
-                    {contacts.map((c: any) => (
-                      <SelectItem key={c.id} value={c.id} className="font-body">
-                        {c.name}{c.company ? ` — ${c.company}` : ""} ({c.role})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.property_id && contacts.length === 0 && (
-                  <p className="font-body text-xs text-muted-foreground">No contacts for this property yet. Add them in Contacts.</p>
+                {!showNewContact ? (
+                  <>
+                    <Select
+                      value={form.contact_id}
+                      onValueChange={(v) => {
+                        if (v === "__new__") {
+                          setShowNewContact(true);
+                          setForm({ ...form, contact_id: "" });
+                        } else {
+                          setForm({ ...form, contact_id: v });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="font-body">
+                        <SelectValue placeholder={form.property_id ? "Select contractor (optional)" : "Select a property first"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none" className="font-body text-muted-foreground">No contractor</SelectItem>
+                        {form.property_id && (
+                          <SelectItem value="__new__" className="font-body font-semibold text-accent">+ Add New Contractor</SelectItem>
+                        )}
+                        {contacts.map((c: any) => (
+                          <SelectItem key={c.id} value={c.id} className="font-body">
+                            {c.name}{c.company ? ` — ${c.company}` : ""} ({c.role})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {form.property_id && contacts.length === 0 && !showNewContact && (
+                      <p className="font-body text-xs text-muted-foreground">No contacts for this property yet.</p>
+                    )}
+                  </>
+                ) : (
+                  <div className="space-y-3 rounded-lg border border-border p-3 bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <p className="font-body text-sm font-semibold">New Contractor</p>
+                      <button
+                        type="button"
+                        className="font-body text-xs text-muted-foreground hover:text-foreground underline"
+                        onClick={() => {
+                          setShowNewContact(false);
+                          setNewContact({ name: "", role: "other", company: "", phone: "", email: "" });
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-body text-xs">Name *</Label>
+                      <Input
+                        placeholder="Contractor name"
+                        value={newContact.name}
+                        onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                        required
+                        className="font-body"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="font-body text-xs">Role</Label>
+                        <Select value={newContact.role} onValueChange={(v) => setNewContact({ ...newContact, role: v })}>
+                          <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {contactRoles.map((r) => (
+                              <SelectItem key={r.value} value={r.value} className="font-body">{r.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-body text-xs">Company</Label>
+                        <Input placeholder="Company" value={newContact.company} onChange={(e) => setNewContact({ ...newContact, company: e.target.value })} className="font-body" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="font-body text-xs">Phone</Label>
+                        <Input placeholder="Phone" value={newContact.phone} onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })} className="font-body" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-body text-xs">Email</Label>
+                        <Input placeholder="Email" type="email" value={newContact.email} onChange={(e) => setNewContact({ ...newContact, email: e.target.value })} className="font-body" />
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
               <div className="space-y-2">
                 <Label className="font-body">Next Due Date *</Label>
                 <Input type="date" value={form.next_due_date} onChange={(e) => setForm({ ...form, next_due_date: e.target.value })} required className="font-body" />
               </div>
-              <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={addTemplate.isPending || !form.property_id || !form.next_due_date}>
+              <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={addTemplate.isPending || !form.property_id || !form.next_due_date || (showNewContact && !newContact.name.trim())}>
                 {addTemplate.isPending ? "Creating..." : "Create Template"}
               </Button>
             </form>
