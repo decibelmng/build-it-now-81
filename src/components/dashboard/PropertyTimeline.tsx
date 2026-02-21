@@ -39,7 +39,7 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; var
 
 interface TimelineEvent {
   id: string;
-  type: "construction" | "maintenance" | "inventory" | "utility";
+  type: "construction" | "maintenance" | "major_repair" | "improvement" | "inventory" | "utility";
   date: string;
   title: string;
   description?: string | null;
@@ -54,7 +54,7 @@ const PropertyTimeline = () => {
   const { user } = useAuth();
   const [selectedProperty, setSelectedProperty] = useState<string>("all");
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
-  const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(["construction", "maintenance", "inventory", "utility"]));
+  const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(["construction", "maintenance", "major_repair", "improvement", "inventory", "utility"]));
 
   const toggleType = (type: string) => {
     setVisibleTypes((prev) => {
@@ -140,9 +140,11 @@ const PropertyTimeline = () => {
 
   filteredLogs.forEach((log: any) => {
     const eventDate = log.completed_date || log.scheduled_date || log.created_at?.split("T")[0];
+    const scope = log.scope || "routine";
+    const eventType = scope === "major_repair" ? "major_repair" : scope === "improvement" ? "improvement" : "maintenance";
     events.push({
       id: log.id,
-      type: "maintenance",
+      type: eventType,
       date: eventDate,
       title: log.title,
       description: log.description,
@@ -213,7 +215,7 @@ const PropertyTimeline = () => {
 
   // Cumulative cost summary
   const totalCost = filteredEvents.reduce((sum, e) => sum + (e.cost ?? 0), 0);
-  const maintenanceEvents = filteredEvents.filter((e) => e.type === "maintenance");
+  const maintenanceEvents = filteredEvents.filter((e) => e.type === "maintenance" || e.type === "major_repair" || e.type === "improvement");
   const avgCost = maintenanceEvents.filter((e) => e.cost).length > 0
     ? totalCost / maintenanceEvents.filter((e) => e.cost).length
     : 0;
@@ -255,7 +257,9 @@ const PropertyTimeline = () => {
       <div className="mb-4 flex flex-wrap gap-2">
         {[
           { type: "construction", label: "Construction", icon: Building },
-          { type: "maintenance", label: "Maintenance", icon: Wrench },
+          { type: "maintenance", label: "Routine", icon: Wrench },
+          { type: "major_repair", label: "Major Repair", icon: Hammer },
+          { type: "improvement", label: "Improvement", icon: TrendingUp },
           { type: "inventory", label: "Inventory", icon: Cog },
           { type: "utility", label: "Utilities", icon: PlugZap },
         ].map(({ type, label, icon: Icon }) => {

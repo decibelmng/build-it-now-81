@@ -267,6 +267,7 @@ export type Database = {
           recurrence_interval: string | null
           reference_code: string | null
           scheduled_date: string | null
+          scope: string
           status: string
           title: string
           updated_at: string
@@ -286,6 +287,7 @@ export type Database = {
           recurrence_interval?: string | null
           reference_code?: string | null
           scheduled_date?: string | null
+          scope?: string
           status?: string
           title: string
           updated_at?: string
@@ -305,6 +307,7 @@ export type Database = {
           recurrence_interval?: string | null
           reference_code?: string | null
           scheduled_date?: string | null
+          scope?: string
           status?: string
           title?: string
           updated_at?: string
