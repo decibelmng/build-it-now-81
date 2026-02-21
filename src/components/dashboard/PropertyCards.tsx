@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import HomeInventory from "@/components/dashboard/HomeInventory";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -30,6 +31,7 @@ const PropertyCards = () => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "", address: "", city: "", state: "", zip: "",
     property_type: "single_family", bedrooms: "", bathrooms: "", sqft: "", year_built: "",
@@ -322,52 +324,69 @@ const PropertyCards = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {properties.map((property) => (
-            <Card key={property.id} className="border-border/50 transition-shadow hover:shadow-card-hover">
-              <div className="h-36 rounded-t-lg bg-gradient-to-br from-accent/20 to-secondary flex items-center justify-center">
-                <MapPin className="h-10 w-10 text-accent/60" />
-              </div>
-              <CardContent className="p-5">
-                <h3 className="mb-1 font-display text-lg font-semibold">{property.name}</h3>
-                {/* Property Code */}
-                {(property as any).property_code && (
-                  <button
-                    onClick={() => copyCode((property as any).property_code, property.id)}
-                    className="mb-2 inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground hover:bg-muted/80 transition-colors"
-                    title="Copy property code"
-                  >
-                    {copiedId === property.id ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
-                    {(property as any).property_code}
-                  </button>
-                )}
-                <p className="mb-3 flex items-center gap-1 font-body text-sm text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {property.address}{property.city ? `, ${property.city}` : ""}{property.state ? `, ${property.state}` : ""}
-                </p>
-                <div className="flex flex-wrap gap-3 font-body text-xs text-muted-foreground">
-                  {property.bedrooms && (
-                    <span className="flex items-center gap-1"><BedDouble className="h-3.5 w-3.5" />{property.bedrooms} bed</span>
-                  )}
-                  {property.bathrooms && (
-                    <span className="flex items-center gap-1"><Bath className="h-3.5 w-3.5" />{property.bathrooms} bath</span>
-                  )}
-                  {property.sqft && (
-                    <span className="flex items-center gap-1"><Ruler className="h-3.5 w-3.5" />{property.sqft.toLocaleString()} sqft</span>
-                  )}
-                  {property.year_built && (
-                    <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{property.year_built}</span>
-                  )}
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {properties.map((property) => (
+              <Card
+                key={property.id}
+                className={`border-border/50 transition-shadow hover:shadow-card-hover cursor-pointer ${selectedPropertyId === property.id ? "ring-2 ring-accent" : ""}`}
+                onClick={() => setSelectedPropertyId(selectedPropertyId === property.id ? null : property.id)}
+              >
+                <div className="h-36 rounded-t-lg bg-gradient-to-br from-accent/20 to-secondary flex items-center justify-center">
+                  <MapPin className="h-10 w-10 text-accent/60" />
                 </div>
-                <div className="mt-3">
-                  <span className="rounded-full bg-secondary px-2.5 py-1 font-body text-xs font-medium text-foreground">
-                    {formatType(property.property_type)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <CardContent className="p-5">
+                  <h3 className="mb-1 font-display text-lg font-semibold">{property.name}</h3>
+                  {(property as any).property_code && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); copyCode((property as any).property_code, property.id); }}
+                      className="mb-2 inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground hover:bg-muted/80 transition-colors"
+                      title="Copy property code"
+                    >
+                      {copiedId === property.id ? <Check className="h-3 w-3 text-accent" /> : <Copy className="h-3 w-3" />}
+                      {(property as any).property_code}
+                    </button>
+                  )}
+                  <p className="mb-3 flex items-center gap-1 font-body text-sm text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {property.address}{property.city ? `, ${property.city}` : ""}{property.state ? `, ${property.state}` : ""}
+                  </p>
+                  <div className="flex flex-wrap gap-3 font-body text-xs text-muted-foreground">
+                    {property.bedrooms && (
+                      <span className="flex items-center gap-1"><BedDouble className="h-3.5 w-3.5" />{property.bedrooms} bed</span>
+                    )}
+                    {property.bathrooms && (
+                      <span className="flex items-center gap-1"><Bath className="h-3.5 w-3.5" />{property.bathrooms} bath</span>
+                    )}
+                    {property.sqft && (
+                      <span className="flex items-center gap-1"><Ruler className="h-3.5 w-3.5" />{property.sqft.toLocaleString()} sqft</span>
+                    )}
+                    {property.year_built && (
+                      <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{property.year_built}</span>
+                    )}
+                  </div>
+                  <div className="mt-3">
+                    <span className="rounded-full bg-secondary px-2.5 py-1 font-body text-xs font-medium text-foreground">
+                      {formatType(property.property_type)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {selectedPropertyId && (
+            <HomeInventory propertyId={selectedPropertyId} />
+          )}
+
+          {properties.length === 1 && !selectedPropertyId && (
+            <div className="mt-4 text-center">
+              <Button variant="outline" className="rounded-full font-body" onClick={() => setSelectedPropertyId(properties[0].id)}>
+                View Home Inventory
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
