@@ -156,7 +156,7 @@ const PropertyTimeline = () => {
     }
   });
 
-  events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const maxCost = Math.max(...events.map((e) => e.cost ?? 0), 1);
 
@@ -311,6 +311,14 @@ const PropertyTimeline = () => {
         </Card>
       ) : (
         <div className="relative ml-4 border-l-2 border-border pl-8">
+          {/* "Today" marker */}
+          <div className="relative mb-8">
+            <div className="absolute -left-[calc(2rem+5px)] flex h-10 w-10 items-center justify-center rounded-full border-2 border-accent bg-accent/10">
+              <span className="h-2.5 w-2.5 rounded-full bg-accent animate-pulse" />
+            </div>
+            <p className="font-body text-xs font-semibold text-accent pt-2.5">Today</p>
+          </div>
+
           {events.map((event) => {
             const isConstruction = event.type === "construction";
             const cat = isConstruction
@@ -390,14 +398,6 @@ const PropertyTimeline = () => {
               </div>
             );
           })}
-
-          {/* "Today" marker */}
-          <div className="relative">
-            <div className="absolute -left-[calc(2rem+5px)] flex h-10 w-10 items-center justify-center rounded-full border-2 border-accent bg-accent/10">
-              <span className="h-2.5 w-2.5 rounded-full bg-accent animate-pulse" />
-            </div>
-            <p className="font-body text-xs font-semibold text-accent pt-2.5">Today</p>
-          </div>
         </div>
       )}
     </div>
