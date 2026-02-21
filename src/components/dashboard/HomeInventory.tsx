@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Package, Zap, Droplets, Wind, Refrigerator, Trash2, Edit2,
-  AlertTriangle, ClipboardList, Gem, Upload, FileText, Image, Download, Loader2, Paperclip
+  AlertTriangle, ClipboardList, Gem, Upload, FileText, Image, Download, Loader2, Paperclip, X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays, isPast } from "date-fns";
@@ -57,10 +57,12 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [itemForm, setItemForm] = useState(emptyItemForm);
   const [quickRefForm, setQuickRefForm] = useState(emptyQuickRef);
-  const [editingRef, setEditingRef] = useState<string | null>(null);
+const [editingRef, setEditingRef] = useState<string | null>(null);
   const [expandedAttachments, setExpandedAttachments] = useState<string | null>(null);
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dialogFileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: items = [], isLoading: itemsLoading } = useQuery({
     queryKey: ["home_items", propertyId],
@@ -125,19 +127,42 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
         warranty_expiry: itemForm.warranty_expiry || null,
         notes: itemForm.notes || null,
       };
+      let itemId = editingItem;
       if (editingItem) {
         const { error } = await supabase.from("home_items").update(payload).eq("id", editingItem);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("home_items").insert(payload);
+        const { data, error } = await supabase.from("home_items").insert(payload).select("id").single();
         if (error) throw error;
+        itemId = data.id;
+      }
+      // Upload any pending files
+      if (pendingFiles.length > 0 && itemId) {
+        for (const file of pendingFiles) {
+          const ext = file.name.split(".").pop();
+          const path = `${user!.id}/${itemId}/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from("home-item-attachments")
+            .upload(path, file);
+          if (uploadError) continue;
+          await supabase.from("home_item_attachments").insert({
+            home_item_id: itemId,
+            user_id: user!.id,
+            file_path: path,
+            file_name: file.name,
+            file_type: file.type,
+            file_size: file.size,
+          });
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
+      queryClient.invalidateQueries({ queryKey: ["home_item_attachments"] });
       setItemOpen(false);
       setEditingItem(null);
       setItemForm(emptyItemForm);
+      setPendingFiles([]);
       toast({ title: editingItem ? "Item updated" : "Item added" });
     },
     onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
@@ -385,7 +410,7 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
                   </Button>
                 </div>
               )}
-              <Dialog open={itemOpen} onOpenChange={(o) => { setItemOpen(o); if (!o) { setEditingItem(null); setItemForm(emptyItemForm); } }}>
+              <Dialog open={itemOpen} onOpenChange={(o) => { setItemOpen(o); if (!o) { setEditingItem(null); setItemForm(emptyItemForm); setPendingFiles([]); } }}>
                 <DialogTrigger asChild>
                   <Button size="sm" className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body">
                     <Plus className="mr-1 h-4 w-4" /> Add Item
@@ -444,6 +469,53 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
                     <div className="space-y-2">
                       <Label className="font-body">Notes</Label>
                       <Textarea placeholder="Additional details, appraised value, condition notes..." value={itemForm.notes} onChange={(e) => setItemForm({ ...itemForm, notes: e.target.value })} className="font-body" rows={3} />
+                    </div>
+                    {/* ── File Attachments Section ── */}
+                    <div className="space-y-2">
+                      <Label className="font-body">Photos & Documents</Label>
+                      <input
+                        ref={dialogFileInputRef}
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length > 0) setPendingFiles((prev) => [...prev, ...files]);
+                          e.target.value = "";
+                        }}
+                      />
+                      <div
+                        className="border-2 border-dashed border-border/50 rounded-lg p-4 text-center cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-colors"
+                        onClick={() => dialogFileInputRef.current?.click()}
+                      >
+                        <Upload className="mx-auto h-6 w-6 text-muted-foreground mb-1" />
+                        <p className="font-body text-xs text-muted-foreground">
+                          Click to add photos, receipts, or documents
+                        </p>
+                      </div>
+                      {pendingFiles.length > 0 && (
+                        <div className="space-y-1 mt-2">
+                          {pendingFiles.map((file, idx) => (
+                            <div key={idx} className="flex items-center gap-2 text-xs font-body bg-muted/50 rounded-md px-2 py-1.5">
+                              {file.type.startsWith("image/") ? (
+                                <Image className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              ) : (
+                                <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              )}
+                              <span className="truncate flex-1">{file.name}</span>
+                              <span className="text-muted-foreground shrink-0">{(file.size / 1024).toFixed(0)} KB</span>
+                              <button
+                                type="button"
+                                className="text-muted-foreground hover:text-destructive shrink-0"
+                                onClick={(e) => { e.stopPropagation(); setPendingFiles((prev) => prev.filter((_, i) => i !== idx)); }}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={upsertItem.isPending}>
                       {upsertItem.isPending ? "Saving..." : editingItem ? "Update Item" : "Add Item"}
