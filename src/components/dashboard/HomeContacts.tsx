@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Phone, Mail, Trash2, Building2, Wrench, DollarSign, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Users, Phone, Mail, Trash2, Building2, Wrench, DollarSign, ChevronDown, ChevronUp, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -55,6 +55,20 @@ const HomeContacts = () => {
         .from("home_contacts")
         .select("*, properties(name)")
         .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Fetch utility contacts
+  const { data: utilities = [] } = useQuery({
+    queryKey: ["property_utilities_contacts", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("property_utilities")
+        .select("id, provider_name, service_type, contact_name, contact_phone, contact_email, monthly_cost, vendor_url, property_id, properties(name)")
+        .order("provider_name");
       if (error) throw error;
       return data;
     },
@@ -203,7 +217,7 @@ const HomeContacts = () => {
         <div className="space-y-3">
           {[1, 2, 3].map((i) => <Card key={i} className="animate-pulse border-border/50"><CardContent className="p-4"><div className="h-16 rounded bg-muted" /></CardContent></Card>)}
         </div>
-      ) : contacts.length === 0 ? (
+      ) : contacts.length === 0 && utilities.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Users className="mb-4 h-10 w-10 text-muted-foreground" />
@@ -300,6 +314,62 @@ const HomeContacts = () => {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Utility Provider Contacts */}
+      {utilities.length > 0 && (
+        <div className="mt-6">
+          <h3 className="mb-3 font-display text-lg font-semibold flex items-center gap-2">
+            <Zap className="h-4 w-4 text-accent" /> Utility Providers
+          </h3>
+          <div className="space-y-3">
+            {utilities.map((util: any) => {
+              const serviceLabel = util.service_type.charAt(0).toUpperCase() + util.service_type.slice(1);
+              return (
+                <Card key={util.id} className="border-border/50 transition-shadow hover:shadow-card-hover">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                          <Zap className="h-5 w-5 text-accent" />
+                        </div>
+                        <div>
+                          <h4 className="font-display text-sm font-semibold">{util.provider_name}</h4>
+                          <p className="font-body text-xs text-muted-foreground">
+                            {util.properties?.name} · {serviceLabel}
+                          </p>
+                          <div className="mt-1 flex flex-wrap gap-3 font-body text-xs text-muted-foreground">
+                            {util.contact_name && (
+                              <span className="inline-flex items-center gap-1">
+                                <Users className="h-3 w-3" />{util.contact_name}
+                              </span>
+                            )}
+                            {util.contact_phone && (
+                              <a href={`tel:${util.contact_phone}`} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                                <Phone className="h-3 w-3" />{util.contact_phone}
+                              </a>
+                            )}
+                            {util.contact_email && (
+                              <a href={`mailto:${util.contact_email}`} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                                <Mail className="h-3 w-3" />{util.contact_email}
+                              </a>
+                            )}
+                          </div>
+                          {util.monthly_cost && (
+                            <p className="mt-1 font-body text-xs font-medium text-accent">
+                              <DollarSign className="inline h-3 w-3" />${Number(util.monthly_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}/mo
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="font-body text-xs">{serviceLabel}</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

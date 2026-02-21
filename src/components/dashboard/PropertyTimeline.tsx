@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import {
   Home, Wrench, Droplets, Zap, Wind, Hammer, TreePine, Cog,
-  CheckCircle2, Clock, AlertTriangle, Building, DollarSign, TrendingUp, Gem, Package,
+  CheckCircle2, Clock, AlertTriangle, Building, DollarSign, TrendingUp, Gem, Package, PlugZap,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
@@ -26,6 +26,7 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType; c
   personal: { label: "Personal Property", icon: Gem, color: "bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-400" },
   structural: { label: "Structural", icon: Package, color: "bg-stone-100 text-stone-600 dark:bg-stone-900/40 dark:text-stone-400" },
   exterior: { label: "Exterior", icon: Package, color: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400" },
+  utility: { label: "Utility", icon: PlugZap, color: "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400" },
   general: { label: "General", icon: Wrench, color: "bg-secondary text-muted-foreground" },
 };
 
@@ -37,7 +38,7 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; var
 
 interface TimelineEvent {
   id: string;
-  type: "construction" | "maintenance" | "inventory";
+  type: "construction" | "maintenance" | "inventory" | "utility";
   date: string;
   title: string;
   description?: string | null;
@@ -83,6 +84,19 @@ const PropertyTimeline = () => {
         .from("home_items")
         .select("*, properties(name)")
         .order("install_date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: utilities = [] } = useQuery({
+    queryKey: ["property_utilities_timeline", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("property_utilities")
+        .select("*, properties(name)")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -154,6 +168,26 @@ const PropertyTimeline = () => {
         propertyName: item.properties?.name,
       });
     }
+  });
+
+  // Add utility accounts
+  const filteredUtilities = selectedProperty === "all" ? utilities : utilities.filter((u: any) => u.property_id === selectedProperty);
+
+  filteredUtilities.forEach((util: any) => {
+    events.push({
+      id: `utility-${util.id}`,
+      type: "utility",
+      date: util.created_at?.split("T")[0],
+      title: `${util.provider_name} — ${util.service_type.charAt(0).toUpperCase() + util.service_type.slice(1)} Service`,
+      description: [
+        util.account_number ? `Acct: ${util.account_number}` : null,
+        util.monthly_cost ? `$${Number(util.monthly_cost).toFixed(2)}/mo` : null,
+        util.contact_name,
+      ].filter(Boolean).join(" · ") || null,
+      category: "utility",
+      cost: util.monthly_cost ? Number(util.monthly_cost) : null,
+      propertyName: util.properties?.name,
+    });
   });
 
   events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
