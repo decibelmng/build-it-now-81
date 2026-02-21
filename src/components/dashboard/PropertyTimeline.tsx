@@ -60,7 +60,7 @@ const PropertyTimeline = () => {
     setVisibleTypes((prev) => {
       const next = new Set(prev);
       if (next.has(type)) {
-        if (next.size > 1) next.delete(type);
+        next.delete(type);
       } else {
         next.add(type);
       }
