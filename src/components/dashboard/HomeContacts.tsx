@@ -219,7 +219,7 @@ const HomeContacts = () => {
             return (
               <Card key={contact.id} className="border-border/50 transition-shadow hover:shadow-card-hover">
                 <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
                         <Users className="h-5 w-5 text-muted-foreground" />
