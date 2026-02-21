@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import {
   Home, Wrench, Droplets, Zap, Wind, Hammer, TreePine, Cog,
-  CheckCircle2, Clock, AlertTriangle, Building, DollarSign, TrendingUp,
+  CheckCircle2, Clock, AlertTriangle, Building, DollarSign, TrendingUp, Gem, Package,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
@@ -23,6 +23,9 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType; c
   roofing: { label: "Roofing", icon: Hammer, color: "bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400" },
   landscaping: { label: "Landscaping", icon: TreePine, color: "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400" },
   appliance: { label: "Appliance", icon: Cog, color: "bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400" },
+  personal: { label: "Personal Property", icon: Gem, color: "bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-400" },
+  structural: { label: "Structural", icon: Package, color: "bg-stone-100 text-stone-600 dark:bg-stone-900/40 dark:text-stone-400" },
+  exterior: { label: "Exterior", icon: Package, color: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400" },
   general: { label: "General", icon: Wrench, color: "bg-secondary text-muted-foreground" },
 };
 
@@ -34,7 +37,7 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; var
 
 interface TimelineEvent {
   id: string;
-  type: "construction" | "maintenance";
+  type: "construction" | "maintenance" | "inventory";
   date: string;
   title: string;
   description?: string | null;
@@ -67,6 +70,19 @@ const PropertyTimeline = () => {
         .from("maintenance_logs")
         .select("*, properties(name, year_built)")
         .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: homeItems = [] } = useQuery({
+    queryKey: ["home_items_timeline", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("home_items")
+        .select("*, properties(name)")
+        .order("install_date", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -108,6 +124,36 @@ const PropertyTimeline = () => {
       propertyName: log.properties?.name,
       image_url: log.image_url,
     });
+  });
+
+  // Add home inventory items (install dates, replacements, maintenance)
+  const filteredItems = selectedProperty === "all" ? homeItems : homeItems.filter((i: any) => i.property_id === selectedProperty);
+
+  filteredItems.forEach((item: any) => {
+    if (item.install_date) {
+      events.push({
+        id: `item-install-${item.id}`,
+        type: "inventory",
+        date: item.install_date,
+        title: `${item.name} — Installed`,
+        description: [item.brand, item.model, item.serial_number ? `S/N: ${item.serial_number}` : null].filter(Boolean).join(" · ") || item.notes,
+        category: item.category,
+        cost: null,
+        propertyName: item.properties?.name,
+      });
+    }
+    if (item.last_maintained) {
+      events.push({
+        id: `item-maint-${item.id}`,
+        type: "inventory",
+        date: item.last_maintained,
+        title: `${item.name} — Maintained`,
+        description: item.notes,
+        category: item.category,
+        cost: null,
+        propertyName: item.properties?.name,
+      });
+    }
   });
 
   events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -259,7 +305,7 @@ const PropertyTimeline = () => {
             <Home className="mb-4 h-10 w-10 text-muted-foreground" />
             <h3 className="mb-1 font-display text-lg font-semibold">No timeline events</h3>
             <p className="font-body text-sm text-muted-foreground">
-              Add properties with a year built and maintenance logs to see your timeline
+              Add properties with a year built, maintenance logs, or home inventory items to see your timeline
             </p>
           </CardContent>
         </Card>
