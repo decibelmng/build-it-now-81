@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
-  Plus, Package, Zap, Droplets, Wind, Flame, Refrigerator, Trash2, Edit2,
-  AlertTriangle, ClipboardList, X, Check
+  Plus, Package, Zap, Droplets, Wind, Refrigerator, Trash2, Edit2,
+  AlertTriangle, ClipboardList, Gem, Upload, FileText, Image, Download, Loader2, Paperclip
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays, isPast } from "date-fns";
@@ -25,6 +25,7 @@ const itemCategories = [
   { value: "appliance", label: "Appliance", icon: Refrigerator },
   { value: "structural", label: "Structural", icon: Package },
   { value: "exterior", label: "Exterior", icon: Package },
+  { value: "personal", label: "Personal Property", icon: Gem },
   { value: "general", label: "General", icon: Package },
 ];
 
@@ -57,6 +58,9 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
   const [itemForm, setItemForm] = useState(emptyItemForm);
   const [quickRefForm, setQuickRefForm] = useState(emptyQuickRef);
   const [editingRef, setEditingRef] = useState<string | null>(null);
+  const [expandedAttachments, setExpandedAttachments] = useState<string | null>(null);
+  const [uploadingFor, setUploadingFor] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: items = [], isLoading: itemsLoading } = useQuery({
     queryKey: ["home_items", propertyId],
@@ -71,6 +75,23 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
       return data;
     },
     enabled: !!user && !!propertyId,
+  });
+
+  // Fetch all attachments for items in this property
+  const itemIds = items.map((i: any) => i.id);
+  const { data: allAttachments = [] } = useQuery({
+    queryKey: ["home_item_attachments", propertyId, itemIds],
+    queryFn: async () => {
+      if (itemIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("home_item_attachments")
+        .select("*")
+        .in("home_item_id", itemIds)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && itemIds.length > 0,
   });
 
   const { data: quickRefs = [], isLoading: refsLoading } = useQuery({
@@ -133,6 +154,66 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
     },
   });
 
+  const uploadAttachment = useMutation({
+    mutationFn: async ({ itemId, file }: { itemId: string; file: File }) => {
+      const ext = file.name.split(".").pop();
+      const path = `${user!.id}/${itemId}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("home-item-attachments")
+        .upload(path, file);
+      if (uploadError) throw uploadError;
+
+      const { error: dbError } = await supabase.from("home_item_attachments").insert({
+        home_item_id: itemId,
+        user_id: user!.id,
+        file_name: file.name,
+        file_path: path,
+        file_type: file.type,
+        file_size: file.size,
+      });
+      if (dbError) throw dbError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["home_item_attachments"] });
+      setUploadingFor(null);
+      toast({ title: "File uploaded" });
+    },
+    onError: (err: Error) => {
+      setUploadingFor(null);
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteAttachment = useMutation({
+    mutationFn: async (att: any) => {
+      await supabase.storage.from("home-item-attachments").remove([att.file_path]);
+      const { error } = await supabase.from("home_item_attachments").delete().eq("id", att.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["home_item_attachments"] });
+      toast({ title: "Attachment removed" });
+    },
+  });
+
+  const handleFileUpload = (itemId: string) => {
+    setUploadingFor(itemId);
+    fileInputRef.current?.click();
+  };
+
+  const onFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && uploadingFor) {
+      uploadAttachment.mutate({ itemId: uploadingFor, file });
+    }
+    e.target.value = "";
+  };
+
+  const getAttachmentUrl = (path: string) => {
+    const { data } = supabase.storage.from("home-item-attachments").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   const upsertQuickRef = useMutation({
     mutationFn: async () => {
       const payload = {
@@ -174,15 +255,11 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
   const openEditItem = (item: any) => {
     setEditingItem(item.id);
     setItemForm({
-      name: item.name,
-      category: item.category,
-      brand: item.brand || "",
-      model: item.model || "",
+      name: item.name, category: item.category,
+      brand: item.brand || "", model: item.model || "",
       serial_number: item.serial_number || "",
-      install_date: item.install_date || "",
-      last_maintained: item.last_maintained || "",
-      expected_replacement: item.expected_replacement || "",
-      warranty_expiry: item.warranty_expiry || "",
+      install_date: item.install_date || "", last_maintained: item.last_maintained || "",
+      expected_replacement: item.expected_replacement || "", warranty_expiry: item.warranty_expiry || "",
       notes: item.notes || "",
     });
     setItemOpen(true);
@@ -194,11 +271,6 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
     setQuickRefOpen(true);
   };
 
-  const getCategoryIcon = (cat: string) => {
-    const found = itemCategories.find((c) => c.value === cat);
-    return found ? found.icon : Package;
-  };
-
   const getReplacementStatus = (date: string | null) => {
     if (!date) return null;
     const d = new Date(date);
@@ -206,6 +278,55 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
     if (isPast(d)) return { label: "Overdue", variant: "destructive" as const };
     if (days <= 90) return { label: "Soon", variant: "default" as const };
     return null;
+  };
+
+  // ── Export functions ──
+  const exportCSV = () => {
+    const headers = ["Name", "Category", "Brand/Manufacturer", "Model", "Serial Number", "Install Date", "Last Maintained", "Expected Replacement", "Warranty Expiry", "Notes"];
+    const rows = items.map((item: any) => [
+      item.name, item.category, item.brand || "", item.model || "", item.serial_number || "",
+      item.install_date || "", item.last_maintained || "", item.expected_replacement || "",
+      item.warranty_expiry || "", (item.notes || "").replace(/"/g, '""'),
+    ]);
+    const csv = [headers.join(","), ...rows.map((r: string[]) => r.map((c) => `"${c}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `home-inventory-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportPDF = () => {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    const rows = items.map((item: any) => `
+      <tr>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.name}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${itemCategories.find(c => c.value === item.category)?.label || item.category}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.brand || "—"}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.model || "—"}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.serial_number || "—"}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.install_date ? format(new Date(item.install_date), "MMM yyyy") : "—"}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.expected_replacement ? format(new Date(item.expected_replacement), "MMM yyyy") : "—"}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.notes || ""}</td>
+      </tr>
+    `).join("");
+    win.document.write(`
+      <html><head><title>Home Inventory Report</title>
+      <style>body{font-family:system-ui,sans-serif;padding:40px}table{width:100%;border-collapse:collapse}th{background:#f5f5f5;text-align:left;padding:8px;border-bottom:2px solid #ddd}h1{margin-bottom:4px}p{color:#666;margin-top:0}</style>
+      </head><body>
+      <h1>Home Inventory Report</h1>
+      <p>Generated ${format(new Date(), "MMMM d, yyyy")}</p>
+      <table>
+        <thead><tr><th>Item</th><th>Category</th><th>Manufacturer</th><th>Model</th><th>Serial #</th><th>Installed</th><th>Replace By</th><th>Notes</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <script>setTimeout(()=>{window.print()},500)</script>
+      </body></html>
+    `);
+    win.document.close();
   };
 
   // Group items by category
@@ -224,8 +345,19 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
     return acc;
   }, {});
 
+  const isImageType = (type: string | null) => type?.startsWith("image/");
+
   return (
     <div className="mt-8 space-y-6">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+        onChange={onFileSelected}
+      />
+
       <Tabs defaultValue="inventory" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="inventory" className="font-body">
@@ -238,76 +370,88 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
 
         {/* ───── INVENTORY TAB ───── */}
         <TabsContent value="inventory" className="mt-4 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <p className="font-body text-sm text-muted-foreground">
               Track every item in your home — ages, serial numbers, maintenance dates, and replacements.
             </p>
-            <Dialog open={itemOpen} onOpenChange={(o) => { setItemOpen(o); if (!o) { setEditingItem(null); setItemForm(emptyItemForm); } }}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body">
-                  <Plus className="mr-1 h-4 w-4" /> Add Item
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="font-display">{editingItem ? "Edit Item" : "Add Home Item"}</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={(e) => { e.preventDefault(); upsertItem.mutate(); }} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2 col-span-2">
-                      <Label className="font-body">Item Name *</Label>
-                      <Input placeholder="e.g. Water Heater" value={itemForm.name} onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })} required className="font-body" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-body">Category</Label>
-                      <Select value={itemForm.category} onValueChange={(v) => setItemForm({ ...itemForm, category: v })}>
-                        <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {itemCategories.map((c) => (
-                            <SelectItem key={c.value} value={c.value} className="font-body">{c.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-body">Brand</Label>
-                      <Input placeholder="e.g. Rheem" value={itemForm.brand} onChange={(e) => setItemForm({ ...itemForm, brand: e.target.value })} className="font-body" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-body">Model</Label>
-                      <Input placeholder="Model number" value={itemForm.model} onChange={(e) => setItemForm({ ...itemForm, model: e.target.value })} className="font-body" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-body">Serial Number</Label>
-                      <Input placeholder="S/N" value={itemForm.serial_number} onChange={(e) => setItemForm({ ...itemForm, serial_number: e.target.value })} className="font-body" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-body">Install Date</Label>
-                      <Input type="date" value={itemForm.install_date} onChange={(e) => setItemForm({ ...itemForm, install_date: e.target.value })} className="font-body" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-body">Last Maintained</Label>
-                      <Input type="date" value={itemForm.last_maintained} onChange={(e) => setItemForm({ ...itemForm, last_maintained: e.target.value })} className="font-body" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-body">Expected Replacement</Label>
-                      <Input type="date" value={itemForm.expected_replacement} onChange={(e) => setItemForm({ ...itemForm, expected_replacement: e.target.value })} className="font-body" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-body">Warranty Expiry</Label>
-                      <Input type="date" value={itemForm.warranty_expiry} onChange={(e) => setItemForm({ ...itemForm, warranty_expiry: e.target.value })} className="font-body" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="font-body">Notes</Label>
-                    <Textarea placeholder="Additional details..." value={itemForm.notes} onChange={(e) => setItemForm({ ...itemForm, notes: e.target.value })} className="font-body" />
-                  </div>
-                  <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={upsertItem.isPending}>
-                    {upsertItem.isPending ? "Saving..." : editingItem ? "Update Item" : "Add Item"}
+            <div className="flex gap-2">
+              {items.length > 0 && (
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" className="rounded-full font-body text-xs" onClick={exportCSV}>
+                    <Download className="mr-1 h-3 w-3" /> CSV
                   </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
+                  <Button size="sm" variant="outline" className="rounded-full font-body text-xs" onClick={exportPDF}>
+                    <FileText className="mr-1 h-3 w-3" /> PDF
+                  </Button>
+                </div>
+              )}
+              <Dialog open={itemOpen} onOpenChange={(o) => { setItemOpen(o); if (!o) { setEditingItem(null); setItemForm(emptyItemForm); } }}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body">
+                    <Plus className="mr-1 h-4 w-4" /> Add Item
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="font-display">{editingItem ? "Edit Item" : "Add Home Item"}</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={(e) => { e.preventDefault(); upsertItem.mutate(); }} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2 col-span-2">
+                        <Label className="font-body">Item Name *</Label>
+                        <Input placeholder="e.g. Water Heater, Rolex Submariner" value={itemForm.name} onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })} required className="font-body" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-body">Category</Label>
+                        <Select value={itemForm.category} onValueChange={(v) => setItemForm({ ...itemForm, category: v })}>
+                          <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {itemCategories.map((c) => (
+                              <SelectItem key={c.value} value={c.value} className="font-body">{c.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-body">Manufacturer</Label>
+                        <Input placeholder="e.g. Rheem, Rolex" value={itemForm.brand} onChange={(e) => setItemForm({ ...itemForm, brand: e.target.value })} className="font-body" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-body">Model</Label>
+                        <Input placeholder="Model number" value={itemForm.model} onChange={(e) => setItemForm({ ...itemForm, model: e.target.value })} className="font-body" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-body">Serial Number</Label>
+                        <Input placeholder="S/N" value={itemForm.serial_number} onChange={(e) => setItemForm({ ...itemForm, serial_number: e.target.value })} className="font-body" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-body">Install / Purchase Date</Label>
+                        <Input type="date" value={itemForm.install_date} onChange={(e) => setItemForm({ ...itemForm, install_date: e.target.value })} className="font-body" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-body">Last Maintained</Label>
+                        <Input type="date" value={itemForm.last_maintained} onChange={(e) => setItemForm({ ...itemForm, last_maintained: e.target.value })} className="font-body" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-body">Expected Replacement</Label>
+                        <Input type="date" value={itemForm.expected_replacement} onChange={(e) => setItemForm({ ...itemForm, expected_replacement: e.target.value })} className="font-body" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-body">Warranty Expiry</Label>
+                        <Input type="date" value={itemForm.warranty_expiry} onChange={(e) => setItemForm({ ...itemForm, warranty_expiry: e.target.value })} className="font-body" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-body">Notes</Label>
+                      <Textarea placeholder="Additional details, appraised value, condition notes..." value={itemForm.notes} onChange={(e) => setItemForm({ ...itemForm, notes: e.target.value })} className="font-body" rows={3} />
+                    </div>
+                    <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={upsertItem.isPending}>
+                      {upsertItem.isPending ? "Saving..." : editingItem ? "Update Item" : "Add Item"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           {itemsLoading ? (
@@ -320,7 +464,7 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
                 <Package className="mb-3 h-10 w-10 text-muted-foreground" />
                 <p className="font-body text-sm text-muted-foreground mb-2">No items tracked yet</p>
                 <p className="font-body text-xs text-muted-foreground max-w-sm text-center">
-                  Start adding items like your water heater, HVAC system, appliances, and more to build your home's digital twin.
+                  Start adding items like your water heater, HVAC system, appliances, jewelry, watches, and more to build your home's digital twin.
                 </p>
               </CardContent>
             </Card>
@@ -336,6 +480,8 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
                   <div className="space-y-2">
                     {(catItems as any[]).map((item) => {
                       const status = getReplacementStatus(item.expected_replacement);
+                      const itemAttachments = allAttachments.filter((a: any) => a.home_item_id === item.id);
+                      const isExpanded = expandedAttachments === item.id;
                       return (
                         <Card key={item.id} className="border-border/50">
                           <CardContent className="p-4">
@@ -353,9 +499,14 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
                                       Warranty expired
                                     </Badge>
                                   )}
+                                  {itemAttachments.length > 0 && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+                                      <Paperclip className="mr-1 h-3 w-3" />{itemAttachments.length}
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-body text-xs text-muted-foreground">
-                                  {item.brand && <span><strong>Brand:</strong> {item.brand}</span>}
+                                  {item.brand && <span><strong>Manufacturer:</strong> {item.brand}</span>}
                                   {item.model && <span><strong>Model:</strong> {item.model}</span>}
                                   {item.serial_number && <span><strong>S/N:</strong> {item.serial_number}</span>}
                                 </div>
@@ -370,6 +521,16 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
                                 )}
                               </div>
                               <div className="flex gap-1 shrink-0">
+                                <Button
+                                  variant="ghost" size="icon" className="h-8 w-8"
+                                  onClick={() => handleFileUpload(item.id)}
+                                  disabled={uploadAttachment.isPending && uploadingFor === item.id}
+                                  title="Upload photo, receipt, or document"
+                                >
+                                  {uploadAttachment.isPending && uploadingFor === item.id
+                                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    : <Upload className="h-3.5 w-3.5" />}
+                                </Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditItem(item)}>
                                   <Edit2 className="h-3.5 w-3.5" />
                                 </Button>
@@ -378,6 +539,54 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
                                 </Button>
                               </div>
                             </div>
+
+                            {/* Attachments row */}
+                            {itemAttachments.length > 0 && (
+                              <div className="mt-3 border-t border-border/50 pt-3">
+                                <button
+                                  onClick={() => setExpandedAttachments(isExpanded ? null : item.id)}
+                                  className="font-body text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                                >
+                                  <Paperclip className="h-3 w-3" />
+                                  {itemAttachments.length} attachment{itemAttachments.length !== 1 ? "s" : ""}
+                                  <span className="ml-1">{isExpanded ? "▾" : "▸"}</span>
+                                </button>
+                                {isExpanded && (
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {itemAttachments.map((att: any) => {
+                                      const url = getAttachmentUrl(att.file_path);
+                                      return (
+                                        <div key={att.id} className="group relative rounded-lg border border-border/50 overflow-hidden">
+                                          {isImageType(att.file_type) ? (
+                                            <a href={url} target="_blank" rel="noopener noreferrer">
+                                              <img src={url} alt={att.file_name} className="h-20 w-20 object-cover" />
+                                            </a>
+                                          ) : (
+                                            <a
+                                              href={url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="flex h-20 w-20 flex-col items-center justify-center bg-muted p-2"
+                                            >
+                                              <FileText className="h-6 w-6 text-muted-foreground mb-1" />
+                                              <span className="font-body text-[9px] text-muted-foreground text-center leading-tight truncate w-full">
+                                                {att.file_name}
+                                              </span>
+                                            </a>
+                                          )}
+                                          <button
+                                            onClick={() => deleteAttachment.mutate(att)}
+                                            className="absolute top-0.5 right-0.5 rounded-full bg-background/80 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          >
+                                            <Trash2 className="h-3 w-3 text-destructive" />
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </CardContent>
                         </Card>
                       );
