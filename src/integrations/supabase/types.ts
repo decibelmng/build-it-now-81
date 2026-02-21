@@ -108,6 +108,109 @@ export type Database = {
           },
         ]
       }
+      home_items: {
+        Row: {
+          brand: string | null
+          category: string
+          created_at: string
+          expected_replacement: string | null
+          id: string
+          install_date: string | null
+          last_maintained: string | null
+          model: string | null
+          name: string
+          notes: string | null
+          property_id: string
+          serial_number: string | null
+          updated_at: string
+          user_id: string
+          warranty_expiry: string | null
+        }
+        Insert: {
+          brand?: string | null
+          category?: string
+          created_at?: string
+          expected_replacement?: string | null
+          id?: string
+          install_date?: string | null
+          last_maintained?: string | null
+          model?: string | null
+          name: string
+          notes?: string | null
+          property_id: string
+          serial_number?: string | null
+          updated_at?: string
+          user_id: string
+          warranty_expiry?: string | null
+        }
+        Update: {
+          brand?: string | null
+          category?: string
+          created_at?: string
+          expected_replacement?: string | null
+          id?: string
+          install_date?: string | null
+          last_maintained?: string | null
+          model?: string | null
+          name?: string
+          notes?: string | null
+          property_id?: string
+          serial_number?: string | null
+          updated_at?: string
+          user_id?: string
+          warranty_expiry?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_items_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      home_quick_refs: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          label: string
+          property_id: string
+          updated_at: string
+          user_id: string
+          value: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          label: string
+          property_id: string
+          updated_at?: string
+          user_id: string
+          value: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          label?: string
+          property_id?: string
+          updated_at?: string
+          user_id?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_quick_refs_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_logs: {
         Row: {
           category: string
