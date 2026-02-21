@@ -30,6 +30,7 @@ const PropertyCards = () => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
+  const [transferStep, setTransferStep] = useState<"email" | "confirm">("email");
   const [transferPropertyId, setTransferPropertyId] = useState<string | null>(null);
   const [transferEmail, setTransferEmail] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -124,6 +125,7 @@ const PropertyCards = () => {
       setTransferOpen(false);
       setTransferEmail("");
       setTransferPropertyId(null);
+      setTransferStep("email");
       toast({ title: "Transfer initiated", description: "The recipient will need to accept the transfer." });
     },
     onError: (err: Error) => {
@@ -334,31 +336,68 @@ const PropertyCards = () => {
         </div>
       )}
 
-      {/* Transfer dialog */}
-      <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
+      {/* Transfer dialog — two-step */}
+      <Dialog open={transferOpen} onOpenChange={(v) => { setTransferOpen(v); if (!v) { setTransferStep("email"); setTransferEmail(""); } }}>
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="font-display">Transfer Property</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={(e) => { e.preventDefault(); initiateTransfer.mutate(); }} className="space-y-4">
-            <div className="space-y-2">
-              <Label className="font-body">Recipient Email *</Label>
-              <Input
-                type="email"
-                placeholder="newowner@example.com"
-                value={transferEmail}
-                onChange={(e) => setTransferEmail(e.target.value)}
-                required
-                className="font-body"
-              />
-              <p className="font-body text-xs text-muted-foreground">
-                The recipient must have an account. They'll need to accept the transfer.
-              </p>
-            </div>
-            <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={initiateTransfer.isPending}>
-              {initiateTransfer.isPending ? "Sending..." : "Send Transfer Request"}
-            </Button>
-          </form>
+          {transferStep === "email" ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-display">Transfer Property</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={(e) => { e.preventDefault(); setTransferStep("confirm"); }} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="font-body">Recipient Email *</Label>
+                  <Input
+                    type="email"
+                    placeholder="newowner@example.com"
+                    value={transferEmail}
+                    onChange={(e) => setTransferEmail(e.target.value)}
+                    required
+                    className="font-body"
+                  />
+                  <p className="font-body text-xs text-muted-foreground">
+                    The recipient must have an account. They'll need to accept the transfer.
+                  </p>
+                </div>
+                <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold">
+                  Continue
+                </Button>
+              </form>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-display text-destructive">⚠ Confirm Transfer</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-2">
+                  <p className="font-body text-sm font-semibold text-destructive">This action cannot be undone.</p>
+                  <p className="font-body text-sm text-muted-foreground">
+                    You are about to permanently transfer ownership of this property and all associated data — maintenance logs, documents, contacts, and recurring templates — to <strong className="text-foreground">{transferEmail}</strong>.
+                  </p>
+                  <p className="font-body text-sm text-muted-foreground">
+                    Once the recipient accepts, you will no longer have access to this property or its records.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 rounded-full font-body"
+                    onClick={() => setTransferStep("email")}
+                  >
+                    Go Back
+                  </Button>
+                  <Button
+                    className="flex-1 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-body font-semibold"
+                    onClick={() => initiateTransfer.mutate()}
+                    disabled={initiateTransfer.isPending}
+                  >
+                    {initiateTransfer.isPending ? "Sending..." : "Transfer Property"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
