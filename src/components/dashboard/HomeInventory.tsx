@@ -250,19 +250,26 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
     URL.revokeObjectURL(url);
   };
 
+  const escapeHtml = (str: string) => str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
   const exportPDF = () => {
     const win = window.open("", "_blank");
     if (!win) return;
     const rows = items.map((item: any) => `
       <tr>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.name}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${itemCategories.find(c => c.value === item.category)?.label || item.category}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.brand || "—"}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.model || "—"}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.serial_number || "—"}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(item.name)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(itemCategories.find(c => c.value === item.category)?.label || item.category)}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(item.brand || "—")}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(item.model || "—")}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(item.serial_number || "—")}</td>
         <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.install_date ? format(new Date(item.install_date), "MMM yyyy") : "—"}</td>
         <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.expected_replacement ? format(new Date(item.expected_replacement), "MMM yyyy") : "—"}</td>
-        <td style="padding:6px 8px;border-bottom:1px solid #eee">${item.notes || ""}</td>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee">${escapeHtml(item.notes || "")}</td>
       </tr>
     `).join("");
     win.document.write(`
