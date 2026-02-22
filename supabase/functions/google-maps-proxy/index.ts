@@ -1,7 +1,26 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
+
+async function authenticateRequest(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) return null;
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!
+  );
+
+  const { data: { user }, error } = await supabase.auth.getUser(
+    authHeader.replace('Bearer ', '')
+  );
+
+  if (error || !user) return null;
+  return user;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -9,6 +28,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Require authentication for all actions
+    const user = await authenticateRequest(req);
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const apiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
     if (!apiKey) {
       return new Response(
@@ -19,7 +47,7 @@ Deno.serve(async (req) => {
 
     const { action, input, placeId } = await req.json();
 
-    // Return the API key for client-side map rendering
+    // Return the API key for client-side map rendering (authenticated users only)
     if (action === 'get_key') {
       return new Response(
         JSON.stringify({ key: apiKey }),
@@ -61,7 +89,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Google Maps proxy error:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify({ error: 'An internal error occurred' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
