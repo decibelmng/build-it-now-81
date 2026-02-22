@@ -1,8 +1,9 @@
-import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, Clock, Settings, Search, LayoutDashboard, RefreshCw, Share2, Download, BarChart3, Zap } from "lucide-react";
+import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, Clock, Settings, Search, LayoutDashboard, RefreshCw, Share2, Download, BarChart3, Zap, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useSubscription, isProFeature } from "@/hooks/useSubscription";
 
 type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search";
 
@@ -34,7 +35,10 @@ const SidebarContent = ({
   onSectionChange,
   onSignOut,
   displayName,
-}: DashboardSidebarProps) => (
+}: DashboardSidebarProps) => {
+  const { tier } = useSubscription();
+
+  return (
   <div className="flex h-full flex-col">
     <div className="flex items-center gap-2 border-b border-border px-6 py-5">
       <Home className="h-6 w-6 text-accent" />
@@ -42,21 +46,25 @@ const SidebarContent = ({
     </div>
 
     <nav className="flex-1 space-y-1 px-3 py-4">
-      {navItems.map((item) => (
-        <button
-          key={item.id}
-          onClick={() => onSectionChange(item.id)}
-          className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 font-body text-sm font-medium transition-colors",
-            activeSection === item.id
-              ? "bg-accent/10 text-accent"
-              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-          )}
-        >
-          <item.icon className="h-4 w-4" />
-          {item.label}
-        </button>
-      ))}
+      {navItems.map((item) => {
+        const locked = tier === "free" && isProFeature(item.id);
+        return (
+          <button
+            key={item.id}
+            onClick={() => onSectionChange(item.id)}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 font-body text-sm font-medium transition-colors",
+              activeSection === item.id
+                ? "bg-accent/10 text-accent"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            )}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+            {locked && <Lock className="ml-auto h-3.5 w-3.5 text-muted-foreground/50" />}
+          </button>
+        );
+      })}
     </nav>
 
     <div className="border-t border-border px-3 py-4">
@@ -85,7 +93,8 @@ const SidebarContent = ({
       </button>
     </div>
   </div>
-);
+  );
+};
 
 const DashboardSidebar = (props: DashboardSidebarProps) => {
   const [open, setOpen] = useState(false);
