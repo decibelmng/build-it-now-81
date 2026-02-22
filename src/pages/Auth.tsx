@@ -32,13 +32,31 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/auth`,
-      extraParams: {
-        prompt: "select_account",
-      },
-    });
-    if (error) {
+    try {
+      const isCustomDomain =
+        !window.location.hostname.includes("lovable.app") &&
+        !window.location.hostname.includes("lovableproject.com") &&
+        !window.location.hostname.includes("localhost");
+
+      if (isCustomDomain) {
+        // Use direct Supabase OAuth on custom domains (user's own Google credentials)
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: `${window.location.origin}/auth`,
+            queryParams: { prompt: "select_account" },
+          },
+        });
+        if (error) throw error;
+      } else {
+        // Use Lovable managed OAuth on preview/staging domains
+        const { error } = await lovable.auth.signInWithOAuth("google", {
+          redirect_uri: `${window.location.origin}/auth`,
+          extraParams: { prompt: "select_account" },
+        });
+        if (error) throw error;
+      }
+    } catch (error: any) {
       toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });
       setGoogleLoading(false);
     }
