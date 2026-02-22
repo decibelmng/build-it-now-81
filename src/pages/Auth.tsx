@@ -49,6 +49,9 @@ const Auth = () => {
         !window.location.hostname.includes("localhost");
 
       if (isCustomDomain) {
+        // Clear any stale session first to prevent Chrome cookie conflicts
+        await supabase.auth.signOut({ scope: 'local' });
+        
         // Bypass auth-bridge on custom domains
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
