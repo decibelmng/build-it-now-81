@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -12,9 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Package, Zap, Droplets, Wind, Refrigerator, Trash2, Edit2,
-  AlertTriangle, Gem, Upload, FileText, Image, Download, Loader2, Paperclip, X
+  AlertTriangle, Gem, Upload, FileText, Image, Download, Loader2, Paperclip, X, Lock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import UpgradeModal from "./UpgradeModal";
 import { format, differenceInDays, isPast } from "date-fns";
 
 const itemCategories = [
@@ -48,6 +50,9 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { tier } = useSubscription();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const isPro = tier === "pro";
   const dialogFileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: items = [], isLoading: itemsLoading } = useQuery({
@@ -322,11 +327,11 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
           <div className="flex gap-2">
             {items.length > 0 && (
               <div className="flex gap-1">
-                <Button size="sm" variant="outline" className="rounded-full font-body text-xs" onClick={exportCSV}>
-                  <Download className="mr-1 h-3 w-3" /> CSV
+                <Button size="sm" variant="outline" className="rounded-full font-body text-xs" onClick={isPro ? exportCSV : () => setUpgradeOpen(true)}>
+                  {isPro ? <Download className="mr-1 h-3 w-3" /> : <Lock className="mr-1 h-3 w-3" />} CSV
                 </Button>
-                <Button size="sm" variant="outline" className="rounded-full font-body text-xs" onClick={exportPDF}>
-                  <FileText className="mr-1 h-3 w-3" /> PDF
+                <Button size="sm" variant="outline" className="rounded-full font-body text-xs" onClick={isPro ? exportPDF : () => setUpgradeOpen(true)}>
+                  {isPro ? <FileText className="mr-1 h-3 w-3" /> : <Lock className="mr-1 h-3 w-3" />} PDF
                 </Button>
               </div>
             )}
@@ -589,6 +594,7 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
           })
         )}
       </div>
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </div>
   );
 };
