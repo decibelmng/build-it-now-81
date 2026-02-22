@@ -26,16 +26,16 @@ const Navbar = () => {
 
         <div className="flex items-center gap-3">
           <Link
-            to="/auth"
+            to="/auth?mode=login"
             className="hidden font-body text-sm font-medium text-primary-foreground/80 transition-colors hover:text-primary-foreground sm:block"
           >
             Log In
           </Link>
           <Link
-            to="/auth"
+            to="/auth?mode=signup"
             className="rounded-full bg-accent px-5 py-2 font-body text-sm font-semibold text-accent-foreground transition-colors hover:bg-accent/90"
           >
-            Get Started
+            Get Started Free
           </Link>
         </div>
       </div>
