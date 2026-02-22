@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Home, Wrench, Droplets, Zap, Wind, Hammer, TreePine, Cog,
-  CheckCircle2, Clock, AlertTriangle, Building, DollarSign, TrendingUp, Gem, Package, PlugZap,
+  CheckCircle2, Clock, AlertTriangle, Building, DollarSign, TrendingUp, Gem, Package, PlugZap, ArrowRightLeft,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
@@ -39,7 +41,7 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; var
 
 interface TimelineEvent {
   id: string;
-  type: "construction" | "maintenance" | "major_repair" | "improvement" | "inventory" | "utility";
+  type: "construction" | "maintenance" | "major_repair" | "improvement" | "inventory" | "utility" | "transfer";
   date: string;
   title: string;
   description?: string | null;
@@ -54,7 +56,7 @@ const PropertyTimeline = () => {
   const { user } = useAuth();
   const [selectedProperty, setSelectedProperty] = useState<string>("all");
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
-  const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(["construction", "maintenance", "major_repair", "improvement", "inventory", "utility"]));
+  const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(["construction", "maintenance", "major_repair", "improvement", "inventory", "utility", "transfer"]));
 
   const toggleType = (type: string) => {
     setVisibleTypes((prev) => {
@@ -109,6 +111,19 @@ const PropertyTimeline = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("property_utilities")
+        .select("*, properties(name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: transfers = [] } = useQuery({
+    queryKey: ["property_transfers_timeline", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("property_transfers")
         .select("*, properties(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -206,10 +221,27 @@ const PropertyTimeline = () => {
     });
   });
 
+  // Add transfer events
+  const filteredTransfers = selectedProperty === "all" ? transfers : transfers.filter((t: any) => t.property_id === selectedProperty);
+
+  filteredTransfers.forEach((transfer: any) => {
+    const statusLabel = transfer.status === "accepted" ? "Completed" : transfer.status === "pending" ? "Pending" : transfer.status;
+    events.push({
+      id: `transfer-${transfer.id}`,
+      type: "transfer",
+      date: transfer.created_at?.split("T")[0],
+      title: `${transfer.properties?.name ?? "Property"} — Transferred`,
+      description: `To: ${transfer.to_email}${statusLabel ? ` · Status: ${statusLabel}` : ""}`,
+      category: "transfer",
+      cost: null,
+      propertyName: transfer.properties?.name,
+    });
+  });
+
   events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Apply type filter
-  const filteredEvents = events.filter((e) => visibleTypes.has(e.type));
+  // Apply type filter — construction is always visible
+  const filteredEvents = events.filter((e) => e.type === "construction" || visibleTypes.has(e.type));
 
   const maxCost = Math.max(...filteredEvents.map((e) => e.cost ?? 0), 1);
 
@@ -254,32 +286,37 @@ const PropertyTimeline = () => {
       </div>
 
       {/* Category Filters */}
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {/* House Creation — always on */}
+        <div className="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <Building className="h-4 w-4 text-accent" />
+            <Label className="font-body text-xs font-medium">House Creation</Label>
+          </div>
+          <span className="font-body text-[10px] text-muted-foreground">Always on</span>
+        </div>
         {[
-          { type: "construction", label: "Construction", icon: Building },
           { type: "maintenance", label: "Routine", icon: Wrench },
           { type: "major_repair", label: "Major Repair", icon: Hammer },
           { type: "improvement", label: "Improvement", icon: TrendingUp },
           { type: "inventory", label: "Inventory", icon: Cog },
           { type: "utility", label: "Utilities", icon: PlugZap },
+          { type: "transfer", label: "Transfer", icon: ArrowRightLeft },
         ].map(({ type, label, icon: Icon }) => {
           const active = visibleTypes.has(type);
-          const count = events.filter((e) => e.type === type).length;
           return (
-            <button
-              key={type}
-              onClick={() => toggleType(type)}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-body text-xs font-medium transition-colors border",
-                active
-                  ? "bg-accent/10 text-accent border-accent/30"
-                  : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
-              )}
-            >
-              <Icon className="h-3 w-3" />
-              {label}
-              <span className={cn("rounded-full px-1.5 py-0.5 text-[10px]", active ? "bg-accent/20" : "bg-muted")}>{count}</span>
-            </button>
+            <div key={type} className="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Icon className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor={`toggle-${type}`} className="font-body text-xs font-medium cursor-pointer">{label}</Label>
+              </div>
+              <Switch
+                id={`toggle-${type}`}
+                checked={active}
+                onCheckedChange={() => toggleType(type)}
+                className="scale-75"
+              />
+            </div>
           );
         })}
       </div>
@@ -405,8 +442,11 @@ const PropertyTimeline = () => {
 
           {filteredEvents.map((event) => {
             const isConstruction = event.type === "construction";
+            const isTransfer = event.type === "transfer";
             const cat = isConstruction
               ? { label: "Construction", icon: Building, color: "bg-accent/20 text-accent" }
+              : isTransfer
+              ? { label: "Transfer", icon: ArrowRightLeft, color: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400" }
               : categoryConfig[event.category] ?? categoryConfig.general;
             const CatIcon = cat.icon;
             const statusCfg = event.status ? statusConfig[event.status] ?? statusConfig.pending : null;
