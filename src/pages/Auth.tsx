@@ -55,7 +55,6 @@ const Auth = () => {
           options: {
             redirectTo: `${window.location.origin}/auth`,
             skipBrowserRedirect: true,
-            queryParams: { prompt: "select_account" },
           },
         });
         if (error) throw error;
