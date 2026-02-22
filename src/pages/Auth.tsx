@@ -39,15 +39,19 @@ const Auth = () => {
         !window.location.hostname.includes("localhost");
 
       if (isCustomDomain) {
-        // Use direct Supabase OAuth on custom domains (user's own Google credentials)
+        // Bypass auth-bridge on custom domains
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
             redirectTo: `${window.location.origin}/auth`,
+            skipBrowserRedirect: true,
             queryParams: { prompt: "select_account" },
           },
         });
         if (error) throw error;
+        if (data?.url) {
+          window.location.href = data.url;
+        }
       } else {
         // Use Lovable managed OAuth on preview/staging domains
         const { error } = await lovable.auth.signInWithOAuth("google", {
