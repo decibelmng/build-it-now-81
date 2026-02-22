@@ -23,6 +23,16 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Handle OAuth callback - detect tokens in URL hash
+  const [oauthProcessing, setOauthProcessing] = useState(false);
+  
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && (hash.includes("access_token") || hash.includes("refresh_token"))) {
+      setOauthProcessing(true);
+    }
+  }, []);
+
   // If already logged in, redirect to dashboard
   useEffect(() => {
     if (!authLoading && user) {
@@ -90,6 +100,18 @@ const Auth = () => {
     }
     setLoading(false);
   };
+
+  // Show loading screen while OAuth processes
+  if (oauthProcessing || authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-section-sage px-4">
+        <div className="text-center">
+          <Home className="mx-auto h-8 w-8 text-accent animate-pulse" />
+          <p className="mt-4 font-body text-sm text-muted-foreground">Signing you in...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-section-sage px-4">
