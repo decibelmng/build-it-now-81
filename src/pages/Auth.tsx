@@ -49,9 +49,6 @@ const Auth = () => {
         !window.location.hostname.includes("localhost");
 
       if (isCustomDomain) {
-        // Clear any stale session first to prevent Chrome cookie conflicts
-        await supabase.auth.signOut({ scope: 'local' });
-        
         // Bypass auth-bridge on custom domains
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
@@ -63,7 +60,9 @@ const Auth = () => {
         });
         if (error) throw error;
         if (data?.url) {
-          window.location.href = data.url;
+          // Use replace to avoid history stack buildup on Chrome mobile
+          window.location.replace(data.url);
+          return;
         }
       } else {
         // Use Lovable managed OAuth on preview/staging domains
