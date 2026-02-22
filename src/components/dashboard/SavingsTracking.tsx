@@ -1,10 +1,30 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, TrendingUp, Wrench, CheckCircle2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  DollarSign, TrendingUp, Wrench, CheckCircle2,
+  Droplets, Zap, Wind, Hammer, TreePine, Cog, Gem, Package, PlugZap,
+} from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format, parseISO, startOfMonth } from "date-fns";
+
+const categoryConfig: Record<string, { label: string; icon: React.ElementType }> = {
+  plumbing: { label: "Plumbing", icon: Droplets },
+  electrical: { label: "Electrical", icon: Zap },
+  hvac: { label: "HVAC", icon: Wind },
+  roofing: { label: "Roofing", icon: Hammer },
+  landscaping: { label: "Landscaping", icon: TreePine },
+  appliance: { label: "Appliance", icon: Cog },
+  personal: { label: "Personal", icon: Gem },
+  structural: { label: "Structural", icon: Package },
+  exterior: { label: "Exterior", icon: Package },
+  utility: { label: "Utility", icon: PlugZap },
+  general: { label: "General", icon: Wrench },
+};
 
 const SavingsTracking = () => {
   const { user } = useAuth();
@@ -22,17 +42,37 @@ const SavingsTracking = () => {
     enabled: !!user,
   });
 
+  // Discover all categories present in data
+  const allCategories = Array.from(new Set(logs.map((l) => l.category)));
+  const [enabledCategories, setEnabledCategories] = useState<Set<string> | null>(null);
+
+  // Initialize on first data load
+  const activeCategories = enabledCategories ?? new Set(allCategories);
+
+  const toggleCategory = (cat: string) => {
+    setEnabledCategories((prev) => {
+      const base = prev ?? new Set(allCategories);
+      const next = new Set(base);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
+
+  // Filter logs by enabled categories
+  const filtered = logs.filter((l) => activeCategories.has(l.category));
+
   // Stats
-  const totalSpent = logs.reduce((sum, l) => sum + (Number(l.cost) || 0), 0);
-  const completedCount = logs.filter((l) => l.status === "completed").length;
-  const pendingCount = logs.filter((l) => l.status !== "completed").length;
-  const avgCost = logs.filter((l) => l.cost).length > 0
-    ? totalSpent / logs.filter((l) => l.cost).length
+  const totalSpent = filtered.reduce((sum, l) => sum + (Number(l.cost) || 0), 0);
+  const completedCount = filtered.filter((l) => l.status === "completed").length;
+  const pendingCount = filtered.filter((l) => l.status !== "completed").length;
+  const avgCost = filtered.filter((l) => l.cost).length > 0
+    ? totalSpent / filtered.filter((l) => l.cost).length
     : 0;
 
   // Monthly spending chart data
   const monthlyMap = new Map<string, number>();
-  logs.forEach((l) => {
+  filtered.forEach((l) => {
     if (!l.cost) return;
     const month = format(startOfMonth(parseISO(l.created_at)), "yyyy-MM");
     monthlyMap.set(month, (monthlyMap.get(month) || 0) + Number(l.cost));
@@ -51,9 +91,9 @@ const SavingsTracking = () => {
     return { month: d.month, cumulative: Number(cumulative.toFixed(2)) };
   });
 
-  // Spending by category
+  // Spending by category (only enabled)
   const categoryMap = new Map<string, number>();
-  logs.forEach((l) => {
+  filtered.forEach((l) => {
     if (!l.cost) return;
     categoryMap.set(l.category, (categoryMap.get(l.category) || 0) + Number(l.cost));
   });
@@ -77,6 +117,31 @@ const SavingsTracking = () => {
         <h2 className="font-display text-2xl font-bold">Savings & Spending</h2>
         <p className="font-body text-sm text-muted-foreground">Track your maintenance costs over time</p>
       </div>
+
+      {/* Category Toggles */}
+      {allCategories.length > 0 && (
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {allCategories.map((cat) => {
+            const cfg = categoryConfig[cat] ?? { label: cat.charAt(0).toUpperCase() + cat.slice(1), icon: Wrench };
+            const Icon = cfg.icon;
+            const active = activeCategories.has(cat);
+            return (
+              <div key={cat} className="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <Icon className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor={`savings-${cat}`} className="font-body text-xs font-medium cursor-pointer">{cfg.label}</Label>
+                </div>
+                <Switch
+                  id={`savings-${cat}`}
+                  checked={active}
+                  onCheckedChange={() => toggleCategory(cat)}
+                  className="scale-75"
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -103,7 +168,7 @@ const SavingsTracking = () => {
             </Card>
           ))}
         </div>
-      ) : logs.length === 0 || totalSpent === 0 ? (
+      ) : filtered.length === 0 || totalSpent === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <DollarSign className="mb-4 h-10 w-10 text-muted-foreground" />
