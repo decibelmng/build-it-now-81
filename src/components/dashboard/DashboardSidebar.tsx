@@ -117,16 +117,21 @@ const DashboardSidebar = (props: DashboardSidebarProps) => {
           <Home className="h-5 w-5 text-accent" />
           <span className="font-display text-lg font-bold">HomeLog</span>
         </div>
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0">
-            <SidebarContent {...props} onSectionChange={handleSectionChange} />
-          </SheetContent>
-        </Sheet>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={props.onSignOut}>
+            <LogOut className="h-4 w-4" />
+          </Button>
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0">
+              <SidebarContent {...props} onSectionChange={handleSectionChange} />
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </>
   );
