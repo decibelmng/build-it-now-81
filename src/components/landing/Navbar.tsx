@@ -1,6 +1,13 @@
 import { Home } from "lucide-react";
 import { Link } from "react-router-dom";
 
+const scrollTo = (id: string) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+};
+
 const Navbar = () => {
   return (
     <nav className="fixed top-0 z-50 w-full border-b border-primary-foreground/10 bg-primary/80 backdrop-blur-md">
@@ -13,15 +20,15 @@ const Navbar = () => {
         </div>
 
         <div className="hidden items-center gap-8 font-body text-sm text-primary-foreground/70 md:flex">
-          <a href="#features" className="transition-colors hover:text-primary-foreground">
+          <button onClick={() => scrollTo("features")} className="transition-colors hover:text-primary-foreground">
             Features
-          </a>
-          <a href="#how-it-works" className="transition-colors hover:text-primary-foreground">
+          </button>
+          <button onClick={() => scrollTo("how-it-works")} className="transition-colors hover:text-primary-foreground">
             How It Works
-          </a>
-          <a href="#costs" className="transition-colors hover:text-primary-foreground">
+          </button>
+          <button onClick={() => scrollTo("costs")} className="transition-colors hover:text-primary-foreground">
             Pricing
-          </a>
+          </button>
         </div>
 
         <div className="flex items-center gap-3">

@@ -54,12 +54,12 @@ const HeroSection = () => {
               </Link>
             </Button>
             <Button
-              asChild
               size="lg"
               variant="ghost"
               className="border border-white/60 text-white hover:bg-white/10 hover:text-white font-body font-medium text-base px-8 py-6 rounded-full backdrop-blur-sm"
+              onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth", block: "start" })}
             >
-              <a href="#how-it-works">See How It Works</a>
+              See How It Works
             </Button>
           </div>
         </div>
