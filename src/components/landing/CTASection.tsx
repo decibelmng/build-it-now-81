@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const CTASection = () => {
   return (
@@ -15,11 +16,14 @@ const CTASection = () => {
             their home's history, maintenance, and financial future.
           </p>
           <Button
+            asChild
             size="lg"
             className="bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold text-base px-10 py-6 rounded-full shadow-premium"
           >
-            Start Your HomeLog
-            <ArrowRight className="ml-2 h-5 w-5" />
+            <Link to="/auth">
+              Start Your HomeLog
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
           </Button>
           <p className="mt-4 font-body text-sm text-primary-foreground/50">
             Free to start · No credit card required
