@@ -16,7 +16,7 @@ const HomeCostsSection = () => {
   const totalAnnual = homeElements.reduce((sum, el) => sum + el.cost / el.lifespan, 0);
 
   return (
-    <section className="bg-secondary/30 py-20 md:py-28">
+    <section id="costs" className="bg-secondary/30 py-20 md:py-28">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center mb-12">
           <Badge variant="outline" className="mb-4 font-body text-xs tracking-wide">

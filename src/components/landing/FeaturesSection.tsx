@@ -41,7 +41,7 @@ const features = [
 
 const FeaturesSection = () => {
   return (
-    <section className="py-24 bg-section-warm">
+    <section id="features" className="py-24 bg-section-warm">
       <div className="container mx-auto px-6">
         <div className="mx-auto mb-16 max-w-2xl text-center">
           <p className="mb-3 font-body text-sm font-semibold uppercase tracking-widest text-sage">

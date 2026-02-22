@@ -1,6 +1,7 @@
 import heroHome from "@/assets/hero-home.jpg";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   return (
@@ -46,16 +47,19 @@ const HeroSection = () => {
             className="flex flex-col gap-4 sm:flex-row opacity-0 animate-fade-up"
             style={{ animationDelay: "0.45s" }}
           >
-            <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold text-base px-8 py-6 rounded-full shadow-premium">
-              Get Started Free
-              <ArrowRight className="ml-2 h-5 w-5" />
+            <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold text-base px-8 py-6 rounded-full shadow-premium">
+              <Link to="/auth">
+                Get Started Free
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
             <Button
+              asChild
               size="lg"
               variant="ghost"
               className="border border-white/60 text-white hover:bg-white/10 hover:text-white font-body font-medium text-base px-8 py-6 rounded-full backdrop-blur-sm"
             >
-              See How It Works
+              <a href="#how-it-works">See How It Works</a>
             </Button>
           </div>
         </div>

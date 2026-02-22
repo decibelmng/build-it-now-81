@@ -19,7 +19,7 @@ const Navbar = () => {
           <a href="#how-it-works" className="transition-colors hover:text-primary-foreground">
             How It Works
           </a>
-          <a href="#pricing" className="transition-colors hover:text-primary-foreground">
+          <a href="#costs" className="transition-colors hover:text-primary-foreground">
             Pricing
           </a>
         </div>
