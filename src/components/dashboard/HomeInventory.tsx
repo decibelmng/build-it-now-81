@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -210,9 +210,35 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
     e.target.value = "";
   };
 
-  const getAttachmentUrl = (path: string) => {
-    const { data } = supabase.storage.from("home-item-attachments").getPublicUrl(path);
-    return data.publicUrl;
+  const getAttachmentUrl = async (path: string): Promise<string> => {
+    const { data, error } = await supabase.storage.from("home-item-attachments").createSignedUrl(path, 3600);
+    if (error || !data?.signedUrl) return "";
+    return data.signedUrl;
+  };
+
+  const AttachmentItem = ({ att }: { att: any }) => {
+    const [url, setUrl] = useState<string>("");
+    useEffect(() => {
+      getAttachmentUrl(att.file_path).then(setUrl);
+    }, [att.file_path]);
+    if (!url) return <div className="h-20 w-20 rounded-lg bg-muted animate-pulse" />;
+    return (
+      <div className="group relative rounded-lg border border-border/50 overflow-hidden">
+        {isImageType(att.file_type) ? (
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            <img src={url} alt={att.file_name} className="h-20 w-20 object-cover" />
+          </a>
+        ) : (
+          <a href={url} target="_blank" rel="noopener noreferrer" className="flex h-20 w-20 flex-col items-center justify-center bg-muted p-2">
+            <FileText className="h-6 w-6 text-muted-foreground mb-1" />
+            <span className="font-body text-[9px] text-muted-foreground text-center leading-tight truncate w-full">{att.file_name}</span>
+          </a>
+        )}
+        <button onClick={() => deleteAttachment.mutate(att)} className="absolute top-0.5 right-0.5 rounded-full bg-background/80 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Trash2 className="h-3 w-3 text-destructive" />
+        </button>
+      </div>
+    );
   };
 
   const openEditItem = (item: any) => {
@@ -550,36 +576,9 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
                               </button>
                               {isExpanded && (
                                 <div className="mt-2 flex flex-wrap gap-2">
-                                  {itemAttachments.map((att: any) => {
-                                    const url = getAttachmentUrl(att.file_path);
-                                    return (
-                                      <div key={att.id} className="group relative rounded-lg border border-border/50 overflow-hidden">
-                                        {isImageType(att.file_type) ? (
-                                          <a href={url} target="_blank" rel="noopener noreferrer">
-                                            <img src={url} alt={att.file_name} className="h-20 w-20 object-cover" />
-                                          </a>
-                                        ) : (
-                                          <a
-                                            href={url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex h-20 w-20 flex-col items-center justify-center bg-muted p-2"
-                                          >
-                                            <FileText className="h-6 w-6 text-muted-foreground mb-1" />
-                                            <span className="font-body text-[9px] text-muted-foreground text-center leading-tight truncate w-full">
-                                              {att.file_name}
-                                            </span>
-                                          </a>
-                                        )}
-                                        <button
-                                          onClick={() => deleteAttachment.mutate(att)}
-                                          className="absolute top-0.5 right-0.5 rounded-full bg-background/80 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                          <Trash2 className="h-3 w-3 text-destructive" />
-                                        </button>
-                                      </div>
-                                    );
-                                  })}
+                                  {itemAttachments.map((att: any) => (
+                                    <AttachmentItem key={att.id} att={att} />
+                                  ))}
                                 </div>
                               )}
                             </div>

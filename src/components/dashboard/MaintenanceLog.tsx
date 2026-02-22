@@ -152,8 +152,8 @@ const MaintenanceLogSection = () => {
         const filePath = `${user.id}/${Date.now()}_${photoFile.name}`;
         const { error: uploadError } = await supabase.storage.from("maintenance-photos").upload(filePath, photoFile);
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from("maintenance-photos").getPublicUrl(filePath);
-        image_url = urlData.publicUrl;
+        const { data: urlData } = await supabase.storage.from("maintenance-photos").createSignedUrl(filePath, 31536000);
+        image_url = urlData?.signedUrl || null;
       }
 
       // If creating a new vendor inline
