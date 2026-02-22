@@ -32,10 +32,30 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/auth`,
-    });
-    if (error) {
+    try {
+      const isCustomDomain =
+        !window.location.hostname.includes("lovable.app") &&
+        !window.location.hostname.includes("lovableproject.com");
+
+      if (isCustomDomain) {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: `${window.location.origin}/auth`,
+            skipBrowserRedirect: true,
+          },
+        });
+        if (error) throw error;
+        if (data?.url) {
+          window.location.href = data.url;
+        }
+      } else {
+        const { error } = await lovable.auth.signInWithOAuth("google", {
+          redirect_uri: `${window.location.origin}/auth`,
+        });
+        if (error) throw error;
+      }
+    } catch (error: any) {
       toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });
       setGoogleLoading(false);
     }
