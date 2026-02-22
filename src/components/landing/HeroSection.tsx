@@ -48,7 +48,7 @@ const HeroSection = () => {
             style={{ animationDelay: "0.45s" }}
           >
             <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold text-base px-8 py-6 rounded-full shadow-premium">
-              <Link to="/auth">
+              <Link to="/auth?mode=signup">
                 Get Started Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
