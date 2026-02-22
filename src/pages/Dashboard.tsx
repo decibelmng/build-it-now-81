@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useSubscription, isProFeature } from "@/hooks/useSubscription";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import PropertyCards from "@/components/dashboard/PropertyCards";
@@ -19,6 +20,9 @@ import PropertySharing from "@/components/dashboard/PropertySharing";
 import ExportReports from "@/components/dashboard/ExportReports";
 import AnalyticsInsights from "@/components/dashboard/AnalyticsInsights";
 import PropertyUtilities from "@/components/dashboard/PropertyUtilities";
+import FeatureGate from "@/components/dashboard/FeatureGate";
+import UpgradeModal from "@/components/dashboard/UpgradeModal";
+import { useToast } from "@/hooks/use-toast";
 
 
 type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search";
@@ -26,9 +30,22 @@ type Section = "overview" | "properties" | "maintenance" | "documents" | "saving
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { toast } = useToast();
+  const { tier, refreshSubscription } = useSubscription();
   const [profile, setProfile] = useState<{ display_name: string | null; persona: string | null } | null>(null);
   const [activeSection, setActiveSection] = useState<Section>("overview");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  // Handle upgrade success/cancel from Stripe redirect
+  useEffect(() => {
+    const upgradeStatus = searchParams.get("upgrade");
+    if (upgradeStatus === "success") {
+      toast({ title: "Welcome to Pro! 🎉", description: "Your subscription is now active." });
+      refreshSubscription();
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!user) return;
@@ -97,12 +114,18 @@ const Dashboard = () => {
           {activeSection === "timeline" && <PropertyTimeline />}
           {activeSection === "recurring" && <RecurringTemplates />}
           {activeSection === "sharing" && <PropertySharing />}
-          {activeSection === "export" && <ExportReports />}
-          {activeSection === "analytics" && <AnalyticsInsights />}
+          {activeSection === "export" && (
+            tier === "pro" ? <ExportReports /> : <FeatureGate featureName="Export & Reports" onUpgrade={() => setShowUpgrade(true)} />
+          )}
+          {activeSection === "analytics" && (
+            tier === "pro" ? <AnalyticsInsights /> : <FeatureGate featureName="Analytics & Insights" onUpgrade={() => setShowUpgrade(true)} />
+          )}
           {activeSection === "settings" && <ProfileSettings />}
           {activeSection === "search" && <DashboardSearch />}
         </div>
       </main>
+
+      <UpgradeModal open={showUpgrade} onOpenChange={setShowUpgrade} />
     </div>
   );
 };
