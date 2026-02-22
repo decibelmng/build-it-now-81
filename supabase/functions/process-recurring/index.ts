@@ -13,8 +13,43 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Authenticate the caller and verify admin role
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const anonClient = createClient(supabaseUrl, supabaseAnonKey);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify admin role
     const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!roleData) {
+      return new Response(
+        JSON.stringify({ error: "Admin access required" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Fetch all active templates that are due (next_due_date <= today)
     const today = new Date().toISOString().split("T")[0];
@@ -30,7 +65,6 @@ Deno.serve(async (req) => {
     let errors = 0;
 
     for (const template of dueTemplates || []) {
-      // Create maintenance log
       const { error: logError } = await supabase
         .from("maintenance_logs")
         .insert({
@@ -50,7 +84,6 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Advance the next_due_date
       const currentDue = new Date(template.next_due_date);
       const nextDue = new Date(currentDue);
       nextDue.setMonth(nextDue.getMonth() + template.interval_months);
@@ -85,7 +118,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("process-recurring error:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: "An internal error occurred" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
