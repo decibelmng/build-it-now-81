@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.process-recurring]
 verify_jwt = false
+
+[functions.contractor-link-info]
+verify_jwt = false
+
+[functions.contractor-submit]
+verify_jwt = false

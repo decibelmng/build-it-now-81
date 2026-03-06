@@ -14,6 +14,128 @@ export type Database = {
   }
   public: {
     Tables: {
+      contractor_access_links: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          label: string | null
+          property_id: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          property_id: string
+          token?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          property_id?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_access_links_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contractor_submissions: {
+        Row: {
+          access_link_id: string
+          add_to_contacts: boolean
+          contractor_company_name: string
+          contractor_contact_name: string
+          contractor_email: string | null
+          contractor_phone: string | null
+          cost: number | null
+          created_at: string
+          id: string
+          notes: string | null
+          photos: string[] | null
+          property_id: string
+          receipt_files: string[] | null
+          reviewed_at: string | null
+          service_category: string
+          service_date: string
+          service_description: string
+          status: string
+          warranty_info: string | null
+        }
+        Insert: {
+          access_link_id: string
+          add_to_contacts?: boolean
+          contractor_company_name: string
+          contractor_contact_name: string
+          contractor_email?: string | null
+          contractor_phone?: string | null
+          cost?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          photos?: string[] | null
+          property_id: string
+          receipt_files?: string[] | null
+          reviewed_at?: string | null
+          service_category: string
+          service_date: string
+          service_description: string
+          status?: string
+          warranty_info?: string | null
+        }
+        Update: {
+          access_link_id?: string
+          add_to_contacts?: boolean
+          contractor_company_name?: string
+          contractor_contact_name?: string
+          contractor_email?: string | null
+          contractor_phone?: string | null
+          cost?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          photos?: string[] | null
+          property_id?: string
+          receipt_files?: string[] | null
+          reviewed_at?: string | null
+          service_category?: string
+          service_date?: string
+          service_description?: string
+          status?: string
+          warranty_info?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_submissions_access_link_id_fkey"
+            columns: ["access_link_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_access_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractor_submissions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           category: string

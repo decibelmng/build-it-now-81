@@ -13,6 +13,7 @@ import PersonaSelection from "./pages/PersonaSelection";
 import Dashboard from "./pages/Dashboard";
 import ResetPassword from "./pages/ResetPassword";
 import Admin from "./pages/Admin";
+import ContractorServiceLog from "./pages/ContractorServiceLog";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +65,7 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
+            <Route path="/service-log/:token" element={<ContractorServiceLog />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
