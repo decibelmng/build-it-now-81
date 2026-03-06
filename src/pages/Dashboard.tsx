@@ -22,10 +22,12 @@ import AnalyticsInsights from "@/components/dashboard/AnalyticsInsights";
 import PropertyUtilities from "@/components/dashboard/PropertyUtilities";
 import FeatureGate from "@/components/dashboard/FeatureGate";
 import UpgradeModal from "@/components/dashboard/UpgradeModal";
+import ContractorLinks from "@/components/dashboard/ContractorLinks";
+import ContractorSubmissions from "@/components/dashboard/ContractorSubmissions";
 import { useToast } from "@/hooks/use-toast";
 
 
-type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search";
+type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -122,6 +124,8 @@ const Dashboard = () => {
           )}
           {activeSection === "settings" && <ProfileSettings />}
           {activeSection === "search" && <DashboardSearch />}
+          {activeSection === "contractor-links" && <ContractorLinks />}
+          {activeSection === "contractor-submissions" && <ContractorSubmissions />}
         </div>
       </main>
 
