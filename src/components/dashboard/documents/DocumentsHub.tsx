@@ -1,10 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Upload, LayoutGrid, List, Star, GroupIcon } from "lucide-react";
+import { FileText, Upload, LayoutGrid, List, Star, GroupIcon, Wrench, User, Package } from "lucide-react";
 import DocumentFilters from "./DocumentFilters";
 import DocumentGrid from "./DocumentGrid";
 import DocumentList from "./DocumentList";
@@ -14,7 +14,7 @@ import {
   type DocumentFilters as Filters,
   DEFAULT_FILTERS,
   getActiveFilterCount,
-  CATEGORY_GROUPS,
+  CATEGORY_GROUPS, CATEGORY_LABELS,
 } from "./constants";
 
 const PAGE_SIZE = 24;
@@ -390,8 +390,7 @@ export const DocumentCard = ({
   const isImage = doc.file_type?.startsWith("image/");
   const [thumbUrl, setThumbUrl] = useState<string | null>(null);
 
-  // Get thumbnail for images
-  useState(() => {
+  useEffect(() => {
     if (isImage && doc.file_path) {
       supabase.storage
         .from(getStorageBucket(doc))
@@ -400,7 +399,7 @@ export const DocumentCard = ({
           if (data?.signedUrl) setThumbUrl(data.signedUrl);
         });
     }
-  });
+  }, [doc.file_path, isImage]);
 
   return (
     <div
@@ -458,11 +457,8 @@ function getSourceFromDoc(doc: any): string {
 }
 
 function getCategoryLabel(category: string): string {
-  const { CATEGORY_LABELS } = require("./constants");
   return CATEGORY_LABELS[category] || category;
 }
-
-import { Wrench, User, Package } from "lucide-react";
 
 const SourceIcon = ({ source }: { source: string }) => {
   const cls = "h-3 w-3 text-muted-foreground";
