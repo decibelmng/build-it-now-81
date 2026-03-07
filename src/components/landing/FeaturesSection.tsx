@@ -1,41 +1,41 @@
-import { Home, FileText, TrendingUp, Shield, Users, ArrowLeftRight } from "lucide-react";
+import { DollarSign, FileText, Camera, Link, ClipboardList, ArrowRightLeft } from "lucide-react";
 
 const features = [
   {
-    icon: Home,
-    title: "Complete Property Profile",
+    icon: DollarSign,
+    title: "Capital Improvement Tracker",
     description:
-      "Catalog every detail — from paint colors and appliance models to roof age and HVAC specs. Never hunt for information again.",
+      "Every expense is automatically classified as a capital improvement or routine repair. Your running cost basis updates in real time — no spreadsheets, no shoeboxes of receipts.",
   },
   {
     icon: FileText,
-    title: "Maintenance Log",
+    title: "IRS-Ready Reports",
     description:
-      "Track every repair, upgrade, and service call with dates, costs, and contractor details. Build a living history of your home.",
+      "Generate a professional tax report with one click: itemized improvements, contractor details, and receipt images — ready to hand to your CPA.",
   },
   {
-    icon: TrendingUp,
-    title: "Smart Savings Planner",
+    icon: Camera,
+    title: "Receipt & Document Vault",
     description:
-      "Know what's coming. Our predictive tool estimates future repair costs so you can budget proactively, not reactively.",
+      "Snap a photo of a receipt or upload a PDF. HomeLog automatically files it under the right project, contractor, and category. Never lose a receipt again.",
   },
   {
-    icon: Shield,
-    title: "Secure Document Vault",
+    icon: Link,
+    title: "Contractor Service Links",
     description:
-      "Store deeds, warranties, insurance policies, and receipts in one encrypted, always-accessible location.",
+      "Send your contractor a link to log their own work, upload photos, and attach invoices — directly into your home's timeline. No app download required.",
   },
   {
-    icon: Users,
-    title: "Household Management",
+    icon: ClipboardList,
+    title: "Complete Home Inventory",
     description:
-      "Invite family members with role-based access. Primary owners control transfers; everyone stays informed.",
+      "Track every component, system, and appliance with install dates, warranties, and documentation. Know what you have and when it needs attention.",
   },
   {
-    icon: ArrowLeftRight,
-    title: "Transferable History",
+    icon: ArrowRightLeft,
+    title: "Transferable Home History",
     description:
-      "When you sell, transfer your home's complete digital record to the new owner — increasing trust and property value.",
+      "Sell your home with a complete digital history attached. Increase buyer confidence, strengthen your negotiating position, and stand out in the market.",
   },
 ];
 
@@ -45,15 +45,11 @@ const FeaturesSection = () => {
       <div className="container mx-auto px-6">
         <div className="mx-auto mb-16 max-w-2xl text-center">
           <p className="mb-3 font-body text-sm font-semibold uppercase tracking-widest text-sage">
-            Everything You Need
+            The Full Platform
           </p>
           <h2 className="mb-4 font-display text-4xl font-bold text-foreground md:text-5xl">
-            Your Home, Fully Managed
+            Everything you need to protect your home investment.
           </h2>
-          <p className="font-body text-lg text-muted-foreground">
-            HomeLog replaces scattered files, forgotten warranties, and surprise
-            repair bills with one intelligent platform.
-          </p>
         </div>
 
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">

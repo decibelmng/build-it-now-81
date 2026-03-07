@@ -1,26 +1,26 @@
-import { ClipboardList, Home, PiggyBank } from "lucide-react";
+import { Home, Wrench, FileDown } from "lucide-react";
 
 const steps = [
   {
     number: "01",
-    icon: ClipboardList,
-    title: "Claim Your Home",
+    icon: Home,
+    title: "Add your home",
     description:
-      "Sign up, verify your identity, and claim your property by entering your address and uploading a deed or utility bill.",
+      "Enter your address and purchase price. We pull public details automatically so you start with a foundation.",
   },
   {
     number: "02",
-    icon: Home,
-    title: "Build Your Profile",
+    icon: Wrench,
+    title: "Log as you go",
     description:
-      "Add your home's details — specs, systems, finishes, documents. HomeLog organizes it all into a beautiful, searchable profile.",
+      "Add expenses and snap receipts, or share a link with your contractor to log their work directly. Every entry is classified and filed automatically.",
   },
   {
     number: "03",
-    icon: PiggyBank,
-    title: "Plan & Save",
+    icon: FileDown,
+    title: "Export when you sell",
     description:
-      "Get personalized maintenance recommendations and savings goals based on your home's age, systems, and lifecycle costs.",
+      "Generate a professional tax report with every improvement, receipt, and contractor detail itemized — ready for your CPA or TurboTax.",
   },
 ];
 
@@ -30,20 +30,16 @@ const HowItWorksSection = () => {
       <div className="container mx-auto px-6">
         <div className="mx-auto mb-16 max-w-2xl text-center">
           <p className="mb-3 font-body text-sm font-semibold uppercase tracking-widest text-sage">
-            Simple & Secure
+            Simple & Fast
           </p>
           <h2 className="mb-4 font-display text-4xl font-bold text-foreground md:text-5xl">
-            How HomeLog Works
+            Three minutes to start saving thousands.
           </h2>
-          <p className="font-body text-lg text-muted-foreground">
-            Get set up in minutes. Benefit for the life of your home.
-          </p>
         </div>
 
         <div className="mx-auto grid max-w-5xl gap-12 lg:grid-cols-3">
           {steps.map((step, index) => (
             <div key={step.number} className="relative text-center">
-              {/* Connector line */}
               {index < steps.length - 1 && (
                 <div className="absolute right-0 top-12 hidden h-0.5 w-full translate-x-1/2 bg-border lg:block" />
               )}
