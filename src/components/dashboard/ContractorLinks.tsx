@@ -26,6 +26,25 @@ const ContractorLinks = () => {
   const [createdLink, setCreatedLink] = useState<string | null>(null);
   const [form, setForm] = useState({ property_id: "", label: "", expiry: "none" });
 
+  // Get first property for default link
+  const { data: properties = [] } = useQuery({
+    queryKey: ["properties", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("properties").select("*").eq("user_id", user!.id).order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const firstPropertyId = properties.length > 0 ? properties[0].id : undefined;
+  const { defaultLink, ensureDefault, linkUrl: defaultLinkUrl } = useDefaultContractorLink(firstPropertyId);
+
+  // Auto-create default link on load
+  useEffect(() => {
+    ensureDefault();
+  }, [firstPropertyId, defaultLink]);
+
   const { data: properties = [] } = useQuery({
     queryKey: ["properties", user?.id],
     queryFn: async () => {
