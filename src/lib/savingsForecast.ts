@@ -130,12 +130,24 @@ export function calculateForecast(
 
   const personalizedCategories = new Set<string>();
   const personalizedCompKeys = new Set<string>();
+  const coveredCompKeys = new Set<string>();
   const events: ForecastEvent[] = [];
 
   const normalizedItems = homeItems.map((item) => ({
     ...item,
     category: normalizeCategory(item.category),
   }));
+
+  // Track all non-skeleton items as "covered" even without install_date
+  normalizedItems.forEach((item) => {
+    if (item.system_key) {
+      coveredCompKeys.add(item.system_key);
+    } else {
+      // Try matching by category
+      const profile = SYSTEM_PROFILES.find((p) => p.category === item.category);
+      if (profile) coveredCompKeys.add(profile.key);
+    }
+  });
 
   // 1. Process tracked items with install dates
   normalizedItems.forEach((item) => {
