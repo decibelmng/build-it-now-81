@@ -54,7 +54,7 @@ const vendorRoles = [
 
 const emptyForm = { title: "", description: "", category: "general", property_id: "", cost: "", scheduled_date: "", contact_id: "", status: "pending", scope: "routine" };
 
-const MaintenanceLogSection = () => {
+const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
