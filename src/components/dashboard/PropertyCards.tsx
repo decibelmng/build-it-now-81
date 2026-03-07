@@ -27,7 +27,11 @@ const propertyTypes = [
   { value: "other", label: "Other" },
 ];
 
-const PropertyCards = () => {
+interface PropertyCardsProps {
+  onNavigate?: (section: string) => void;
+}
+
+const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
