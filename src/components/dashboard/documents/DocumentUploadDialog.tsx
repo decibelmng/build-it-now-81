@@ -31,13 +31,13 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
   const [files, setFiles] = useState<File[]>([]);
   const [form, setForm] = useState({
     property_id: properties.length === 1 ? properties[0]?.id || "" : "",
-    category: "other",
+    category: defaultCategory || "other",
     title: "",
     description: "",
     document_date: "",
     tags: "",
-    maintenance_log_id: "",
-    home_item_id: "",
+    maintenance_log_id: defaultLinkKey === "maintenance_log_id" ? (defaultLinkValue || "") : "",
+    home_item_id: defaultLinkKey === "home_item_id" ? (defaultLinkValue || "") : "",
     contact_id: "",
   });
   const [uploading, setUploading] = useState(false);

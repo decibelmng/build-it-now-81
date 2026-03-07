@@ -53,7 +53,7 @@ const Thumb = ({ doc, onClick }: { doc: any; onClick: () => void }) => {
         {isImage && url ? (
           <img src={url} alt={doc.title || doc.file_name} className="h-full w-full object-cover" />
         ) : doc.file_type === "application/pdf" ? (
-          <FileText className="h-5 w-5 text-red-400" />
+          <FileText className="h-5 w-5 text-destructive/70" />
         ) : (
           <FileText className="h-5 w-5 text-muted-foreground" />
         )}
