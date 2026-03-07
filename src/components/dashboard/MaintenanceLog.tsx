@@ -550,7 +550,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-4">
             <div className="space-y-2">
               <Label className="font-body">Property *</Label>
-              <Select value={form.property_id} onValueChange={(v) => { setForm({ ...form, property_id: v }); setSelectedComponentId(null); }}>
+              <Select value={form.property_id} onValueChange={(v) => { setForm({ ...form, property_id: v }); setSelectedComponentIds([]); }}>
                 <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
                 <SelectContent>
                   {properties.map((p) => (
@@ -589,16 +589,32 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
             {/* Related Component — positioned after category, before description */}
             {form.property_id && (
               <div className="space-y-1.5">
-                <Label className="font-body flex items-center gap-1"><Package className="h-3.5 w-3.5" /> Related Component</Label>
+                <Label className="font-body flex items-center gap-1"><Package className="h-3.5 w-3.5" /> Related Components</Label>
                 {!showNewComponent ? (
                   <>
                     <Popover open={componentComboOpen} onOpenChange={setComponentComboOpen}>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" aria-expanded={componentComboOpen} className="w-full justify-between font-body font-normal h-9 text-sm">
-                          {selectedComponent ? (
-                            <span>{selectedComponent.name} <span className="text-muted-foreground">· {selectedComponent.category}</span></span>
+                        <Button variant="outline" role="combobox" aria-expanded={componentComboOpen} className="w-full justify-between font-body font-normal h-auto min-h-9 text-sm py-1.5">
+                          {selectedComponentNames.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {selectedComponentNames.map((c) => (
+                                <Badge key={c.id} variant="secondary" className="text-[10px] px-1.5 py-0.5 font-normal">
+                                  {c.name}
+                                  <button
+                                    type="button"
+                                    className="ml-1 hover:text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedComponentIds((prev) => prev.filter((id) => id !== c.id));
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
                           ) : (
-                            <span className="text-muted-foreground">Link to a home component (optional)</span>
+                            <span className="text-muted-foreground">Link to components (optional)</span>
                           )}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -608,33 +624,67 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                           <CommandInput placeholder="Search components..." className="font-body" />
                           <CommandList>
                             <CommandEmpty className="font-body text-sm py-3 text-center">No components found.</CommandEmpty>
-                            <CommandGroup>
-                              {selectedComponentId && (
+                            {selectedComponentIds.length > 0 && (
+                              <CommandGroup>
                                 <CommandItem
                                   value="__clear__"
-                                  onSelect={() => { setSelectedComponentId(null); setComponentComboOpen(false); }}
+                                  onSelect={() => { setSelectedComponentIds([]); }}
                                   className="font-body text-sm text-muted-foreground"
                                 >
-                                  Clear selection
+                                  Clear all
                                 </CommandItem>
-                              )}
-                              {homeComponents.map((comp) => (
-                                <CommandItem
-                                  key={comp.id}
-                                  value={comp.name}
-                                  onSelect={() => { setSelectedComponentId(comp.id); setComponentComboOpen(false); }}
-                                  className="font-body text-sm"
-                                >
-                                  <Check className={cn("mr-2 h-4 w-4", selectedComponentId === comp.id ? "opacity-100" : "opacity-0")} />
-                                  {comp.name}
-                                  <span className="ml-auto text-xs text-muted-foreground">{comp.category}</span>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
+                              </CommandGroup>
+                            )}
+                            {(() => {
+                              // Group by system_key prefix
+                              const grouped: Record<string, typeof filteredComponents> = {};
+                              for (const comp of filteredComponents) {
+                                const sk = (comp as any).system_key as string | null;
+                                const sysPrefix = sk?.split(":")[0] || "other";
+                                if (!grouped[sysPrefix]) grouped[sysPrefix] = [];
+                                grouped[sysPrefix].push(comp);
+                              }
+                              return Object.entries(grouped).map(([sysKey, comps]) => {
+                                const sys = SYSTEMS_CATALOG.find((s) => s.key === sysKey);
+                                const label = sys ? `${sys.icon} ${sys.label}` : "Other";
+                                return (
+                                  <CommandGroup key={sysKey} heading={label}>
+                                    {comps.map((comp) => {
+                                      const isSelected = selectedComponentIds.includes(comp.id);
+                                      return (
+                                        <CommandItem
+                                          key={comp.id}
+                                          value={comp.name}
+                                          onSelect={() => {
+                                            setSelectedComponentIds((prev) =>
+                                              isSelected
+                                                ? prev.filter((id) => id !== comp.id)
+                                                : [...prev, comp.id]
+                                            );
+                                            // Auto-set category if selecting first component (Prompt 7)
+                                            if (!isSelected && selectedComponentIds.length === 0 && (comp as any).system_key) {
+                                              const compSysKey = ((comp as any).system_key as string).split(":")[0];
+                                              if (compSysKey && categories.some((c) => c.value === compSysKey)) {
+                                                setForm((f) => ({ ...f, category: compSysKey }));
+                                              }
+                                            }
+                                          }}
+                                          className="font-body text-sm"
+                                        >
+                                          <Checkbox checked={isSelected} className="mr-2 h-4 w-4" />
+                                          {comp.name}
+                                          <span className="ml-auto text-xs text-muted-foreground">{comp.category}</span>
+                                        </CommandItem>
+                                      );
+                                    })}
+                                  </CommandGroup>
+                                );
+                              });
+                            })()}
                             <CommandGroup>
                               <CommandItem
                                 value="__new__"
-                                onSelect={() => { setShowNewComponent(true); setSelectedComponentId(null); setComponentComboOpen(false); }}
+                                onSelect={() => { setShowNewComponent(true); setSelectedComponentIds([]); setComponentComboOpen(false); }}
                                 className="font-body text-sm text-accent"
                               >
                                 <Plus className="mr-2 h-4 w-4" />
@@ -645,7 +695,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                         </Command>
                       </PopoverContent>
                     </Popover>
-                    <p className="font-body text-xs text-muted-foreground">Linking helps keep your home records in sync automatically</p>
+                    <p className="font-body text-xs text-muted-foreground">Link to the components this work serviced</p>
                   </>
                 ) : (
                   <div className="rounded-lg border border-border/50 p-3 space-y-2 bg-muted/30">
@@ -665,7 +715,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                         <Select value={newComponentType} onValueChange={setNewComponentType}>
                           <SelectTrigger className="font-body h-8 text-sm"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            {categories.map((c) => (
+                            {legacyCategories.map((c) => (
                               <SelectItem key={c.value} value={c.value} className="font-body text-sm">{c.label}</SelectItem>
                             ))}
                           </SelectContent>
