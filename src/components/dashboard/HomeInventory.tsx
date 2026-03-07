@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Package, Zap, Droplets, Wind, Refrigerator, Trash2, Edit2,
-  AlertTriangle, Gem, Upload, FileText, Image, Download, Loader2, Paperclip, X, Lock
+  AlertTriangle, Gem, Upload, FileText, Image, Download, Loader2, Paperclip, X, Lock, ArrowRightLeft
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import UpgradeModal from "./UpgradeModal";
@@ -48,7 +48,7 @@ interface HomeInventoryProps {
 const emptyItemForm = {
   name: "", category: "general", brand: "", model: "", serial_number: "",
   install_date: "", last_maintained: "", expected_replacement: "", warranty_expiry: "", notes: "",
-  estimated_value: "",
+  estimated_value: "", item_type: "" as "home_component" | "personal_item" | "",
 };
 
 const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventoryProps) => {
@@ -103,6 +103,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
 
   const upsertItem = useMutation({
     mutationFn: async () => {
+      const effectiveType = itemForm.item_type || itemType;
       const payload: any = {
         property_id: propertyId,
         user_id: user!.id,
@@ -116,8 +117,8 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
         expected_replacement: itemForm.expected_replacement || null,
         warranty_expiry: itemForm.warranty_expiry || null,
         notes: itemForm.notes || null,
-        item_type: itemType,
-        estimated_value: itemType === "personal_item" && itemForm.estimated_value ? parseFloat(itemForm.estimated_value) : null,
+        item_type: effectiveType,
+        estimated_value: effectiveType === "personal_item" && itemForm.estimated_value ? parseFloat(itemForm.estimated_value) : null,
       };
       let itemId = editingItem;
       if (editingItem) {
@@ -149,7 +150,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId, itemType] });
+      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
       queryClient.invalidateQueries({ queryKey: ["home_item_attachments"] });
       setItemOpen(false);
       setEditingItem(null);
@@ -166,9 +167,23 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId, itemType] });
+      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
       toast({ title: "Item removed" });
     },
+  });
+
+  const moveItem = useMutation({
+    mutationFn: async ({ id, newType }: { id: string; newType: "home_component" | "personal_item" }) => {
+      const updates: any = { item_type: newType };
+      if (newType === "home_component") updates.estimated_value = null;
+      const { error } = await supabase.from("home_items").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_, { newType }) => {
+      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
+      toast({ title: `Item moved to ${newType === "personal_item" ? "Personal Items" : "Home Components"}` });
+    },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
   });
 
   const uploadAttachment = useMutation({
@@ -267,6 +282,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
       expected_replacement: item.expected_replacement || "", warranty_expiry: item.warranty_expiry || "",
       notes: item.notes || "",
       estimated_value: item.estimated_value ? String(item.estimated_value) : "",
+      item_type: item.item_type || itemType,
     });
     setItemOpen(true);
   };
@@ -391,6 +407,26 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
                   <DialogTitle className="font-display">{editingItem ? "Edit Item" : itemType === "personal_item" ? "Add Personal Item" : "Add Home Component"}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={(e) => { e.preventDefault(); upsertItem.mutate(); }} className="space-y-4">
+                  {/* Item Type Selector */}
+                  <div className="space-y-2">
+                    <Label className="font-body">Item Type</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["home_component", "personal_item"] as const).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          className={`rounded-lg border px-3 py-2 text-sm font-body font-medium transition-colors ${
+                            (itemForm.item_type || itemType) === t
+                              ? "border-accent bg-accent/10 text-accent-foreground"
+                              : "border-border bg-background text-muted-foreground hover:border-accent/50"
+                          }`}
+                          onClick={() => setItemForm({ ...itemForm, item_type: t })}
+                        >
+                          {t === "home_component" ? "Home Component" : "Personal Item"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2 col-span-2">
                       <Label className="font-body">Item Name *</Label>
@@ -401,7 +437,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
                       <Select value={itemForm.category} onValueChange={(v) => setItemForm({ ...itemForm, category: v })}>
                         <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          {itemCategories.map((c) => (
+                          {((itemForm.item_type || itemType) === "personal_item" ? personalItemCategories : homeComponentCategories).map((c) => (
                             <SelectItem key={c.value} value={c.value} className="font-body">{c.label}</SelectItem>
                           ))}
                         </SelectContent>
@@ -440,7 +476,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
                     <Label className="font-body">Notes</Label>
                     <Textarea placeholder="Additional details, condition notes..." value={itemForm.notes} onChange={(e) => setItemForm({ ...itemForm, notes: e.target.value })} className="font-body" rows={3} />
                   </div>
-                  {itemType === "personal_item" && (
+                  {(itemForm.item_type || itemType) === "personal_item" && (
                     <div className="space-y-2">
                       <Label className="font-body">Estimated Value ($)</Label>
                       <Input type="number" placeholder="e.g. 500" value={itemForm.estimated_value} onChange={(e) => setItemForm({ ...itemForm, estimated_value: e.target.value })} className="font-body" min="0" step="0.01" />
@@ -580,6 +616,14 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
                                 {uploadAttachment.isPending && uploadingFor === item.id
                                   ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                   : <Upload className="h-3.5 w-3.5" />}
+                              </Button>
+                              <Button
+                                variant="ghost" size="icon" className="h-8 w-8"
+                                title={itemType === "home_component" ? "Move to Personal Items" : "Move to Home Components"}
+                                onClick={() => moveItem.mutate({ id: item.id, newType: itemType === "home_component" ? "personal_item" : "home_component" })}
+                                disabled={moveItem.isPending}
+                              >
+                                <ArrowRightLeft className="h-3.5 w-3.5" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditItem(item)}>
                                 <Edit2 className="h-3.5 w-3.5" />
