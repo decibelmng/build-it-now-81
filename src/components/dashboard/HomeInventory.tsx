@@ -69,6 +69,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const isPro = tier === "pro";
   const dialogFileInputRef = useRef<HTMLInputElement>(null);
+  const [fileDragOver, setFileDragOver] = useState(false);
 
   const { data: items = [], isLoading: itemsLoading } = useQuery({
     queryKey: ["home_items", propertyId, itemType],
@@ -514,12 +515,26 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
                       }}
                     />
                     <div
-                      className="border-2 border-dashed border-border/50 rounded-lg p-4 text-center cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-colors"
+                      className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                        fileDragOver
+                          ? "border-accent bg-accent/10"
+                          : "border-border/50 hover:border-accent/50 hover:bg-accent/5"
+                      }`}
                       onClick={() => dialogFileInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setFileDragOver(true); }}
+                      onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setFileDragOver(true); }}
+                      onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setFileDragOver(false); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setFileDragOver(false);
+                        const files = Array.from(e.dataTransfer.files);
+                        if (files.length > 0) setPendingFiles((prev) => [...prev, ...files]);
+                      }}
                     >
                       <Upload className="mx-auto h-6 w-6 text-muted-foreground mb-1" />
                       <p className="font-body text-xs text-muted-foreground">
-                        Click to add photos, receipts, or documents
+                        Click or drag files to add photos, receipts, or documents
                       </p>
                     </div>
                     {pendingFiles.length > 0 && (
