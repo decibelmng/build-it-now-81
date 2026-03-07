@@ -361,10 +361,12 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
             <h3 className="font-display text-lg font-semibold flex items-center gap-2">
-              <Package className="h-5 w-5" /> Home Inventory
+              <Package className="h-5 w-5" /> {itemType === "personal_item" ? "Personal Items" : "Home Components"}
             </h3>
             <p className="font-body text-sm text-muted-foreground">
-              Track every item in your home — ages, serial numbers, maintenance dates, and replacements.
+              {itemType === "personal_item"
+                ? "Track personal belongings for insurance and record-keeping."
+                : "Track every component in your home — ages, serial numbers, maintenance dates, and replacements."}
             </p>
           </div>
           <div className="flex gap-2">
