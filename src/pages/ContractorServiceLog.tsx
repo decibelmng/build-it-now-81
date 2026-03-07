@@ -253,6 +253,7 @@ const ContractorServiceLog = () => {
                   </label>
                   <p className="text-xs text-muted-foreground">This helps the homeowner track improvements for tax purposes.</p>
                 </div>
+              </div>
               <div>
                 <Label htmlFor="desc">Description of Work Performed *</Label>
                 <Textarea id="desc" required rows={4} value={form.service_description}

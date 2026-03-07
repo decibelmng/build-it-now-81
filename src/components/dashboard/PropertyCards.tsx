@@ -375,6 +375,14 @@ const PropertyCards = () => {
             ))}
           </div>
 
+          {/* Purchase Info for selected property */}
+          {selectedPropertyId && (
+            <div className="mt-6">
+              <PurchaseInfoSection
+                property={properties.find((p) => p.id === selectedPropertyId)!}
+              />
+            </div>
+          )}
         </>
       )}
     </div>
