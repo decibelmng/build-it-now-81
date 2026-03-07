@@ -1,7 +1,9 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "homelog-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "HomeLog - The digital twin for your home",
+  "homepage": "https://homelogapp.com",
   "type": "module",
   "scripts": {
     "dev": "vite",
