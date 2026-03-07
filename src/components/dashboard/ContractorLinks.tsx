@@ -117,6 +117,9 @@ const ContractorLinks = () => {
   const getPropertyName = (propertyId: string) =>
     properties.find((p) => p.id === propertyId)?.name || "Unknown";
 
+  // Filter out the default link from the custom links list
+  const customLinks = links.filter((l: any) => !l.is_default);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
