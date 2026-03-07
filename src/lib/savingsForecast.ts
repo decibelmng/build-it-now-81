@@ -1,9 +1,13 @@
 /**
  * Predictive Savings Forecaster
  * Calculates future home maintenance costs based on property data and tracked items.
+ * Uses the Home Systems Registry when available to only predict costs for systems the home actually has.
  */
 
+import { SYSTEMS_CATALOG, type HomeSystemsRegistry } from "@/lib/homeSystemsRegistry";
+
 export interface SystemCostProfile {
+  key: string;
   label: string;
   category: string;
   replacementCost: number;
@@ -11,14 +15,15 @@ export interface SystemCostProfile {
   annualCost: number;
 }
 
-export const SYSTEM_PROFILES: SystemCostProfile[] = [
-  { label: "Roof", category: "roofing", replacementCost: 10000, lifespanYears: 25, annualCost: 400 },
-  { label: "HVAC System", category: "hvac", replacementCost: 7500, lifespanYears: 18, annualCost: 417 },
-  { label: "Water Heater", category: "plumbing", replacementCost: 2000, lifespanYears: 12, annualCost: 167 },
-  { label: "Exterior Paint", category: "exterior", replacementCost: 5000, lifespanYears: 8, annualCost: 625 },
-  { label: "Appliances", category: "appliance", replacementCost: 1200, lifespanYears: 12, annualCost: 100 },
-  { label: "Flooring", category: "structural", replacementCost: 3000, lifespanYears: 20, annualCost: 150 },
-];
+// Build SYSTEM_PROFILES from SYSTEMS_CATALOG for backward compatibility
+export const SYSTEM_PROFILES: SystemCostProfile[] = SYSTEMS_CATALOG.map((s) => ({
+  key: s.key,
+  label: s.label,
+  category: s.category,
+  replacementCost: s.replacementCost,
+  lifespanYears: s.lifespanYears,
+  annualCost: s.annualCost,
+}));
 
 // Map variant category names to their canonical SYSTEM_PROFILES category
 const CATEGORY_ALIASES: Record<string, string> = {
@@ -76,30 +81,37 @@ export interface ForecastResult {
 export function calculateForecast(
   property: PropertyInfo,
   homeItems: HomeItem[],
-  forecastYears: number = 10
+  forecastYears: number = 10,
+  homeSystems?: HomeSystemsRegistry | null,
+  registryCompleted?: boolean
 ): ForecastResult {
   const now = new Date();
   const currentYear = now.getFullYear();
   const homeAge = property.year_built ? currentYear - property.year_built : 20;
   const homeValue = property.purchase_price || 350000;
 
+  const hasRegistry = !!homeSystems && !!registryCompleted;
+
   // Track which categories have personalized data
   const personalizedCategories = new Set<string>();
   const events: ForecastEvent[] = [];
 
-  // 1. Process tracked home items for personalized predictions
-  // Normalize item categories for matching against SYSTEM_PROFILES
+  // Normalize item categories
   const normalizedItems = homeItems.map((item) => ({
     ...item,
     category: normalizeCategory(item.category),
   }));
 
+  // 1. Process tracked home items for personalized predictions
   normalizedItems.forEach((item) => {
     if (!item.install_date) return;
 
     const installYear = new Date(item.install_date).getFullYear();
     const profile = SYSTEM_PROFILES.find((p) => p.category === item.category);
     if (!profile) return;
+
+    // If registry exists and this system is disabled, skip
+    if (hasRegistry && homeSystems![profile.key] && !homeSystems![profile.key].enabled) return;
 
     personalizedCategories.add(item.category);
 
@@ -108,7 +120,6 @@ export function calculateForecast(
     const yearsRemaining = Math.max(0, lifespan - age);
     const replacementYear = currentYear + yearsRemaining;
 
-    // Add replacement events within forecast window
     if (replacementYear <= currentYear + forecastYears) {
       events.push({
         year: replacementYear,
@@ -119,7 +130,6 @@ export function calculateForecast(
       });
     }
 
-    // If replacement already overdue, flag it in year 1
     if (yearsRemaining === 0) {
       events.push({
         year: currentYear + 1,
@@ -131,37 +141,65 @@ export function calculateForecast(
     }
   });
 
-  // 2. Add generic estimates for uncovered categories
+  // 2. Add estimates for uncovered categories
   SYSTEM_PROFILES.forEach((profile) => {
     if (personalizedCategories.has(profile.category)) return;
 
-    // Estimate replacement based on home age
-    const estimatedAge = homeAge % profile.lifespanYears;
-    const yearsToNext = profile.lifespanYears - estimatedAge;
-    const replacementYear = currentYear + yearsToNext;
+    // If registry exists, only include enabled systems
+    if (hasRegistry) {
+      const entry = homeSystems![profile.key];
+      if (!entry?.enabled) return;
 
-    if (replacementYear <= currentYear + forecastYears) {
-      events.push({
-        year: replacementYear,
-        label: `${profile.label} — Est. Replacement`,
-        cost: profile.replacementCost,
-        category: profile.category,
-        isPersonalized: false,
-      });
+      // Multiply by quantity
+      const quantity = entry.quantity || 1;
+      const estimatedAge = homeAge % profile.lifespanYears;
+      const yearsToNext = profile.lifespanYears - estimatedAge;
+      const replacementYear = currentYear + yearsToNext;
+
+      if (replacementYear <= currentYear + forecastYears) {
+        events.push({
+          year: replacementYear,
+          label: `${profile.label} — Est. Replacement`,
+          cost: profile.replacementCost * quantity,
+          category: profile.category,
+          isPersonalized: false,
+        });
+      }
+    } else {
+      // No registry — iterate all systems as generic estimates (backward compatible)
+      const estimatedAge = homeAge % profile.lifespanYears;
+      const yearsToNext = profile.lifespanYears - estimatedAge;
+      const replacementYear = currentYear + yearsToNext;
+
+      if (replacementYear <= currentYear + forecastYears) {
+        events.push({
+          year: replacementYear,
+          label: `${profile.label} — Est. Replacement`,
+          cost: profile.replacementCost,
+          category: profile.category,
+          isPersonalized: false,
+        });
+      }
     }
   });
 
-  // 3. Calculate annual baseline (ongoing maintenance)
-  let annualBaseline = homeValue * 0.01; // 1% rule
+  // 3. Calculate annual baseline
+  let annualBaseline = homeValue * 0.01;
 
-  // Add specific annual maintenance costs
   Object.entries(ANNUAL_MAINTENANCE).forEach(([cat, cost]) => {
     if (!personalizedCategories.has(cat)) {
-      annualBaseline += cost;
+      // If registry exists, only add if system is enabled
+      if (hasRegistry) {
+        const matchingProfile = SYSTEM_PROFILES.find((p) => p.category === cat);
+        if (matchingProfile && homeSystems![matchingProfile.key]?.enabled) {
+          annualBaseline += cost;
+        }
+      } else {
+        annualBaseline += cost;
+      }
     }
   });
 
-  // Reduce baseline to avoid double-counting with the 1% rule
   annualBaseline = Math.max(annualBaseline, homeValue * 0.01);
 
   // 4. Build yearly totals
@@ -182,43 +220,65 @@ export function calculateForecast(
     });
   }
 
-  // 5. Calculate recommended monthly savings
+  // 5. Recommended monthly savings
   const recommendedMonthlySavings = Math.round(totalOverForecast / (forecastYears * 12));
 
-  // 6. Calculate confidence score
+  // 6. Confidence score
   let confidence = 20; // Base: having a property
+  if (registryCompleted) confidence += 15;
   if (property.purchase_price) confidence += 15;
 
-  const documentedSystems = new Set(normalizedItems.map((i) => i.category));
-  MAJOR_SYSTEM_CATEGORIES.forEach((cat) => {
-    if (documentedSystems.has(cat)) confidence += 10;
-  });
+  const documentedSystems = new Set(normalizedItems.filter((i) => i.install_date).map((i) => i.category));
 
-  // Additional items with install dates
-  const itemsWithDates = normalizedItems.filter((i) => i.install_date && !MAJOR_SYSTEM_CATEGORIES.includes(i.category));
+  // +10 per enabled system with personalized data
+  if (hasRegistry) {
+    SYSTEM_PROFILES.forEach((p) => {
+      if (homeSystems![p.key]?.enabled && documentedSystems.has(p.category)) {
+        confidence += 10;
+      }
+    });
+  } else {
+    MAJOR_SYSTEM_CATEGORIES.forEach((cat) => {
+      if (documentedSystems.has(cat)) confidence += 10;
+    });
+  }
+
+  // Additional items with dates (non-major)
+  const itemsWithDates = normalizedItems.filter(
+    (i) => i.install_date && !MAJOR_SYSTEM_CATEGORIES.includes(i.category)
+  );
   confidence += Math.min(itemsWithDates.length * 5, 15);
-
   confidence = Math.min(confidence, 100);
 
-  // 7. Suggest most impactful items to add or update
+  // 7. Suggested items
   const suggestedItems: { label: string; impact: string }[] = [];
 
+  if (!registryCompleted) {
+    suggestedItems.push({
+      label: "Set up your home systems",
+      impact: "Immediately improves accuracy by ~15%",
+    });
+  }
+
   if (!property.purchase_price) {
-    suggestedItems.push({ label: "Set your home's purchase price", impact: "Improves baseline estimate by 15%" });
+    suggestedItems.push({
+      label: "Set your home's purchase price",
+      impact: "Improves baseline estimate by 15%",
+    });
   }
 
   SYSTEM_PROFILES.forEach((profile) => {
-    if (personalizedCategories.has(profile.category)) return; // fully tracked, skip
+    // Only suggest for enabled systems (or all if no registry)
+    if (hasRegistry && !homeSystems![profile.key]?.enabled) return;
+    if (personalizedCategories.has(profile.category)) return;
 
     const existingItem = normalizedItems.find((i) => i.category === profile.category);
     if (existingItem) {
-      // Component exists but missing install_date — suggest updating it
       suggestedItems.push({
         label: `Update your ${profile.label.toLowerCase()} install date`,
         impact: `Personalizes $${profile.annualCost}/yr in predictions`,
       });
     } else {
-      // No component at all — suggest adding one
       suggestedItems.push({
         label: `Add your ${profile.label.toLowerCase()} details`,
         impact: `Personalizes $${profile.annualCost}/yr in predictions`,
@@ -226,8 +286,10 @@ export function calculateForecast(
     }
   });
 
-  // Sort by impact (systems with highest annual cost first)
+  // Sort: registry setup first, then purchase price, then rest
   suggestedItems.sort((a, b) => {
+    if (a.label.includes("home systems")) return -1;
+    if (b.label.includes("home systems")) return 1;
     if (a.label.includes("purchase price")) return -1;
     if (b.label.includes("purchase price")) return 1;
     return 0;

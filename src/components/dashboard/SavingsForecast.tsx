@@ -25,7 +25,7 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("id, year_built, purchase_price, sqft")
+        .select("id, year_built, purchase_price, sqft, home_systems, registry_completed")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data;
@@ -65,7 +65,13 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
     estimated_value: i.estimated_value ? Number(i.estimated_value) : null,
   }));
 
-  const forecast = calculateForecast(propertyInfo, items);
+  const forecast = calculateForecast(
+    propertyInfo,
+    items,
+    10,
+    (primary as any).home_systems || null,
+    (primary as any).registry_completed || false
+  );
 
   // Chart data
   const chartData = forecast.yearlyTotals.map((yt) => ({
@@ -225,7 +231,7 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
                   key={i}
                   className="w-full flex items-center justify-between rounded-lg border border-border/50 bg-background px-3 py-2.5 text-left hover:border-accent/50 transition-colors group"
                   onClick={() => {
-                    if (item.label.includes("purchase price")) {
+                    if (item.label.includes("home systems") || item.label.includes("purchase price")) {
                       onNavigate?.("properties");
                     } else {
                       const matchedProfile = SYSTEM_PROFILES.find(

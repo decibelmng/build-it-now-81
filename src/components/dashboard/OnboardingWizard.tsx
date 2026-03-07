@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Home, ArrowRight, CheckCircle2, MapPin, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
+import SystemsToggleGrid from "./SystemsToggleGrid";
+import { getDefaultRegistry, syncRegistryToInventory, type HomeSystemsRegistry } from "@/lib/homeSystemsRegistry";
 
 const propertyTypes = [
   { value: "single_family", label: "Single Family" },
@@ -28,18 +30,22 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
+  const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "", address: "", city: "", state: "", zip: "",
     property_type: "single_family", bedrooms: "", bathrooms: "", sqft: "", year_built: "",
     latitude: null as number | null, longitude: null as number | null,
   });
+  const [systemsRegistry, setSystemsRegistry] = useState<HomeSystemsRegistry>({});
+  const [savingSystems, setSavingSystems] = useState(false);
+
   const { predictions, loading: acLoading, search: acSearch, getDetails, clear: acClear } = useAddressAutocomplete();
   const [showPredictions, setShowPredictions] = useState(false);
   const addressWrapperRef = useRef<HTMLDivElement>(null);
 
   const addProperty = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("properties").insert({
+      const { data, error } = await supabase.from("properties").insert({
         user_id: user!.id,
         name: form.name,
         address: form.address,
@@ -53,11 +59,15 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
         year_built: form.year_built ? parseInt(form.year_built) : null,
         latitude: form.latitude,
         longitude: form.longitude,
-      });
+      } as any).select("id").single();
       if (error) throw error;
+      return data.id;
     },
-    onSuccess: () => {
+    onSuccess: (propertyId: string) => {
+      setCreatedPropertyId(propertyId);
       queryClient.invalidateQueries({ queryKey: ["properties"] });
+      // Initialize default registry for the property type
+      setSystemsRegistry(getDefaultRegistry(form.property_type));
       setStep(2);
     },
     onError: (err: Error) => {
@@ -65,6 +75,31 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     },
   });
 
+  const handleSaveSystems = async () => {
+    if (!createdPropertyId || !user) return;
+    setSavingSystems(true);
+    try {
+      // Save registry to property
+      const { error } = await supabase
+        .from("properties")
+        .update({ home_systems: systemsRegistry, registry_completed: true } as any)
+        .eq("id", createdPropertyId);
+      if (error) throw error;
+
+      // Sync to inventory (create skeletons)
+      await syncRegistryToInventory(createdPropertyId, user.id, systemsRegistry, []);
+
+      queryClient.invalidateQueries({ queryKey: ["properties"] });
+      queryClient.invalidateQueries({ queryKey: ["home_items"] });
+      setStep(3);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingSystems(false);
+    }
+  };
+
+  // Step 0: Welcome
   if (step === 0) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -95,7 +130,47 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     );
   }
 
+  // Step 2: Systems setup
   if (step === 2) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Card className="max-w-2xl w-full border-border/50 shadow-premium">
+          <CardContent className="p-6">
+            <h2 className="mb-1 font-display text-xl font-bold">What does your home have?</h2>
+            <p className="mb-5 font-body text-sm text-muted-foreground">
+              Toggle the systems in your home. This powers your personalized savings forecast.
+            </p>
+
+            <SystemsToggleGrid
+              registry={systemsRegistry}
+              onChange={setSystemsRegistry}
+              showAccuracy
+            />
+
+            <div className="flex gap-3 pt-6">
+              <button
+                onClick={() => setStep(3)}
+                className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Skip for now
+              </button>
+              <Button
+                onClick={handleSaveSystems}
+                disabled={savingSystems}
+                className="flex-1 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold"
+              >
+                {savingSystems ? "Saving..." : "Continue to Dashboard"}
+                {!savingSystems && <ArrowRight className="ml-2 h-4 w-4" />}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Step 3: Success
+  if (step === 3) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Card className="max-w-md w-full border-border/50 shadow-premium">
@@ -119,6 +194,7 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     );
   }
 
+  // Step 1: Property form
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <Card className="max-w-lg w-full border-border/50 shadow-premium">

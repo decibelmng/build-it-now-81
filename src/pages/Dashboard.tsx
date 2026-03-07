@@ -165,7 +165,7 @@ const Dashboard = () => {
         <div className="mx-auto max-w-5xl px-3 py-4 sm:px-8 sm:py-8">
           <Suspense fallback={<div className="p-8"><div className="h-8 w-48 rounded bg-muted animate-pulse mb-4" /><div className="h-64 rounded bg-muted animate-pulse" /></div>}>
             {activeSection === "overview" && <DashboardOverview onNavigate={(s: string) => setActiveSection(s as Section)} />}
-            {activeSection === "properties" && <PropertyCards />}
+            {activeSection === "properties" && <PropertyCards onNavigate={(s: string) => setActiveSection(s as Section)} />}
             {activeSection === "home-inventory" && <HomeInventoryPage />}
             {activeSection === "maintenance" && <MaintenanceLogSection onNavigate={(s: string) => setActiveSection(s as Section)} />}
             {activeSection === "documents" && <DocumentsHub />}

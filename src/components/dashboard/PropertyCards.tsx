@@ -15,6 +15,7 @@ import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
 import type { Tables } from "@/integrations/supabase/types";
 import PurchaseInfoSection from "@/components/dashboard/PurchaseInfoSection";
 import CostBasisSummarySection from "@/components/dashboard/CostBasisSummarySection";
+import HomeSystemsSettings from "@/components/dashboard/HomeSystemsSettings";
 
 type Property = Tables<"properties">;
 
@@ -26,7 +27,11 @@ const propertyTypes = [
   { value: "other", label: "Other" },
 ];
 
-const PropertyCards = () => {
+interface PropertyCardsProps {
+  onNavigate?: (section: string) => void;
+}
+
+const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -376,11 +381,18 @@ const PropertyCards = () => {
             ))}
           </div>
 
-          {/* Purchase Info for selected property */}
+          {/* Property details for selected property */}
           {selectedPropertyId && (
-            <div className="mt-6">
+            <div className="mt-6 space-y-6">
               <PurchaseInfoSection
                 property={properties.find((p) => p.id === selectedPropertyId)!}
+              />
+              <HomeSystemsSettings
+                propertyId={selectedPropertyId}
+                propertyType={properties.find((p) => p.id === selectedPropertyId)?.property_type || "single_family"}
+                homeSystems={(properties.find((p) => p.id === selectedPropertyId) as any)?.home_systems || null}
+                registryCompleted={(properties.find((p) => p.id === selectedPropertyId) as any)?.registry_completed || false}
+                onNavigate={onNavigate}
               />
               <CostBasisSummarySection propertyId={selectedPropertyId} />
             </div>
