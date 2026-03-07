@@ -15,7 +15,7 @@ import {
   Plus, Package, Zap, Droplets, Wind, Refrigerator, Trash2, Edit2,
   AlertTriangle, Gem, Upload, FileText, Image, Download, Loader2, Paperclip, X, Lock, Circle, Shield
 } from "lucide-react";
-import * as Icons from "lucide-react";
+
 import { useToast } from "@/hooks/use-toast";
 import UpgradeModal from "./UpgradeModal";
 import { format, differenceInDays, differenceInMonths, isPast } from "date-fns";
