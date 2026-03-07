@@ -20,6 +20,19 @@ export const SYSTEM_PROFILES: SystemCostProfile[] = [
   { label: "Flooring", category: "structural", replacementCost: 3000, lifespanYears: 20, annualCost: 150 },
 ];
 
+// Map variant category names to their canonical SYSTEM_PROFILES category
+const CATEGORY_ALIASES: Record<string, string> = {
+  roof: "roofing",
+  "hvac system": "hvac",
+  "hvac_system": "hvac",
+};
+
+/** Normalize a category to its canonical form */
+export function normalizeCategory(cat: string): string {
+  const lower = cat.toLowerCase().trim();
+  return CATEGORY_ALIASES[lower] || lower;
+}
+
 export const ANNUAL_MAINTENANCE: Record<string, number> = {
   plumbing: 300,
   electrical: 200,
@@ -75,7 +88,13 @@ export function calculateForecast(
   const events: ForecastEvent[] = [];
 
   // 1. Process tracked home items for personalized predictions
-  homeItems.forEach((item) => {
+  // Normalize item categories for matching against SYSTEM_PROFILES
+  const normalizedItems = homeItems.map((item) => ({
+    ...item,
+    category: normalizeCategory(item.category),
+  }));
+
+  normalizedItems.forEach((item) => {
     if (!item.install_date) return;
 
     const installYear = new Date(item.install_date).getFullYear();
@@ -170,20 +189,19 @@ export function calculateForecast(
   let confidence = 20; // Base: having a property
   if (property.purchase_price) confidence += 15;
 
-  const documentedSystems = new Set(homeItems.map((i) => i.category));
+  const documentedSystems = new Set(normalizedItems.map((i) => i.category));
   MAJOR_SYSTEM_CATEGORIES.forEach((cat) => {
     if (documentedSystems.has(cat)) confidence += 10;
   });
 
   // Additional items with install dates
-  const itemsWithDates = homeItems.filter((i) => i.install_date && !MAJOR_SYSTEM_CATEGORIES.includes(i.category));
+  const itemsWithDates = normalizedItems.filter((i) => i.install_date && !MAJOR_SYSTEM_CATEGORIES.includes(i.category));
   confidence += Math.min(itemsWithDates.length * 5, 15);
 
   confidence = Math.min(confidence, 100);
 
   // 7. Suggest most impactful items to add or update
   const suggestedItems: { label: string; impact: string }[] = [];
-  const allItemCategories = new Set(homeItems.map((i) => i.category));
 
   if (!property.purchase_price) {
     suggestedItems.push({ label: "Set your home's purchase price", impact: "Improves baseline estimate by 15%" });
@@ -192,7 +210,7 @@ export function calculateForecast(
   SYSTEM_PROFILES.forEach((profile) => {
     if (personalizedCategories.has(profile.category)) return; // fully tracked, skip
 
-    const existingItem = homeItems.find((i) => i.category === profile.category);
+    const existingItem = normalizedItems.find((i) => i.category === profile.category);
     if (existingItem) {
       // Component exists but missing install_date — suggest updating it
       suggestedItems.push({

@@ -11,6 +11,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { calculateForecast } from "@/lib/savingsForecast";
 import type { HomeItem, PropertyInfo } from "@/lib/savingsForecast";
 import { SYSTEM_PROFILES } from "@/lib/savingsForecast";
+import { setPendingInventoryAction } from "@/lib/pendingInventoryAction";
 
 interface SavingsForecastProps {
   onNavigate?: (section: string) => void;
@@ -231,17 +232,12 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
                         (p) => item.label.toLowerCase().includes(p.label.toLowerCase())
                       );
                       const isUpdate = item.label.startsWith("Update");
+                      setPendingInventoryAction({
+                        category: matchedProfile?.category || "general",
+                        mode: isUpdate ? "edit" : "add",
+                        timestamp: Date.now(),
+                      });
                       onNavigate?.("home-inventory");
-                      setTimeout(() => {
-                        window.dispatchEvent(
-                          new CustomEvent("add-home-component", {
-                            detail: {
-                              category: matchedProfile?.category || "general",
-                              mode: isUpdate ? "edit" : "add",
-                            },
-                          })
-                        );
-                      }, 150);
                     }
                   }}
                 >
