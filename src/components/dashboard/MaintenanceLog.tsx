@@ -111,6 +111,42 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     enabled: !!user,
   });
 
+  const firstPropertyId = properties.length > 0 ? properties[0].id : undefined;
+  const { defaultLink, ensureDefault, linkUrl: defaultLinkUrl } = useDefaultContractorLink(firstPropertyId);
+
+  // Auto-create default link on load
+  useEffect(() => {
+    ensureDefault();
+  }, [firstPropertyId, defaultLink]);
+
+  // Query pending contractor submissions
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ["pending_submissions_count", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contractor_submissions")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (error) throw error;
+      return data?.length ?? 0;
+    },
+    enabled: !!user,
+  });
+
+  // Use count from header for accurate count
+  const { data: pendingSubmissionsCount = 0 } = useQuery({
+    queryKey: ["pending_submissions_exact_count", user?.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("contractor_submissions")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!user,
+  });
+
   const { data: contacts = [] } = useQuery({
     queryKey: ["home_contacts", user?.id],
     queryFn: async () => {
