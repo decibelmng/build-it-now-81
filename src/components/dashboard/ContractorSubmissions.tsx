@@ -394,7 +394,6 @@ const ContractorSubmissions = () => {
           componentName={componentUpdateData.componentType}
           componentType={componentUpdateData.componentType}
           isNewComponent={componentUpdateData.isNewComponent}
-          logTitle={componentUpdateData.logTitle}
           logId=""
           logDate={componentUpdateData.logDate || ""}
           logCost={String(componentUpdateData.logCost || "")}
