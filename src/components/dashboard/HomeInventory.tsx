@@ -45,6 +45,7 @@ const personalItemCategories = [
 interface HomeInventoryProps {
   propertyId: string;
   itemType?: "home_component" | "personal_item";
+  warrantyFilter?: boolean;
 }
 
 const emptyItemForm = {
@@ -53,7 +54,7 @@ const emptyItemForm = {
   estimated_value: "", item_type: "" as "home_component" | "personal_item" | "",
 };
 
-const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventoryProps) => {
+const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter = false }: HomeInventoryProps) => {
   const itemCategories = itemType === "personal_item" ? personalItemCategories : homeComponentCategories;
   const { user } = useAuth();
   const { toast } = useToast();
@@ -72,15 +73,21 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
   const [fileDragOver, setFileDragOver] = useState(false);
 
   const { data: items = [], isLoading: itemsLoading } = useQuery({
-    queryKey: ["home_items", propertyId, itemType],
+    queryKey: ["home_items", propertyId, itemType, warrantyFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("home_items")
         .select("*")
         .eq("property_id", propertyId)
         .eq("item_type", itemType)
         .order("category", { ascending: true })
         .order("name", { ascending: true });
+      if (warrantyFilter) {
+        const future = new Date();
+        future.setDate(future.getDate() + 90);
+        query = query.not("warranty_expiry", "is", null).lte("warranty_expiry", future.toISOString().split("T")[0]);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -640,7 +647,12 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
                                 {item.install_date && <span><strong>Installed:</strong> {format(new Date(item.install_date), "MMM yyyy")}</span>}
                                 {item.last_maintained && <span><strong>Last maintained:</strong> {format(new Date(item.last_maintained), "MMM d, yyyy")}</span>}
                                 {item.expected_replacement && <span><strong>Replace by:</strong> {format(new Date(item.expected_replacement), "MMM yyyy")}</span>}
-                                {item.warranty_expiry && <span><strong>Warranty:</strong> {format(new Date(item.warranty_expiry), "MMM yyyy")}</span>}
+                                {item.warranty_expiry && (
+                                  <span className={isPast(new Date(item.warranty_expiry)) ? "text-destructive/60" : ""}>
+                                    <strong>Warranty:</strong> {format(new Date(item.warranty_expiry), "MMM yyyy")}
+                                    {isPast(new Date(item.warranty_expiry)) && " (expired)"}
+                                  </span>
+                                )}
                                 {item.estimated_value && <span><strong>Value:</strong> ${Number(item.estimated_value).toLocaleString()}</span>}
                               </div>
                               {item.notes && (
