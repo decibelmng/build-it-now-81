@@ -440,7 +440,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         }
       }
 
-
+      for (const uploaded of uploadedPaths) {
         if (logId) {
           await indexMaintenancePhoto({
             file_path: uploaded.path,
