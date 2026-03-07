@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CATEGORY_GROUPS, CATEGORY_LABELS } from "./constants";
 import { UNIVERSAL_FILE_ACCEPT, isImageFile, fileTypeLabel } from "@/lib/fileUploadConstants";
 import FilePicker from "@/components/ui/file-picker";
+import { SYSTEMS_CATALOG } from "@/lib/homeSystemsRegistry";
 
 interface Props {
   open: boolean;
@@ -39,6 +40,7 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
     maintenance_log_id: defaultLinkKey === "maintenance_log_id" ? (defaultLinkValue || "") : "",
     home_item_id: defaultLinkKey === "home_item_id" ? (defaultLinkValue || "") : "",
     contact_id: "",
+    system_key: "",
   });
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -94,6 +96,18 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
     enabled: !!user && !!form.property_id,
   });
 
+  // Auto-populate system_key when home_item or maintenance_log is selected
+  const selectedItem = inventoryItems.find((i: any) => i.id === form.home_item_id);
+  const selectedLog = maintenanceLogs.find((l: any) => l.id === form.maintenance_log_id);
+
+  useEffect(() => {
+    if (form.home_item_id && selectedItem && (selectedItem as any).system_key) {
+      setForm(prev => ({ ...prev, system_key: (selectedItem as any).system_key?.split(":")[0] || "" }));
+    } else if (form.maintenance_log_id && selectedLog && (selectedLog as any).system_key) {
+      setForm(prev => ({ ...prev, system_key: (selectedLog as any).system_key || "" }));
+    }
+  }, [form.home_item_id, form.maintenance_log_id]);
+
   const handleUpload = async () => {
     if (!user || files.length === 0 || !form.property_id) return;
     setUploading(true);
@@ -131,6 +145,7 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
           maintenance_log_id: form.maintenance_log_id || null,
           home_item_id: form.home_item_id || null,
           contact_id: form.contact_id || null,
+          system_key: form.system_key || null,
         });
         if (insertError) throw insertError;
 
@@ -149,6 +164,7 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
         maintenance_log_id: "",
         home_item_id: "",
         contact_id: "",
+        system_key: "",
       });
       onComplete();
     } catch (err: any) {
@@ -268,6 +284,27 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
               placeholder="tag1, tag2, tag3"
               className="font-body"
             />
+          </div>
+
+          {/* System */}
+          <div className="space-y-2">
+            <Label className="font-body">System (optional)</Label>
+            <Select
+              value={form.system_key || "none"}
+              onValueChange={(v) => setForm({ ...form, system_key: v === "none" ? "" : v })}
+            >
+              <SelectTrigger className="font-body text-xs h-9">
+                <SelectValue placeholder="Select system" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none" className="font-body text-xs">No system</SelectItem>
+                {SYSTEMS_CATALOG.map((sys) => (
+                  <SelectItem key={sys.key} value={sys.key} className="font-body text-xs">
+                    {sys.icon} {sys.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Optional Linking */}

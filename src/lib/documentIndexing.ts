@@ -44,6 +44,7 @@ export async function indexDocument(params: {
   contractor_submission_id?: string | null;
   home_item_id?: string | null;
   contact_id?: string | null;
+  system_key?: string | null;
 }): Promise<void> {
   // Check for existing document with this file_path (idempotency)
   const { data: existing } = await supabase
@@ -71,6 +72,7 @@ export async function indexDocument(params: {
     contractor_submission_id: params.contractor_submission_id || null,
     home_item_id: params.home_item_id || null,
     contact_id: params.contact_id || null,
+    system_key: params.system_key || null,
   });
 }
 
@@ -120,6 +122,7 @@ export async function indexContractorSubmissionFiles(params: {
     photos?: string[] | null;
     receipt_files?: string[] | null;
     add_to_contacts?: boolean;
+    system_key?: string | null;
   };
   user_id: string;
   contact_id?: string | null;
@@ -150,6 +153,7 @@ export async function indexContractorSubmissionFiles(params: {
       context: "contractor",
       contractor_submission_id: submission.id,
       contact_id: contact_id || null,
+      system_key: submission.system_key || null,
     });
   }
 }

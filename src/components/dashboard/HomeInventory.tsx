@@ -511,6 +511,8 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     win.document.close();
   };
 
+  const [viewMode, setViewMode] = useState<"category" | "system">("system");
+
   // Group items by category
   const groupedItems = items.reduce((acc: Record<string, any[]>, item: any) => {
     const cat = item.category || "general";
@@ -518,6 +520,53 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     acc[cat].push(item);
     return acc;
   }, {});
+
+  // Group items by system for "Group by System" view
+  const systemGroupedItems = (() => {
+    if (viewMode !== "system" || itemType !== "home_component") return null;
+    const groups: Record<string, {
+      sys: typeof SYSTEMS_CATALOG[0];
+      instances: Record<number, any[]>;
+      uninstanced: any[];
+    }> = {};
+    
+    for (const item of items) {
+      const sysKey = item.system_key?.split(":")[0];
+      if (!sysKey) {
+        // Unlinked items
+        if (!groups["__unlinked__"]) {
+          groups["__unlinked__"] = { sys: { key: "__unlinked__", label: "Unlinked Items", icon: "📦", description: "", defaultEnabled: true, defaultEnabledCondo: true, quantityType: "none", components: [] } as any, instances: {}, uninstanced: [] };
+        }
+        groups["__unlinked__"].uninstanced.push(item);
+        continue;
+      }
+      
+      const sys = SYSTEMS_CATALOG.find((s) => s.key === sysKey);
+      if (!sys) continue;
+      
+      if (!groups[sysKey]) {
+        groups[sysKey] = { sys, instances: {}, uninstanced: [] };
+      }
+      
+      const inst = item.system_instance;
+      if (inst && inst > 0) {
+        if (!groups[sysKey].instances[inst]) groups[sysKey].instances[inst] = [];
+        groups[sysKey].instances[inst].push(item);
+      } else {
+        groups[sysKey].uninstanced.push(item);
+      }
+    }
+    return groups;
+  })();
+
+  const [expandedSystems, setExpandedSystems] = useState<Set<string>>(new Set(SYSTEMS_CATALOG.map(s => s.key)));
+  const toggleSystemExpand = (key: string) => {
+    setExpandedSystems(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
 
   const isImageType = (type: string | null) => type?.startsWith("image/");
 
@@ -565,6 +614,22 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                 ? "Track personal belongings for insurance and record-keeping."
                 : "Track every component in your home — ages, serial numbers, maintenance dates, and replacements."}
             </p>
+            {itemType === "home_component" && items.length > 0 && (
+              <div className="flex mt-2 rounded-lg border border-border p-0.5 w-fit">
+                <button
+                  className={`px-3 py-1 rounded-md text-xs font-body font-medium transition-colors ${viewMode === "system" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setViewMode("system")}
+                >
+                  System
+                </button>
+                <button
+                  className={`px-3 py-1 rounded-md text-xs font-body font-medium transition-colors ${viewMode === "category" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setViewMode("category")}
+                >
+                  Category
+                </button>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             {items.length > 0 && (
@@ -791,6 +856,131 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
             </CardContent>
           </Card>
         ) : (
+          viewMode === "system" && systemGroupedItems ? (
+            (() => {
+              const systemOrder = SYSTEMS_CATALOG.map((s) => s.key);
+              const allKeys = [...systemOrder.filter((k) => systemGroupedItems[k]), ...(systemGroupedItems["__unlinked__"] ? ["__unlinked__"] : [])];
+              
+              return allKeys.map((sysKey) => {
+                const group = systemGroupedItems[sysKey];
+                if (!group) return null;
+                const { sys, instances, uninstanced } = group;
+                const allItems = [...uninstanced, ...Object.values(instances).flat()];
+                const isExpanded = expandedSystems.has(sysKey);
+                const avgCompleteness = allItems.length > 0 ? Math.round(allItems.reduce((sum, i) => sum + (i.data_completeness || 0), 0) / allItems.length) : 0;
+
+                const renderItem = (item: any) => {
+                  const status = getReplacementStatus(item.expected_replacement);
+                  const itemAttachments = allAttachments.filter((a: any) => a.home_item_id === item.id);
+                  const isAttExpanded = expandedAttachments === item.id;
+                  const freshness = getFreshnessIndicator(item.last_updated_at);
+                  const completeness = item.data_completeness ?? 0;
+                  const completenessRadius = 14;
+                  const completenessCircumference = 2 * Math.PI * completenessRadius;
+                  const completenessOffset = completenessCircumference - (completeness / 100) * completenessCircumference;
+                  return (
+                    <Card key={item.id} className="border-border/50">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h5 className="font-body text-sm font-semibold">{item.name}</h5>
+                              <div className="relative inline-flex items-center justify-center" title={`${completeness}% complete`}>
+                                <svg width="32" height="32" className="-rotate-90">
+                                  <circle cx="16" cy="16" r={completenessRadius} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                                  <circle cx="16" cy="16" r={completenessRadius} fill="none" stroke="hsl(var(--accent))" strokeWidth="3" strokeDasharray={completenessCircumference} strokeDashoffset={completenessOffset} strokeLinecap="round" />
+                                </svg>
+                                <span className="absolute font-body text-[8px] font-bold">{completeness}%</span>
+                              </div>
+                              {status && <Badge variant={status.variant} className="text-[10px] px-1.5 py-0"><AlertTriangle className="mr-1 h-3 w-3" />{status.label}</Badge>}
+                              {item.warranty_expiry && isPast(new Date(item.warranty_expiry)) && <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">Warranty expired</Badge>}
+                              {itemAttachments.length > 0 && <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground"><Paperclip className="mr-1 h-3 w-3" />{itemAttachments.length}</Badge>}
+                            </div>
+                            {freshness && (
+                              <div className="mt-1 flex items-center gap-1.5">
+                                <Circle className={`h-2 w-2 ${freshness.fill} ${freshness.color} shrink-0`} />
+                                <span className={`font-body text-[10px] ${freshness.color}`}>{freshness.label}</span>
+                              </div>
+                            )}
+                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-body text-xs text-muted-foreground">
+                              {item.brand && <span><strong>Manufacturer:</strong> {item.brand}</span>}
+                              {item.model && <span><strong>Model:</strong> {item.model}</span>}
+                              {item.serial_number && <span><strong>S/N:</strong> {item.serial_number}</span>}
+                            </div>
+                            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-body text-xs text-muted-foreground">
+                              {item.install_date && <span><strong>Installed:</strong> {format(new Date(item.install_date), "MMM yyyy")}</span>}
+                              {item.last_maintained && <span><strong>Last maintained:</strong> {format(new Date(item.last_maintained), "MMM d, yyyy")}</span>}
+                              {item.expected_replacement && <span><strong>Replace by:</strong> {format(new Date(item.expected_replacement), "MMM yyyy")}</span>}
+                              {item.warranty_expiry && (
+                                <span className={isPast(new Date(item.warranty_expiry)) ? "text-destructive/60" : ""}>
+                                  <strong>Warranty:</strong> {format(new Date(item.warranty_expiry), "MMM yyyy")}
+                                  {isPast(new Date(item.warranty_expiry)) && " (expired)"}
+                                </span>
+                              )}
+                            </div>
+                            {item.notes && <p className="mt-1 font-body text-xs text-muted-foreground italic">{item.notes}</p>}
+                          </div>
+                          <div className="flex gap-1 shrink-0">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleFileUpload(item.id)} disabled={uploadAttachment.isPending && uploadingFor === item.id} title="Upload">
+                              {uploadAttachment.isPending && uploadingFor === item.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditItem(item)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteItem.mutate(item.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                          </div>
+                        </div>
+                        {itemAttachments.length > 0 && (
+                          <div className="mt-3 border-t border-border/50 pt-3">
+                            <button onClick={() => setExpandedAttachments(isAttExpanded ? null : item.id)} className="font-body text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                              <Paperclip className="h-3 w-3" /> {itemAttachments.length} attachment{itemAttachments.length !== 1 ? "s" : ""} <span className="ml-1">{isAttExpanded ? "▾" : "▸"}</span>
+                            </button>
+                            {isAttExpanded && (
+                              <div className="mt-2 space-y-3">
+                                <div className="flex flex-wrap gap-2">{itemAttachments.map((att: any) => <AttachmentItem key={att.id} att={att} />)}</div>
+                                <LinkedDocuments homeItemId={item.id} propertyId={propertyId} defaultCategory="inventory_photo" />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {itemType === "home_component" && <ComponentMaintenanceHistory componentId={item.id} propertyId={propertyId} component={item} />}
+                      </CardContent>
+                    </Card>
+                  );
+                };
+
+                return (
+                  <div key={sysKey}>
+                    <button
+                      onClick={() => toggleSystemExpand(sysKey)}
+                      className="w-full flex items-center justify-between gap-2 mb-2 group"
+                    >
+                      <h4 className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                        <span>{sys.icon}</span> {sys.label}
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{allItems.length}</Badge>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">{avgCompleteness}% avg</Badge>
+                      </h4>
+                      <span className="text-muted-foreground text-xs">{isExpanded ? "▾" : "▸"}</span>
+                    </button>
+                    {isExpanded && (
+                      <div className="space-y-2 ml-2 border-l-2 border-border/30 pl-3">
+                        {Object.keys(instances).length > 1 ? (
+                          Object.entries(instances).sort(([a], [b]) => Number(a) - Number(b)).map(([inst, instItems]) => (
+                            <div key={inst}>
+                              <p className="font-body text-xs font-medium text-muted-foreground mb-1.5">
+                                {sysKey === "bathrooms" ? `Bathroom ${inst}` : `Zone ${inst}`}
+                              </p>
+                              <div className="space-y-2">{instItems.map(renderItem)}</div>
+                            </div>
+                          ))
+                        ) : null}
+                        {Object.keys(instances).length <= 1 && Object.values(instances).flat().map(renderItem)}
+                        {uninstanced.map(renderItem)}
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            })()
+          ) : (
           Object.entries(groupedItems).map(([cat, catItems]) => {
             const catInfo = itemCategories.find((c) => c.value === cat);
             const CatIcon = catInfo?.icon || Package;
@@ -803,7 +993,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                   {(catItems as any[]).map((item) => {
                     const status = getReplacementStatus(item.expected_replacement);
                     const itemAttachments = allAttachments.filter((a: any) => a.home_item_id === item.id);
-                    const isExpanded = expandedAttachments === item.id;
+                    const isExpanded2 = expandedAttachments === item.id;
                     const freshness = itemType === "home_component" ? getFreshnessIndicator(item.last_updated_at) : null;
                     const completeness = item.data_completeness ?? 0;
                     const completenessRadius = 14;
@@ -816,40 +1006,19 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h5 className="font-body text-sm font-semibold">{item.name}</h5>
-                                {/* Completeness Badge */}
                                 {itemType === "home_component" && (
                                   <div className="relative inline-flex items-center justify-center" title={`${completeness}% complete`}>
                                     <svg width="32" height="32" className="-rotate-90">
                                       <circle cx="16" cy="16" r={completenessRadius} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
-                                      <circle
-                                        cx="16" cy="16" r={completenessRadius} fill="none"
-                                        stroke="hsl(var(--accent))"
-                                        strokeWidth="3"
-                                        strokeDasharray={completenessCircumference}
-                                        strokeDashoffset={completenessOffset}
-                                        strokeLinecap="round"
-                                      />
+                                      <circle cx="16" cy="16" r={completenessRadius} fill="none" stroke="hsl(var(--accent))" strokeWidth="3" strokeDasharray={completenessCircumference} strokeDashoffset={completenessOffset} strokeLinecap="round" />
                                     </svg>
                                     <span className="absolute font-body text-[8px] font-bold">{completeness}%</span>
                                   </div>
                                 )}
-                                {status && (
-                                  <Badge variant={status.variant} className="text-[10px] px-1.5 py-0">
-                                    <AlertTriangle className="mr-1 h-3 w-3" />{status.label}
-                                  </Badge>
-                                )}
-                                {item.warranty_expiry && isPast(new Date(item.warranty_expiry)) && (
-                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
-                                    Warranty expired
-                                  </Badge>
-                                )}
-                                {itemAttachments.length > 0 && (
-                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
-                                    <Paperclip className="mr-1 h-3 w-3" />{itemAttachments.length}
-                                  </Badge>
-                                )}
+                                {status && <Badge variant={status.variant} className="text-[10px] px-1.5 py-0"><AlertTriangle className="mr-1 h-3 w-3" />{status.label}</Badge>}
+                                {item.warranty_expiry && isPast(new Date(item.warranty_expiry)) && <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">Warranty expired</Badge>}
+                                {itemAttachments.length > 0 && <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground"><Paperclip className="mr-1 h-3 w-3" />{itemAttachments.length}</Badge>}
                               </div>
-                              {/* Freshness Indicator */}
                               {freshness && (
                                 <div className="mt-1 flex items-center gap-1.5">
                                   <Circle className={`h-2 w-2 ${freshness.fill} ${freshness.color} shrink-0`} />
@@ -873,66 +1042,30 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                                 )}
                                 {item.estimated_value && <span><strong>Value:</strong> ${Number(item.estimated_value).toLocaleString()}</span>}
                               </div>
-                              {item.notes && (
-                                <p className="mt-1 font-body text-xs text-muted-foreground italic">{item.notes}</p>
-                              )}
+                              {item.notes && <p className="mt-1 font-body text-xs text-muted-foreground italic">{item.notes}</p>}
                             </div>
                             <div className="flex gap-1 shrink-0">
-                              <Button
-                                variant="ghost" size="icon" className="h-8 w-8"
-                                onClick={() => handleFileUpload(item.id)}
-                                disabled={uploadAttachment.isPending && uploadingFor === item.id}
-                                title="Upload photo, receipt, or document"
-                              >
-                                {uploadAttachment.isPending && uploadingFor === item.id
-                                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                  : <Upload className="h-3.5 w-3.5" />}
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleFileUpload(item.id)} disabled={uploadAttachment.isPending && uploadingFor === item.id} title="Upload">
+                                {uploadAttachment.isPending && uploadingFor === item.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditItem(item)}>
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteItem.mutate(item.id)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditItem(item)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteItem.mutate(item.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                             </div>
                           </div>
-
-                          {/* Attachments row */}
                           {itemAttachments.length > 0 && (
                             <div className="mt-3 border-t border-border/50 pt-3">
-                              <button
-                                onClick={() => setExpandedAttachments(isExpanded ? null : item.id)}
-                                className="font-body text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                              >
-                                <Paperclip className="h-3 w-3" />
-                                {itemAttachments.length} attachment{itemAttachments.length !== 1 ? "s" : ""}
-                                <span className="ml-1">{isExpanded ? "▾" : "▸"}</span>
+                              <button onClick={() => setExpandedAttachments(isExpanded2 ? null : item.id)} className="font-body text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                                <Paperclip className="h-3 w-3" /> {itemAttachments.length} attachment{itemAttachments.length !== 1 ? "s" : ""} <span className="ml-1">{isExpanded2 ? "▾" : "▸"}</span>
                               </button>
-                              {isExpanded && (
+                              {isExpanded2 && (
                                 <div className="mt-2 space-y-3">
-                                  <div className="flex flex-wrap gap-2">
-                                    {itemAttachments.map((att: any) => (
-                                      <AttachmentItem key={att.id} att={att} />
-                                    ))}
-                                  </div>
-                                  <LinkedDocuments
-                                    homeItemId={item.id}
-                                    propertyId={propertyId}
-                                    defaultCategory="inventory_photo"
-                                  />
+                                  <div className="flex flex-wrap gap-2">{itemAttachments.map((att: any) => <AttachmentItem key={att.id} att={att} />)}</div>
+                                  <LinkedDocuments homeItemId={item.id} propertyId={propertyId} defaultCategory="inventory_photo" />
                                 </div>
                               )}
                             </div>
                           )}
-
-                          {/* Maintenance History (home components only) */}
-                          {itemType === "home_component" && (
-                            <ComponentMaintenanceHistory
-                              componentId={item.id}
-                              propertyId={propertyId}
-                              component={item}
-                            />
-                          )}
+                          {itemType === "home_component" && <ComponentMaintenanceHistory componentId={item.id} propertyId={propertyId} component={item} />}
                         </CardContent>
                       </Card>
                     );
@@ -941,6 +1074,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
               </div>
             );
           })
+          )
         )}
 
         {/* Skeleton cards for systems needing details — grouped by parent system */}
