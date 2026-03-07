@@ -220,21 +220,50 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     enabled: !!user,
   });
 
-  // Fetch home components for the selected property
+  // Fetch home components for the selected property (with system_key for grouping)
   const { data: homeComponents = [] } = useQuery({
     queryKey: ["home_components_for_property", form.property_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_items")
-        .select("id, name, category, item_type, data_completeness, install_date, brand, model, warranty_expiry, last_maintained, notes, estimated_value")
+        .select("id, name, category, item_type, data_completeness, install_date, brand, model, warranty_expiry, last_maintained, notes, estimated_value, system_key, system_instance")
         .eq("property_id", form.property_id)
         .eq("item_type", "home_component")
+        .or("is_active.is.null,is_active.eq.true")
         .order("name");
       if (error) throw error;
       return data;
     },
     enabled: !!form.property_id,
   });
+
+  // Fetch property registry for dynamic categories (Prompt 7)
+  const selectedProperty = properties.find((p) => p.id === form.property_id);
+  const rawPropSystems = (selectedProperty as any)?.home_systems || null;
+  const propRegistry = rawPropSystems ? (migrateOldRegistry(rawPropSystems) || rawPropSystems as HomeSystemsRegistry) : null;
+  const propRegistryCompleted = (selectedProperty as any)?.registry_completed || false;
+
+  // Build categories from registry or fall back to legacy
+  const categories = (() => {
+    if (!propRegistryCompleted || !propRegistry) return legacyCategories;
+    const enabled: { value: string; label: string; icon: string }[] = [];
+    for (const sys of SYSTEMS_CATALOG) {
+      const entry = propRegistry[sys.key];
+      if (entry?.enabled) {
+        enabled.push({ value: sys.key, label: sys.label, icon: sys.icon });
+      }
+    }
+    enabled.push({ value: "general", label: "General", icon: "🔧" });
+    return enabled;
+  })();
+
+  // Filter components by selected category (Prompt 7)
+  const filteredComponents = form.category && form.category !== "general"
+    ? homeComponents.filter((c: any) => {
+        const sk = (c as any).system_key as string | null;
+        return sk ? sk.startsWith(form.category + ":") : c.category === form.category;
+      })
+    : homeComponents;
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["maintenance_logs", user?.id],
@@ -309,7 +338,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       }
 
       // Handle inline new component creation
-      let component_id: string | null = selectedComponentId;
+      let component_id: string | null = selectedComponentIds.length > 0 ? selectedComponentIds[0] : null;
       if (showNewComponent && newComponentName) {
         const { data: newComp, error: compErr } = await supabase
           .from("home_items")
@@ -477,7 +506,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const selectedComponent = homeComponents.find((c) => c.id === selectedComponentId);
+  const selectedComponentNames = homeComponents.filter((c) => selectedComponentIds.includes(c.id));
 
   return (
     <div>
