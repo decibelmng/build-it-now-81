@@ -420,7 +420,27 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         logId = newLog.id;
       }
 
-      for (const uploaded of uploadedPaths) {
+      // Save junction table rows for multi-component linking
+      if (logId) {
+        const allComponentIds = showNewComponent && component_id
+          ? [component_id]
+          : selectedComponentIds;
+
+        if (allComponentIds.length > 0) {
+          // Delete old junction rows if editing
+          if (editingId) {
+            await supabase.from("maintenance_log_components").delete().eq("log_id", logId);
+          }
+          // Insert new junction rows
+          const junctionRows = allComponentIds.map((cid) => ({
+            log_id: logId!,
+            component_id: cid,
+          }));
+          await supabase.from("maintenance_log_components").insert(junctionRows as any);
+        }
+      }
+
+
         if (logId) {
           await indexMaintenancePhoto({
             file_path: uploaded.path,
