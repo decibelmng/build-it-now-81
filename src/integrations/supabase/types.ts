@@ -279,9 +279,11 @@ export type Database = {
           brand: string | null
           category: string
           created_at: string
+          estimated_value: number | null
           expected_replacement: string | null
           id: string
           install_date: string | null
+          item_type: string
           last_maintained: string | null
           model: string | null
           name: string
@@ -296,9 +298,11 @@ export type Database = {
           brand?: string | null
           category?: string
           created_at?: string
+          estimated_value?: number | null
           expected_replacement?: string | null
           id?: string
           install_date?: string | null
+          item_type?: string
           last_maintained?: string | null
           model?: string | null
           name: string
@@ -313,9 +317,11 @@ export type Database = {
           brand?: string | null
           category?: string
           created_at?: string
+          estimated_value?: number | null
           expected_replacement?: string | null
           id?: string
           install_date?: string | null
+          item_type?: string
           last_maintained?: string | null
           model?: string | null
           name?: string
