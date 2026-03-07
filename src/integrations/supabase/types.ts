@@ -288,7 +288,7 @@ export type Database = {
           model: string | null
           name: string
           notes: string | null
-          property_id: string
+          property_id: string | null
           serial_number: string | null
           updated_at: string
           user_id: string
@@ -307,7 +307,7 @@ export type Database = {
           model?: string | null
           name: string
           notes?: string | null
-          property_id: string
+          property_id?: string | null
           serial_number?: string | null
           updated_at?: string
           user_id: string
@@ -326,7 +326,7 @@ export type Database = {
           model?: string | null
           name?: string
           notes?: string | null
-          property_id?: string
+          property_id?: string | null
           serial_number?: string | null
           updated_at?: string
           user_id?: string
