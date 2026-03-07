@@ -110,11 +110,7 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
               variant="outline"
               size="sm"
               className="mt-2 rounded-full font-body text-xs"
-              onClick={() => {
-                // Navigate to properties section
-                const event = new CustomEvent("navigate-section", { detail: "properties" });
-                window.dispatchEvent(event);
-              }}
+              onClick={() => onNavigate?.("properties")}
             >
               Add Purchase Price
             </Button>
