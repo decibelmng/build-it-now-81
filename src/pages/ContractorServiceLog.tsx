@@ -36,6 +36,7 @@ const ContractorServiceLog = () => {
     contractor_phone: "",
     service_date: new Date().toISOString().split("T")[0],
     service_category: "",
+    expense_type: "repair",
     service_description: "",
     cost: "",
     warranty_info: "",
@@ -220,6 +221,38 @@ const ContractorServiceLog = () => {
                   </Select>
                 </div>
               </div>
+              {/* Type of Work */}
+              <div>
+                <Label>Type of Work</Label>
+                <div className="mt-1 space-y-2">
+                  <label className="flex items-center gap-3 rounded-lg border border-border p-3 cursor-pointer hover:bg-secondary/30 transition-colors">
+                    <input
+                      type="radio"
+                      name="expense_type"
+                      value="repair"
+                      checked={form.expense_type === "repair"}
+                      onChange={() => setForm((f) => ({ ...f, expense_type: "repair" }))}
+                      className="accent-foreground"
+                    />
+                    <div>
+                      <p className="text-sm font-medium">Repair — Fixed or maintained something existing</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 rounded-lg border border-border p-3 cursor-pointer hover:bg-secondary/30 transition-colors">
+                    <input
+                      type="radio"
+                      name="expense_type"
+                      value="capital_improvement"
+                      checked={form.expense_type === "capital_improvement"}
+                      onChange={() => setForm((f) => ({ ...f, expense_type: "capital_improvement" }))}
+                      className="accent-foreground"
+                    />
+                    <div>
+                      <p className="text-sm font-medium">Improvement — Added something new or upgraded existing</p>
+                    </div>
+                  </label>
+                  <p className="text-xs text-muted-foreground">This helps the homeowner track improvements for tax purposes.</p>
+                </div>
               <div>
                 <Label htmlFor="desc">Description of Work Performed *</Label>
                 <Textarea id="desc" required rows={4} value={form.service_description}

@@ -662,6 +662,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           })}
         </div>
       )}
+
+      <BulkClassifyDialog open={bulkClassifyOpen} onOpenChange={setBulkClassifyOpen} />
     </div>
   );
 };
