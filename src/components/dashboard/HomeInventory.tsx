@@ -73,15 +73,21 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
   const [fileDragOver, setFileDragOver] = useState(false);
 
   const { data: items = [], isLoading: itemsLoading } = useQuery({
-    queryKey: ["home_items", propertyId, itemType],
+    queryKey: ["home_items", propertyId, itemType, warrantyFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("home_items")
         .select("*")
         .eq("property_id", propertyId)
         .eq("item_type", itemType)
         .order("category", { ascending: true })
         .order("name", { ascending: true });
+      if (warrantyFilter) {
+        const future = new Date();
+        future.setDate(future.getDate() + 90);
+        query = query.not("warranty_expiry", "is", null).lte("warranty_expiry", future.toISOString().split("T")[0]);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
