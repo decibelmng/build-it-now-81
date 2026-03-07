@@ -8,7 +8,7 @@ import { Home, Wrench, DollarSign, Clock, CheckCircle2, AlertTriangle, FileText,
 import { format, parseISO } from "date-fns";
 import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
 
-const DashboardOverview = () => {
+const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
 
   const { data: properties = [] } = useQuery({
