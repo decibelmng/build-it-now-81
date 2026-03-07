@@ -15,6 +15,9 @@ import ResetPassword from "./pages/ResetPassword";
 import Admin from "./pages/Admin";
 import ContractorServiceLog from "./pages/ContractorServiceLog";
 import NotFound from "./pages/NotFound";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +69,9 @@ const App = () => {
               }
             />
             <Route path="/service-log/:token" element={<ContractorServiceLog />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

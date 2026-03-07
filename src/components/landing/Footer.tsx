@@ -1,4 +1,5 @@
 import { Home } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -16,9 +17,9 @@ const Footer = () => {
             and save on taxes when they sell.
           </p>
           <div className="flex gap-8 font-body text-sm text-primary-foreground/40">
-            <a href="#" className="transition-colors hover:text-primary-foreground/70">Privacy</a>
-            <a href="#" className="transition-colors hover:text-primary-foreground/70">Terms</a>
-            <a href="#" className="transition-colors hover:text-primary-foreground/70">Contact</a>
+            <Link to="/privacy" className="transition-colors hover:text-primary-foreground/70">Privacy</Link>
+            <Link to="/terms" className="transition-colors hover:text-primary-foreground/70">Terms</Link>
+            <Link to="/contact" className="transition-colors hover:text-primary-foreground/70">Contact</Link>
           </div>
           <p className="font-body text-xs text-primary-foreground/30">
             © {new Date().getFullYear()} HomeLog. All rights reserved.
