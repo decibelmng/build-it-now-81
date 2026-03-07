@@ -177,6 +177,7 @@ const ComponentBackfillCard = ({ propertyId, onNavigate }: ComponentBackfillCard
         open={carouselOpen}
         onOpenChange={setCarouselOpen}
         items={backfillItems}
+        onNavigate={onNavigate}
       />
     </>
   );
