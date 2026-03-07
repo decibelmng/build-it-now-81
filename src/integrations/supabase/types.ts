@@ -374,12 +374,15 @@ export type Database = {
           brand: string | null
           category: string
           created_at: string
+          data_completeness: number
           estimated_value: number | null
           expected_replacement: string | null
           id: string
           install_date: string | null
           item_type: string
           last_maintained: string | null
+          last_updated_at: string | null
+          last_updated_from_log_id: string | null
           model: string | null
           name: string
           notes: string | null
@@ -393,12 +396,15 @@ export type Database = {
           brand?: string | null
           category?: string
           created_at?: string
+          data_completeness?: number
           estimated_value?: number | null
           expected_replacement?: string | null
           id?: string
           install_date?: string | null
           item_type?: string
           last_maintained?: string | null
+          last_updated_at?: string | null
+          last_updated_from_log_id?: string | null
           model?: string | null
           name: string
           notes?: string | null
@@ -412,12 +418,15 @@ export type Database = {
           brand?: string | null
           category?: string
           created_at?: string
+          data_completeness?: number
           estimated_value?: number | null
           expected_replacement?: string | null
           id?: string
           install_date?: string | null
           item_type?: string
           last_maintained?: string | null
+          last_updated_at?: string | null
+          last_updated_from_log_id?: string | null
           model?: string | null
           name?: string
           notes?: string | null
@@ -428,6 +437,13 @@ export type Database = {
           warranty_expiry?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "home_items_last_updated_from_log_id_fkey"
+            columns: ["last_updated_from_log_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_logs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "home_items_property_id_fkey"
             columns: ["property_id"]
