@@ -66,8 +66,8 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     onSuccess: (propertyId: string) => {
       setCreatedPropertyId(propertyId);
       queryClient.invalidateQueries({ queryKey: ["properties"] });
-      // Initialize default registry for the property type
-      setSystemsRegistry(getDefaultRegistry(form.property_type));
+      const baths = form.bathrooms ? parseFloat(form.bathrooms) : undefined;
+      setSystemsRegistry(getDefaultRegistry(form.property_type, baths));
       setStep(2);
     },
     onError: (err: Error) => {
@@ -79,15 +79,14 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     if (!createdPropertyId || !user) return;
     setSavingSystems(true);
     try {
-      // Save registry to property
       const { error } = await supabase
         .from("properties")
         .update({ home_systems: systemsRegistry, registry_completed: true } as any)
         .eq("id", createdPropertyId);
       if (error) throw error;
 
-      // Sync to inventory (create skeletons)
-      await syncRegistryToInventory(createdPropertyId, user.id, systemsRegistry, []);
+      const baths = form.bathrooms ? parseFloat(form.bathrooms) : undefined;
+      await syncRegistryToInventory(createdPropertyId, user.id, systemsRegistry, [], baths);
 
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       queryClient.invalidateQueries({ queryKey: ["home_items"] });
@@ -140,13 +139,7 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
             <p className="mb-5 font-body text-sm text-muted-foreground">
               Toggle the systems in your home. This powers your personalized savings forecast.
             </p>
-
-            <SystemsToggleGrid
-              registry={systemsRegistry}
-              onChange={setSystemsRegistry}
-              showAccuracy
-            />
-
+            <SystemsToggleGrid registry={systemsRegistry} onChange={setSystemsRegistry} showAccuracy />
             <div className="flex gap-3 pt-6">
               <button
                 onClick={() => setStep(3)}
@@ -304,9 +297,7 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={onComplete} className="rounded-full font-body">
-                Skip
-              </Button>
+              <Button type="button" variant="outline" onClick={onComplete} className="rounded-full font-body">Skip</Button>
               <Button type="submit" className="flex-1 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={addProperty.isPending}>
                 {addProperty.isPending ? "Adding..." : "Add Property"}
               </Button>
