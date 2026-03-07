@@ -298,15 +298,22 @@ const ContractorSubmissions = () => {
                 />
 
                 {selected.status === "pending" && (
-                  <div className="flex gap-2 pt-2">
-                    <Button className="flex-1" onClick={() => approveAndCreateLog.mutate(selected)}
-                      disabled={approveAndCreateLog.isPending}>
-                      <CheckCircle2 className="mr-2 h-4 w-4" />Approve
-                    </Button>
-                    <Button variant="destructive" className="flex-1" onClick={() => reject.mutate(selected.id)}
-                      disabled={reject.isPending}>
-                      <XCircle className="mr-2 h-4 w-4" />Reject
-                    </Button>
+                  <div className="space-y-3 pt-2">
+                    <ExpenseTypeField
+                      value={overrideExpenseType ?? selected.expense_type ?? "repair"}
+                      onChange={(v) => setOverrideExpenseType(v)}
+                      showTaxNotes={false}
+                    />
+                    <div className="flex gap-2">
+                      <Button className="flex-1" onClick={() => approveAndCreateLog.mutate(selected)}
+                        disabled={approveAndCreateLog.isPending}>
+                        <CheckCircle2 className="mr-2 h-4 w-4" />Approve
+                      </Button>
+                      <Button variant="destructive" className="flex-1" onClick={() => reject.mutate(selected.id)}
+                        disabled={reject.isPending}>
+                        <XCircle className="mr-2 h-4 w-4" />Reject
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
