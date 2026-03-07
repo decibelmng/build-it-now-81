@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,8 @@ import { Link2, Plus, Copy, Trash2, QrCode, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
+import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
+import QuickShareCard from "@/components/dashboard/QuickShareCard";
 
 const ContractorLinks = () => {
   const { user } = useAuth();
