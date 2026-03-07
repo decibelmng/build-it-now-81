@@ -123,7 +123,7 @@ const Dashboard = () => {
           {activeSection === "home-inventory" && <HomeInventoryPage />}
           {activeSection === "maintenance" && <MaintenanceLogSection onNavigate={(s: string) => setActiveSection(s as Section)} />}
           {activeSection === "documents" && <DocumentsHub />}
-          {activeSection === "savings" && <SavingsTracking />}
+          {activeSection === "savings" && <SavingsTracking onNavigate={(s: string) => setActiveSection(s as Section)} />}
           {activeSection === "tax-investment" && <TaxInvestmentPage />}
           {activeSection === "contacts" && <HomeContacts />}
           {activeSection === "utilities" && <PropertyUtilities />}
