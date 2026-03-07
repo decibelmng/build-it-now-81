@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import UpgradeModal from "./UpgradeModal";
 import { format, differenceInDays, isPast } from "date-fns";
+import { indexInventoryAttachment, removeDocumentIndex } from "@/lib/documentIndexing";
 
 const homeComponentCategories = [
   { value: "hvac", label: "HVAC", icon: Wind },
@@ -146,6 +147,17 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
             file_type: file.type,
             file_size: file.size,
           });
+          // Auto-index into documents
+          await indexInventoryAttachment({
+            file_path: path,
+            file_name: file.name,
+            file_type: file.type,
+            file_size: file.size,
+            property_id: propertyId,
+            user_id: user!.id,
+            home_item_id: itemId,
+            item_name: itemForm.name,
+          });
         }
       }
     },
@@ -174,7 +186,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
 
 
   const uploadAttachment = useMutation({
-    mutationFn: async ({ itemId, file }: { itemId: string; file: File }) => {
+    mutationFn: async ({ itemId, file, itemName }: { itemId: string; file: File; itemName?: string }) => {
       const ext = file.name.split(".").pop();
       const path = `${user!.id}/${itemId}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
@@ -191,6 +203,19 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
         file_size: file.size,
       });
       if (dbError) throw dbError;
+
+      // Auto-index into documents
+      const name = itemName || items.find((i: any) => i.id === itemId)?.name || "Inventory Item";
+      await indexInventoryAttachment({
+        file_path: path,
+        file_name: file.name,
+        file_type: file.type,
+        file_size: file.size,
+        property_id: propertyId,
+        user_id: user!.id,
+        home_item_id: itemId,
+        item_name: name,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["home_item_attachments"] });
@@ -208,6 +233,8 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
       await supabase.storage.from("home-item-attachments").remove([att.file_path]);
       const { error } = await supabase.from("home_item_attachments").delete().eq("id", att.id);
       if (error) throw error;
+      // Remove from documents index
+      await removeDocumentIndex(att.file_path);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["home_item_attachments"] });
