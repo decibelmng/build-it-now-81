@@ -142,38 +142,102 @@ export type Database = {
       documents: {
         Row: {
           category: string
+          contact_id: string | null
+          contractor_submission_id: string | null
           created_at: string
+          description: string | null
+          display_type: string
+          document_date: string | null
+          file_name: string
           file_path: string
           file_size: number | null
           file_type: string | null
+          home_item_id: string | null
           id: string
+          is_important: boolean
+          maintenance_log_id: string | null
           name: string
           property_id: string
+          tags: string[] | null
+          title: string | null
+          uploaded_at: string | null
           user_id: string
         }
         Insert: {
           category?: string
+          contact_id?: string | null
+          contractor_submission_id?: string | null
           created_at?: string
+          description?: string | null
+          display_type?: string
+          document_date?: string | null
+          file_name: string
           file_path: string
           file_size?: number | null
           file_type?: string | null
+          home_item_id?: string | null
           id?: string
+          is_important?: boolean
+          maintenance_log_id?: string | null
           name: string
           property_id: string
+          tags?: string[] | null
+          title?: string | null
+          uploaded_at?: string | null
           user_id: string
         }
         Update: {
           category?: string
+          contact_id?: string | null
+          contractor_submission_id?: string | null
           created_at?: string
+          description?: string | null
+          display_type?: string
+          document_date?: string | null
+          file_name?: string
           file_path?: string
           file_size?: number | null
           file_type?: string | null
+          home_item_id?: string | null
           id?: string
+          is_important?: boolean
+          maintenance_log_id?: string | null
           name?: string
           property_id?: string
+          tags?: string[] | null
+          title?: string | null
+          uploaded_at?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "home_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_contractor_submission_id_fkey"
+            columns: ["contractor_submission_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_home_item_id_fkey"
+            columns: ["home_item_id"]
+            isOneToOne: false
+            referencedRelation: "home_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_maintenance_log_id_fkey"
+            columns: ["maintenance_log_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_logs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "documents_property_id_fkey"
             columns: ["property_id"]
