@@ -576,11 +576,22 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
         ) : items.length === 0 ? (
           <Card className="border-dashed border-2 border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <Package className="mb-3 h-10 w-10 text-muted-foreground" />
-              <p className="font-body text-sm text-muted-foreground mb-2">No items tracked yet</p>
-              <p className="font-body text-xs text-muted-foreground max-w-sm text-center">
-                Start adding items like your water heater, HVAC system, appliances, jewelry, watches, and more to build your home's digital twin.
+              <Package className="mb-3 h-12 w-12 text-muted-foreground/40" />
+              <h3 className="font-display text-lg font-semibold mb-1">What's in your home?</h3>
+              <p className="font-body text-sm text-muted-foreground mb-4 max-w-sm text-center">
+                Adding your roof, HVAC, water heater, and major systems helps HomeLog predict future costs and track warranties.
               </p>
+              <div className="flex flex-wrap gap-2 mb-5 justify-center max-w-xs">
+                {["Roof", "HVAC System", "Water Heater", "Electrical Panel", "Flooring"].map((item) => (
+                  <span key={item} className="flex items-center gap-1.5 rounded-full border border-border/50 bg-secondary/50 px-3 py-1 font-body text-xs text-muted-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent/50" />
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <Button size="sm" className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" onClick={() => setItemOpen(true)}>
+                <Plus className="mr-1 h-4 w-4" /> Add First Item
+              </Button>
             </CardContent>
           </Card>
         ) : (

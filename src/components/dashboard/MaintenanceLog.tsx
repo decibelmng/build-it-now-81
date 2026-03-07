@@ -576,8 +576,9 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       {properties.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <Wrench className="mb-4 h-10 w-10 text-muted-foreground" />
-            <p className="font-body text-sm text-muted-foreground">Add a property first to start logging maintenance</p>
+            <Wrench className="mb-4 h-10 w-10 text-muted-foreground/50" />
+            <h3 className="mb-1 font-display text-lg font-semibold">Add a property first</h3>
+            <p className="font-body text-sm text-muted-foreground">You need at least one property to start logging maintenance</p>
           </CardContent>
         </Card>
       ) : isLoading ? (
@@ -587,9 +588,21 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       ) : logs.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <Wrench className="mb-4 h-10 w-10 text-muted-foreground" />
-            <h3 className="mb-1 font-display text-lg font-semibold">No maintenance logs</h3>
-            <p className="font-body text-sm text-muted-foreground">Start tracking your home maintenance</p>
+            <Wrench className="mb-4 h-12 w-12 text-muted-foreground/40" />
+            <h3 className="mb-1 font-display text-lg font-semibold">Your maintenance timeline starts here</h3>
+            <p className="font-body text-sm text-muted-foreground text-center max-w-md mb-5">
+              Log your first repair, service call, or improvement to start building your home's complete history.
+            </p>
+            <div className="flex gap-3">
+              <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" onClick={openCreate}>
+                <Plus className="mr-2 h-4 w-4" /> Log First Entry
+              </Button>
+              {defaultLinkUrl && (
+                <Button variant="outline" className="rounded-full font-body" onClick={() => onNavigate?.("contractor-links")}>
+                  <Users className="mr-2 h-4 w-4" /> Share Link with Contractor
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       ) : (

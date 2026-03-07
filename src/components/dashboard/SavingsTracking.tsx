@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -189,9 +190,18 @@ const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => voi
       ) : filtered.length === 0 || totalSpent === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <DollarSign className="mb-4 h-10 w-10 text-muted-foreground" />
-            <h3 className="mb-1 font-display text-lg font-semibold">No cost data yet</h3>
-            <p className="font-body text-sm text-muted-foreground">Add maintenance entries with costs to see spending trends</p>
+            <TrendingUp className="mb-4 h-12 w-12 text-muted-foreground/40" />
+            <h3 className="mb-1 font-display text-lg font-semibold">Your financial picture starts with data</h3>
+            <p className="font-body text-sm text-muted-foreground text-center max-w-md mb-4">
+              Add maintenance entries with costs to see spending trends and savings forecasts.
+            </p>
+            <Button
+              variant="outline"
+              className="rounded-full font-body"
+              onClick={() => onNavigate?.("maintenance")}
+            >
+              <Wrench className="mr-2 h-4 w-4" /> Go to Maintenance
+            </Button>
           </CardContent>
         </Card>
       ) : (

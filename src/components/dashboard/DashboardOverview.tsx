@@ -4,11 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Home, Wrench, DollarSign, Clock, CheckCircle2, AlertTriangle, FileText, Users, TrendingUp, X } from "lucide-react";
+import { Home, Wrench, DollarSign, Clock, CheckCircle2, AlertTriangle, FileText, Users, TrendingUp, X, Shield, Sparkles } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
 
-const DashboardOverview = () => {
+const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
 
   const { data: properties = [] } = useQuery({
@@ -110,11 +110,7 @@ const DashboardOverview = () => {
               variant="outline"
               size="sm"
               className="mt-2 rounded-full font-body text-xs"
-              onClick={() => {
-                // Navigate to properties section
-                const event = new CustomEvent("navigate-section", { detail: "properties" });
-                window.dispatchEvent(event);
-              }}
+              onClick={() => onNavigate?.("properties")}
             >
               Add Purchase Price
             </Button>
@@ -162,10 +158,7 @@ const DashboardOverview = () => {
                 variant="outline"
                 size="sm"
                 className="rounded-full font-body"
-                onClick={() => {
-                  const event = new CustomEvent("navigate-section", { detail: "properties" });
-                  window.dispatchEvent(event);
-                }}
+                onClick={() => onNavigate?.("properties")}
               >
                 Get Started
               </Button>
@@ -196,9 +189,19 @@ const DashboardOverview = () => {
         <CardContent className="p-5">
           <h3 className="mb-4 font-display text-base font-semibold">Recent Activity</h3>
           {recentLogs.length === 0 ? (
-            <p className="font-body text-sm text-muted-foreground py-8 text-center">
-              No activity yet. Add a property and start logging maintenance.
-            </p>
+            <div className="py-8 text-center">
+              <Wrench className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
+              <h4 className="font-display text-base font-semibold mb-1">Your maintenance timeline starts here</h4>
+              <p className="font-body text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
+                Log your first repair, service call, or improvement to start building your home's history.
+              </p>
+              <Button
+                className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body"
+                onClick={() => onNavigate?.("maintenance")}
+              >
+                <Wrench className="mr-2 h-4 w-4" /> Log First Entry
+              </Button>
+            </div>
           ) : (
             <div className="space-y-3">
               {recentLogs.map((log: any) => {
