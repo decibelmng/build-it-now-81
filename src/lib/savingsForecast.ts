@@ -84,6 +84,7 @@ export interface HomeItem {
   expected_replacement: string | null;
   estimated_value: number | null;
   system_key?: string | null;
+  is_registry_skeleton?: boolean;
 }
 
 export interface PropertyInfo {
@@ -130,12 +131,24 @@ export function calculateForecast(
 
   const personalizedCategories = new Set<string>();
   const personalizedCompKeys = new Set<string>();
+  const coveredCompKeys = new Set<string>();
   const events: ForecastEvent[] = [];
 
   const normalizedItems = homeItems.map((item) => ({
     ...item,
     category: normalizeCategory(item.category),
   }));
+
+  // Track all non-skeleton items as "covered" even without install_date
+  normalizedItems.forEach((item) => {
+    if (item.is_registry_skeleton) return; // Skeletons don't count as user-added
+    if (item.system_key) {
+      coveredCompKeys.add(item.system_key);
+    } else {
+      const profile = SYSTEM_PROFILES.find((p) => p.category === item.category);
+      if (profile) coveredCompKeys.add(profile.key);
+    }
+  });
 
   // 1. Process tracked items with install dates
   normalizedItems.forEach((item) => {
@@ -320,11 +333,20 @@ export function calculateForecast(
   }
 
   // Suggest details for enabled components without data
+  // Use coveredCompKeys (any item exists) to suppress "Add" suggestions,
+  // but use personalizedCompKeys (has install_date) for "Update" suggestions
   if (hasRegistry) {
     const enabledComps = getEnabledComponents(homeSystems);
     for (const comp of enabledComps) {
       const compKey = `${comp.systemKey}:${comp.key}`;
-      if (personalizedCompKeys.has(compKey)) continue;
+      if (coveredCompKeys.has(compKey) && personalizedCompKeys.has(compKey)) continue;
+      if (coveredCompKeys.has(compKey) && !personalizedCompKeys.has(compKey)) {
+        suggestedItems.push({
+          label: `Update your ${comp.label.toLowerCase()} with install date`,
+          impact: `Personalizes $${comp.annualCost}/yr in predictions`,
+        });
+        continue;
+      }
       suggestedItems.push({
         label: `Add your ${comp.label.toLowerCase()} details`,
         impact: `Personalizes $${comp.annualCost}/yr in predictions`,
@@ -336,7 +358,14 @@ export function calculateForecast(
       const comp = sys?.components.find((c) => `${sys.key}:${c.key}` === p.key);
       return comp?.autoCreate;
     }).forEach((profile) => {
-      if (personalizedCompKeys.has(profile.key)) return;
+      if (coveredCompKeys.has(profile.key) && personalizedCompKeys.has(profile.key)) return;
+      if (coveredCompKeys.has(profile.key) && !personalizedCompKeys.has(profile.key)) {
+        suggestedItems.push({
+          label: `Update your ${profile.label.toLowerCase()} with install date`,
+          impact: `Personalizes $${profile.annualCost}/yr in predictions`,
+        });
+        return;
+      }
       suggestedItems.push({
         label: `Add your ${profile.label.toLowerCase()} details`,
         impact: `Personalizes $${profile.annualCost}/yr in predictions`,
