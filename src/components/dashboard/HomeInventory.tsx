@@ -22,6 +22,7 @@ import { indexInventoryAttachment, removeDocumentIndex } from "@/lib/documentInd
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 import ComponentMaintenanceHistory from "./ComponentMaintenanceHistory";
 import { calculateComponentCompleteness } from "@/lib/componentCompleteness";
+import { consumePendingInventoryAction } from "@/lib/pendingInventoryAction";
 
 const homeComponentCategories = [
   { value: "hvac", label: "HVAC", icon: Wind },
