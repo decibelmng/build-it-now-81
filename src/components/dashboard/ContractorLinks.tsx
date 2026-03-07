@@ -45,15 +45,6 @@ const ContractorLinks = () => {
     ensureDefault();
   }, [firstPropertyId, defaultLink]);
 
-  const { data: properties = [] } = useQuery({
-    queryKey: ["properties", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("properties").select("*").eq("user_id", user!.id).order("name");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
 
   const { data: links = [] } = useQuery({
     queryKey: ["contractor_links", user?.id],
