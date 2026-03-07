@@ -12,7 +12,11 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties">;
 
-const HomeInventoryPage = () => {
+interface HomeInventoryPageProps {
+  onNavigate?: (section: string) => void;
+}
+
+const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"home_component" | "personal_item">("home_component");
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
@@ -125,7 +129,7 @@ const HomeInventoryPage = () => {
 
           <TabsContent value="home_component">
             {selectedPropertyId && (
-              <HomeInventory propertyId={selectedPropertyId} itemType="home_component" warrantyFilter={showExpiringSoon} />
+              <HomeInventory propertyId={selectedPropertyId} itemType="home_component" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
             )}
           </TabsContent>
 
@@ -145,7 +149,7 @@ const HomeInventoryPage = () => {
               </div>
             )}
             {selectedPropertyId && (
-              <HomeInventory propertyId={selectedPropertyId} itemType="personal_item" warrantyFilter={showExpiringSoon} />
+              <HomeInventory propertyId={selectedPropertyId} itemType="personal_item" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
             )}
 
             {/* Archived personal items from transferred properties */}
