@@ -280,14 +280,23 @@ const HomeContacts = () => {
                           )}
                         </div>
                         {/* Linked stats */}
-                        {stats.jobs > 0 && (
+                        {(stats.jobs > 0 || (contactDocCounts as Record<string, number>)[contact.id] > 0) && (
                           <div className="mt-1.5 flex items-center gap-3 font-body text-xs">
-                            <span className="inline-flex items-center gap-1 text-accent font-medium">
-                              <Wrench className="h-3 w-3" />{stats.jobs} job{stats.jobs !== 1 ? "s" : ""}
-                            </span>
-                            <span className="inline-flex items-center gap-1 text-accent font-medium">
-                              <DollarSign className="h-3 w-3" />${stats.totalSpend.toLocaleString()}
-                            </span>
+                            {stats.jobs > 0 && (
+                              <span className="inline-flex items-center gap-1 text-accent font-medium">
+                                <Wrench className="h-3 w-3" />{stats.jobs} job{stats.jobs !== 1 ? "s" : ""}
+                              </span>
+                            )}
+                            {stats.totalSpend > 0 && (
+                              <span className="inline-flex items-center gap-1 text-accent font-medium">
+                                <DollarSign className="h-3 w-3" />${stats.totalSpend.toLocaleString()}
+                              </span>
+                            )}
+                            {(contactDocCounts as Record<string, number>)[contact.id] > 0 && (
+                              <span className="inline-flex items-center gap-1 text-muted-foreground font-medium">
+                                <Paperclip className="h-3 w-3" />{(contactDocCounts as Record<string, number>)[contact.id]} doc{(contactDocCounts as Record<string, number>)[contact.id] !== 1 ? "s" : ""}
+                              </span>
+                            )}
                           </div>
                         )}
                         {contact.notes && (
