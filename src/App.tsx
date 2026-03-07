@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,16 +8,17 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { SubscriptionProvider } from "@/hooks/useSubscription";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import PersonaSelection from "./pages/PersonaSelection";
-import Dashboard from "./pages/Dashboard";
-import ResetPassword from "./pages/ResetPassword";
-import Admin from "./pages/Admin";
-import ContractorServiceLog from "./pages/ContractorServiceLog";
-import NotFound from "./pages/NotFound";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import Contact from "./pages/Contact";
+
+const Auth = lazy(() => import("./pages/Auth"));
+const PersonaSelection = lazy(() => import("./pages/PersonaSelection"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Admin = lazy(() => import("./pages/Admin"));
+const ContractorServiceLog = lazy(() => import("./pages/ContractorServiceLog"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Contact = lazy(() => import("./pages/Contact"));
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-accent" /></div>}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -74,6 +76,7 @@ const App = () => {
             <Route path="/contact" element={<Contact />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
       </SubscriptionProvider>

@@ -1,32 +1,33 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSubscription, isProFeature } from "@/hooks/useSubscription";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
-import DashboardOverview from "@/components/dashboard/DashboardOverview";
-import PropertyCards from "@/components/dashboard/PropertyCards";
-import MaintenanceLogSection from "@/components/dashboard/MaintenanceLog";
-import DocumentsHub from "@/components/dashboard/documents/DocumentsHub";
-import SavingsTracking from "@/components/dashboard/SavingsTracking";
-import HomeContacts from "@/components/dashboard/HomeContacts";
-import PropertyTimeline from "@/components/dashboard/PropertyTimeline";
-import ProfileSettings from "@/components/dashboard/ProfileSettings";
 import OnboardingWizard from "@/components/dashboard/OnboardingWizard";
-import RecurringTemplates from "@/components/dashboard/RecurringTemplates";
-import PropertySharing from "@/components/dashboard/PropertySharing";
-import ExportReports from "@/components/dashboard/ExportReports";
-import AnalyticsInsights from "@/components/dashboard/AnalyticsInsights";
-import PropertyUtilities from "@/components/dashboard/PropertyUtilities";
 import FeatureGate from "@/components/dashboard/FeatureGate";
 import UpgradeModal from "@/components/dashboard/UpgradeModal";
-import ContractorLinks from "@/components/dashboard/ContractorLinks";
-import ContractorSubmissions from "@/components/dashboard/ContractorSubmissions";
-import HomeInventoryPage from "@/components/dashboard/HomeInventoryPage";
-import TaxInvestmentPage from "@/components/dashboard/TaxInvestmentPage";
 import SearchCommandPalette from "@/components/dashboard/SearchCommandPalette";
 import { useToast } from "@/hooks/use-toast";
+
+const DashboardOverview = lazy(() => import("@/components/dashboard/DashboardOverview"));
+const PropertyCards = lazy(() => import("@/components/dashboard/PropertyCards"));
+const MaintenanceLogSection = lazy(() => import("@/components/dashboard/MaintenanceLog"));
+const DocumentsHub = lazy(() => import("@/components/dashboard/documents/DocumentsHub"));
+const SavingsTracking = lazy(() => import("@/components/dashboard/SavingsTracking"));
+const HomeContacts = lazy(() => import("@/components/dashboard/HomeContacts"));
+const PropertyTimeline = lazy(() => import("@/components/dashboard/PropertyTimeline"));
+const ProfileSettings = lazy(() => import("@/components/dashboard/ProfileSettings"));
+const RecurringTemplates = lazy(() => import("@/components/dashboard/RecurringTemplates"));
+const PropertySharing = lazy(() => import("@/components/dashboard/PropertySharing"));
+const ExportReports = lazy(() => import("@/components/dashboard/ExportReports"));
+const AnalyticsInsights = lazy(() => import("@/components/dashboard/AnalyticsInsights"));
+const PropertyUtilities = lazy(() => import("@/components/dashboard/PropertyUtilities"));
+const ContractorLinks = lazy(() => import("@/components/dashboard/ContractorLinks"));
+const ContractorSubmissions = lazy(() => import("@/components/dashboard/ContractorSubmissions"));
+const HomeInventoryPage = lazy(() => import("@/components/dashboard/HomeInventoryPage"));
+const TaxInvestmentPage = lazy(() => import("@/components/dashboard/TaxInvestmentPage"));
 
 type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "tax-investment" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
 
@@ -144,28 +145,30 @@ const Dashboard = () => {
 
       <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
         <div className="mx-auto max-w-5xl px-3 py-4 sm:px-8 sm:py-8">
-          {activeSection === "overview" && <DashboardOverview onNavigate={(s: string) => setActiveSection(s as Section)} />}
-          {activeSection === "properties" && <PropertyCards />}
-          {activeSection === "home-inventory" && <HomeInventoryPage />}
-          {activeSection === "maintenance" && <MaintenanceLogSection onNavigate={(s: string) => setActiveSection(s as Section)} />}
-          {activeSection === "documents" && <DocumentsHub />}
-          {activeSection === "savings" && <SavingsTracking onNavigate={(s: string) => setActiveSection(s as Section)} />}
-          {activeSection === "tax-investment" && <TaxInvestmentPage />}
-          {activeSection === "contacts" && <HomeContacts />}
-          {activeSection === "utilities" && <PropertyUtilities />}
-          {activeSection === "timeline" && <PropertyTimeline />}
-          {activeSection === "recurring" && <RecurringTemplates />}
-          {activeSection === "sharing" && <PropertySharing />}
-          {activeSection === "export" && (
-            tier === "pro" ? <ExportReports /> : <FeatureGate featureName="Export & Reports" onUpgrade={() => setShowUpgrade(true)} />
-          )}
-          {activeSection === "analytics" && (
-            tier === "pro" ? <AnalyticsInsights /> : <FeatureGate featureName="Analytics & Insights" onUpgrade={() => setShowUpgrade(true)} />
-          )}
-          {activeSection === "settings" && <ProfileSettings />}
-          {activeSection === "search" && <SearchCommandPalette open={true} onOpenChange={() => setActiveSection("overview")} onNavigate={handleSearchNavigate} />}
-          {activeSection === "contractor-links" && <ContractorLinks />}
-          {activeSection === "contractor-submissions" && <ContractorSubmissions />}
+          <Suspense fallback={<div className="p-8"><div className="h-8 w-48 rounded bg-muted animate-pulse mb-4" /><div className="h-64 rounded bg-muted animate-pulse" /></div>}>
+            {activeSection === "overview" && <DashboardOverview onNavigate={(s: string) => setActiveSection(s as Section)} />}
+            {activeSection === "properties" && <PropertyCards />}
+            {activeSection === "home-inventory" && <HomeInventoryPage />}
+            {activeSection === "maintenance" && <MaintenanceLogSection onNavigate={(s: string) => setActiveSection(s as Section)} />}
+            {activeSection === "documents" && <DocumentsHub />}
+            {activeSection === "savings" && <SavingsTracking onNavigate={(s: string) => setActiveSection(s as Section)} />}
+            {activeSection === "tax-investment" && <TaxInvestmentPage />}
+            {activeSection === "contacts" && <HomeContacts />}
+            {activeSection === "utilities" && <PropertyUtilities />}
+            {activeSection === "timeline" && <PropertyTimeline />}
+            {activeSection === "recurring" && <RecurringTemplates />}
+            {activeSection === "sharing" && <PropertySharing />}
+            {activeSection === "export" && (
+              tier === "pro" ? <ExportReports /> : <FeatureGate featureName="Export & Reports" onUpgrade={() => setShowUpgrade(true)} />
+            )}
+            {activeSection === "analytics" && (
+              tier === "pro" ? <AnalyticsInsights /> : <FeatureGate featureName="Analytics & Insights" onUpgrade={() => setShowUpgrade(true)} />
+            )}
+            {activeSection === "settings" && <ProfileSettings />}
+            {activeSection === "search" && <SearchCommandPalette open={true} onOpenChange={() => setActiveSection("overview")} onNavigate={handleSearchNavigate} />}
+            {activeSection === "contractor-links" && <ContractorLinks />}
+            {activeSection === "contractor-submissions" && <ContractorSubmissions />}
+          </Suspense>
         </div>
       </main>
 
