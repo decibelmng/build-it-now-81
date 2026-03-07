@@ -5,7 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Info, X, ClipboardList } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Info, X, ClipboardList, Shield } from "lucide-react";
 import HomeInventory from "@/components/dashboard/HomeInventory";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -15,6 +16,25 @@ const HomeInventoryPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"home_component" | "personal_item">("home_component");
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
+  const [showPersonalBanner, setShowPersonalBanner] = useState(true);
+  const [showExpiringSoon, setShowExpiringSoon] = useState(false);
+
+  // Count items with warranties expiring in 90 days
+  const { data: expiringCount = 0 } = useQuery({
+    queryKey: ["expiring_warranty_count", user?.id],
+    queryFn: async () => {
+      const future = new Date();
+      future.setDate(future.getDate() + 90);
+      const { count, error } = await supabase
+        .from("home_items")
+        .select("id", { count: "exact", head: true })
+        .not("warranty_expiry", "is", null)
+        .lte("warranty_expiry", future.toISOString().split("T")[0]);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!user,
+  });
   const [showPersonalBanner, setShowPersonalBanner] = useState(true);
 
   const { data: properties = [] } = useQuery({
@@ -73,6 +93,20 @@ const HomeInventoryPage = () => {
               ))}
             </SelectContent>
           </Select>
+        )}
+        {expiringCount > 0 && (
+          <button
+            onClick={() => setShowExpiringSoon(!showExpiringSoon)}
+            className="shrink-0"
+          >
+            <Badge
+              variant={showExpiringSoon ? "default" : "outline"}
+              className="gap-1 cursor-pointer font-body"
+            >
+              <Shield className="h-3 w-3" />
+              Expiring Soon ({expiringCount})
+            </Badge>
+          </button>
         )}
       </div>
 
