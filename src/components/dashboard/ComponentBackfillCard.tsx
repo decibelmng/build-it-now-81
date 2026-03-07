@@ -6,18 +6,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Package } from "lucide-react";
 import { matchLogToComponent } from "@/lib/componentMatcher";
+import BackfillReviewCarousel, { type BackfillItem } from "./BackfillReviewCarousel";
 
 const PREF_KEY = "backfill_card_hidden";
 const SESSION_DISMISS_KEY = "backfill_card_session_dismiss_count";
-
-interface BackfillMatch {
-  logId: string;
-  logTitle: string;
-  componentId: string | null;
-  componentType: string | null;
-  confidence: number;
-  isNewComponent: boolean;
-}
 
 interface ComponentBackfillCardProps {
   propertyId: string | undefined;
@@ -27,24 +19,23 @@ interface ComponentBackfillCardProps {
 const ComponentBackfillCard = ({ propertyId, onNavigate }: ComponentBackfillCardProps) => {
   const { user } = useAuth();
   const [sessionDismissed, setSessionDismissed] = useState(false);
+  const [carouselOpen, setCarouselOpen] = useState(false);
 
-  // Check permanent preference
   const permanentlyHidden = useMemo(() => {
     try { return localStorage.getItem(PREF_KEY) === "true"; } catch { return false; }
   }, []);
 
-  // Track session dismiss count
   const sessionDismissCount = useMemo(() => {
     try { return parseInt(sessionStorage.getItem(SESSION_DISMISS_KEY) || "0", 10); } catch { return 0; }
   }, [sessionDismissed]);
 
-  // Fetch unlinked, non-skipped logs for this property
+  // Fetch unlinked, non-skipped logs with full details
   const { data: unlinkedLogs = [] } = useQuery({
     queryKey: ["unlinked_logs_backfill", propertyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("maintenance_logs")
-        .select("id, title, description, category")
+        .select("id, title, description, category, scheduled_date, completed_date, created_at, cost, contact_id, home_contacts(name)")
         .eq("property_id", propertyId!)
         .is("component_id", null)
         .eq("component_update_skipped", false)
@@ -55,13 +46,12 @@ const ComponentBackfillCard = ({ propertyId, onNavigate }: ComponentBackfillCard
     enabled: !!user && !!propertyId && !permanentlyHidden,
   });
 
-  // Fetch home components for matching
   const { data: homeComponents = [] } = useQuery({
     queryKey: ["home_components_backfill", propertyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_items")
-        .select("id, name, category, item_type, data_completeness")
+        .select("id, name, category, item_type, data_completeness, last_updated_at")
         .eq("property_id", propertyId!)
         .eq("item_type", "home_component");
       if (error) throw error;
@@ -70,27 +60,38 @@ const ComponentBackfillCard = ({ propertyId, onNavigate }: ComponentBackfillCard
     enabled: !!user && !!propertyId && unlinkedLogs.length > 0 && !permanentlyHidden,
   });
 
-  // Run matcher
-  const matches: BackfillMatch[] = useMemo(() => {
+  // Build backfill items with matcher results
+  const backfillItems: BackfillItem[] = useMemo(() => {
     if (unlinkedLogs.length === 0) return [];
     const components = homeComponents.map((c) => ({ id: c.id, name: c.name, category: c.category, item_type: c.item_type }));
-    const results: BackfillMatch[] = [];
+    const results: BackfillItem[] = [];
     for (const log of unlinkedLogs) {
       const result = matchLogToComponent(log.title, log.description || "", log.category, components);
       if (result.confidence >= 0.6) {
+        const existingComp = result.componentId ? homeComponents.find((c) => c.id === result.componentId) : null;
+        const logDate = log.scheduled_date || log.completed_date || (log.created_at ? log.created_at.split("T")[0] : null);
         results.push({
           logId: log.id,
           logTitle: log.title,
-          ...result,
+          logDate,
+          logCost: log.cost ? Number(log.cost) : null,
+          logContactName: (log as any).home_contacts?.name || null,
+          logCategory: log.category,
+          componentId: result.componentId,
+          componentName: existingComp?.name || null,
+          componentType: result.componentType,
+          isNewComponent: result.isNewComponent,
+          confidence: result.confidence,
+          existingComponentUpdatedAt: existingComp?.last_updated_at || null,
+          propertyId: propertyId!,
         });
       }
     }
     return results;
-  }, [unlinkedLogs, homeComponents]);
+  }, [unlinkedLogs, homeComponents, propertyId]);
 
-  const matchCount = matches.length;
+  const matchCount = backfillItems.length;
 
-  // Check if previously shown (for title variation)
   const [hasBeenShown, setHasBeenShown] = useState(false);
   useEffect(() => {
     if (matchCount > 0) {
@@ -102,17 +103,14 @@ const ComponentBackfillCard = ({ propertyId, onNavigate }: ComponentBackfillCard
     }
   }, [matchCount]);
 
-  // Calculate accuracy jump
   const avgCurrentCompleteness = homeComponents.length > 0
     ? homeComponents.reduce((sum, c) => sum + (c.data_completeness ?? 0), 0) / homeComponents.length
     : 0;
-  const projectedJump = Math.min(30, matchCount * 5); // rough estimate
+  const projectedJump = Math.min(30, matchCount * 5);
   const highImpact = projectedJump > 15;
 
-  // Don't show if permanently hidden, session dismissed (max 2 times), or no matches
   if (permanentlyHidden || sessionDismissed || sessionDismissCount >= 2 || matchCount === 0) return null;
 
-  // Pick title
   let title: string;
   if (highImpact) {
     const fromPct = Math.round(avgCurrentCompleteness);
@@ -138,41 +136,49 @@ const ComponentBackfillCard = ({ propertyId, onNavigate }: ComponentBackfillCard
   };
 
   return (
-    <Card className="mb-8 border-l-4 border-l-accent border-border/50 bg-accent/5">
-      <CardContent className="p-5">
-        <div className="flex items-start gap-3">
-          <Package className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <h3 className="font-display text-sm font-semibold mb-1">{title}</h3>
-            <p className="font-body text-sm text-muted-foreground mb-3">
-              We found {matchCount} maintenance entr{matchCount !== 1 ? "ies" : "y"} that could update your Home Components.
-              Want to review them? It only takes a minute and makes your savings forecast way more accurate.
-            </p>
-            <div className="flex items-center gap-3 flex-wrap">
-              <Button
-                className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold text-sm"
-                size="sm"
-                onClick={() => onNavigate?.("maintenance")}
-              >
-                Review Updates ({matchCount} item{matchCount !== 1 ? "s" : ""})
-              </Button>
+    <>
+      <Card className="mb-8 border-l-4 border-l-accent border-border/50 bg-accent/5">
+        <CardContent className="p-5">
+          <div className="flex items-start gap-3">
+            <Package className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-display text-sm font-semibold mb-1">{title}</h3>
+              <p className="font-body text-sm text-muted-foreground mb-3">
+                We found {matchCount} maintenance entr{matchCount !== 1 ? "ies" : "y"} that could update your Home Components.
+                Want to review them? It only takes a minute and makes your savings forecast way more accurate.
+              </p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Button
+                  className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold text-sm"
+                  size="sm"
+                  onClick={() => setCarouselOpen(true)}
+                >
+                  Review Updates ({matchCount} item{matchCount !== 1 ? "s" : ""})
+                </Button>
+                <button
+                  onClick={handleRemindLater}
+                  className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Remind Me Later
+                </button>
+              </div>
               <button
-                onClick={handleRemindLater}
-                className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors"
+                onClick={handleDontShowAgain}
+                className="mt-2 font-body text-xs text-muted-foreground/70 hover:text-muted-foreground transition-colors"
               >
-                Remind Me Later
+                Don't show this again
               </button>
             </div>
-            <button
-              onClick={handleDontShowAgain}
-              className="mt-2 font-body text-xs text-muted-foreground/70 hover:text-muted-foreground transition-colors"
-            >
-              Don't show this again
-            </button>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <BackfillReviewCarousel
+        open={carouselOpen}
+        onOpenChange={setCarouselOpen}
+        items={backfillItems}
+      />
+    </>
   );
 };
 
