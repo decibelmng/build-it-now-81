@@ -29,9 +29,15 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
     queryFn: async () => {
       const { data, error } = await supabase
         .from("maintenance_logs")
-        .select("id, title, status, cost, category, created_at, completed_date, properties(name)")
+        .select("id, title, status, cost, category, created_at, completed_date, scheduled_date, properties(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
+      // Sort by service date (scheduled_date > completed_date > created_at)
+      return (data || []).sort((a, b) => {
+        const dateA = a.scheduled_date || a.completed_date || a.created_at;
+        const dateB = b.scheduled_date || b.completed_date || b.created_at;
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      });
       return data;
     },
     enabled: !!user,

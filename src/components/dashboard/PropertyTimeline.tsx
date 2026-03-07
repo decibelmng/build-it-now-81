@@ -86,7 +86,7 @@ const PropertyTimeline = () => {
       const { data, error } = await supabase
         .from("maintenance_logs")
         .select("*, properties(name, year_built)")
-        .order("created_at", { ascending: false });
+        .order("scheduled_date", { ascending: false, nullsFirst: false });
       if (error) throw error;
       return data;
     },

@@ -40,11 +40,13 @@ const QuickLogCard = () => {
   const mutation = useMutation({
     mutationFn: async () => {
       if (!properties[0]) throw new Error("No property");
+      const dateStr = format(date, "yyyy-MM-dd");
       const { error } = await supabase.from("maintenance_logs").insert({
         title,
         category,
         status: "completed",
-        completed_date: format(date, "yyyy-MM-dd"),
+        scheduled_date: dateStr,
+        completed_date: dateStr,
         cost: cost ? parseFloat(cost) : null,
         property_id: properties[0].id,
         user_id: user!.id,
