@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import HomeInventory from "@/components/dashboard/HomeInventory";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -375,17 +374,6 @@ const PropertyCards = () => {
             ))}
           </div>
 
-          {selectedPropertyId && (
-            <HomeInventory propertyId={selectedPropertyId} />
-          )}
-
-          {properties.length === 1 && !selectedPropertyId && (
-            <div className="mt-4 text-center">
-              <Button variant="outline" className="rounded-full font-body" onClick={() => setSelectedPropertyId(properties[0].id)}>
-                View Home Inventory
-              </Button>
-            </div>
-          )}
         </>
       )}
     </div>

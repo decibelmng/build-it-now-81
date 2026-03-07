@@ -1,11 +1,11 @@
-import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, Clock, Settings, Search, LayoutDashboard, RefreshCw, Share2, Download, BarChart3, Zap, Lock, Link2, ClipboardCheck } from "lucide-react";
+import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, Clock, Settings, Search, LayoutDashboard, RefreshCw, Share2, Download, BarChart3, Zap, Lock, Link2, ClipboardCheck, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useSubscription, isProFeature } from "@/hooks/useSubscription";
 
-type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
+type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
 
 interface DashboardSidebarProps {
   activeSection: Section;
@@ -17,6 +17,7 @@ interface DashboardSidebarProps {
 const navItems: { id: Section; label: string; icon: React.ElementType }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "properties", label: "My Home", icon: Home },
+  { id: "home-inventory", label: "Home Inventory", icon: ClipboardList },
   { id: "maintenance", label: "Maintenance", icon: Wrench },
   { id: "documents", label: "Documents", icon: FileText },
   { id: "savings", label: "Savings", icon: TrendingUp },

@@ -279,14 +279,16 @@ export type Database = {
           brand: string | null
           category: string
           created_at: string
+          estimated_value: number | null
           expected_replacement: string | null
           id: string
           install_date: string | null
+          item_type: string
           last_maintained: string | null
           model: string | null
           name: string
           notes: string | null
-          property_id: string
+          property_id: string | null
           serial_number: string | null
           updated_at: string
           user_id: string
@@ -296,14 +298,16 @@ export type Database = {
           brand?: string | null
           category?: string
           created_at?: string
+          estimated_value?: number | null
           expected_replacement?: string | null
           id?: string
           install_date?: string | null
+          item_type?: string
           last_maintained?: string | null
           model?: string | null
           name: string
           notes?: string | null
-          property_id: string
+          property_id?: string | null
           serial_number?: string | null
           updated_at?: string
           user_id: string
@@ -313,14 +317,16 @@ export type Database = {
           brand?: string | null
           category?: string
           created_at?: string
+          estimated_value?: number | null
           expected_replacement?: string | null
           id?: string
           install_date?: string | null
+          item_type?: string
           last_maintained?: string | null
           model?: string | null
           name?: string
           notes?: string | null
-          property_id?: string
+          property_id?: string | null
           serial_number?: string | null
           updated_at?: string
           user_id?: string

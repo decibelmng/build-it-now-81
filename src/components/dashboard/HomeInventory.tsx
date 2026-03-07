@@ -19,27 +19,40 @@ import { useToast } from "@/hooks/use-toast";
 import UpgradeModal from "./UpgradeModal";
 import { format, differenceInDays, isPast } from "date-fns";
 
-const itemCategories = [
+const homeComponentCategories = [
   { value: "hvac", label: "HVAC", icon: Wind },
   { value: "plumbing", label: "Plumbing", icon: Droplets },
   { value: "electrical", label: "Electrical", icon: Zap },
   { value: "appliance", label: "Appliance", icon: Refrigerator },
   { value: "structural", label: "Structural", icon: Package },
   { value: "exterior", label: "Exterior", icon: Package },
-  { value: "personal", label: "Personal Property", icon: Gem },
   { value: "general", label: "General", icon: Package },
+];
+
+const personalItemCategories = [
+  { value: "furniture", label: "Furniture", icon: Package },
+  { value: "electronics", label: "Electronics", icon: Zap },
+  { value: "art_decor", label: "Art & Decor", icon: Gem },
+  { value: "tools", label: "Tools & Equipment", icon: Package },
+  { value: "sporting", label: "Sporting Goods", icon: Package },
+  { value: "instruments", label: "Musical Instruments", icon: Package },
+  { value: "jewelry", label: "Jewelry & Valuables", icon: Gem },
+  { value: "other", label: "Other", icon: Package },
 ];
 
 interface HomeInventoryProps {
   propertyId: string;
+  itemType?: "home_component" | "personal_item";
 }
 
 const emptyItemForm = {
   name: "", category: "general", brand: "", model: "", serial_number: "",
   install_date: "", last_maintained: "", expected_replacement: "", warranty_expiry: "", notes: "",
+  estimated_value: "",
 };
 
-const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
+const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventoryProps) => {
+  const itemCategories = itemType === "personal_item" ? personalItemCategories : homeComponentCategories;
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -56,12 +69,13 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
   const dialogFileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: items = [], isLoading: itemsLoading } = useQuery({
-    queryKey: ["home_items", propertyId],
+    queryKey: ["home_items", propertyId, itemType],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_items")
         .select("*")
         .eq("property_id", propertyId)
+        .eq("item_type", itemType)
         .order("category", { ascending: true })
         .order("name", { ascending: true });
       if (error) throw error;
@@ -89,7 +103,7 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
 
   const upsertItem = useMutation({
     mutationFn: async () => {
-      const payload = {
+      const payload: any = {
         property_id: propertyId,
         user_id: user!.id,
         name: itemForm.name,
@@ -102,6 +116,8 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
         expected_replacement: itemForm.expected_replacement || null,
         warranty_expiry: itemForm.warranty_expiry || null,
         notes: itemForm.notes || null,
+        item_type: itemType,
+        estimated_value: itemType === "personal_item" && itemForm.estimated_value ? parseFloat(itemForm.estimated_value) : null,
       };
       let itemId = editingItem;
       if (editingItem) {
@@ -133,7 +149,7 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
+      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId, itemType] });
       queryClient.invalidateQueries({ queryKey: ["home_item_attachments"] });
       setItemOpen(false);
       setEditingItem(null);
@@ -150,7 +166,7 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
+      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId, itemType] });
       toast({ title: "Item removed" });
     },
   });
@@ -250,6 +266,7 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
       install_date: item.install_date || "", last_maintained: item.last_maintained || "",
       expected_replacement: item.expected_replacement || "", warranty_expiry: item.warranty_expiry || "",
       notes: item.notes || "",
+      estimated_value: item.estimated_value ? String(item.estimated_value) : "",
     });
     setItemOpen(true);
   };
@@ -344,10 +361,12 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
             <h3 className="font-display text-lg font-semibold flex items-center gap-2">
-              <Package className="h-5 w-5" /> Home Inventory
+              <Package className="h-5 w-5" /> {itemType === "personal_item" ? "Personal Items" : "Home Components"}
             </h3>
             <p className="font-body text-sm text-muted-foreground">
-              Track every item in your home — ages, serial numbers, maintenance dates, and replacements.
+              {itemType === "personal_item"
+                ? "Track personal belongings for insurance and record-keeping."
+                : "Track every component in your home — ages, serial numbers, maintenance dates, and replacements."}
             </p>
           </div>
           <div className="flex gap-2">
@@ -369,7 +388,7 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
               </DialogTrigger>
               <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="font-display">{editingItem ? "Edit Item" : "Add Home Item"}</DialogTitle>
+                  <DialogTitle className="font-display">{editingItem ? "Edit Item" : itemType === "personal_item" ? "Add Personal Item" : "Add Home Component"}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={(e) => { e.preventDefault(); upsertItem.mutate(); }} className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
@@ -419,8 +438,15 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
                   </div>
                   <div className="space-y-2">
                     <Label className="font-body">Notes</Label>
-                    <Textarea placeholder="Additional details, appraised value, condition notes..." value={itemForm.notes} onChange={(e) => setItemForm({ ...itemForm, notes: e.target.value })} className="font-body" rows={3} />
+                    <Textarea placeholder="Additional details, condition notes..." value={itemForm.notes} onChange={(e) => setItemForm({ ...itemForm, notes: e.target.value })} className="font-body" rows={3} />
                   </div>
+                  {itemType === "personal_item" && (
+                    <div className="space-y-2">
+                      <Label className="font-body">Estimated Value ($)</Label>
+                      <Input type="number" placeholder="e.g. 500" value={itemForm.estimated_value} onChange={(e) => setItemForm({ ...itemForm, estimated_value: e.target.value })} className="font-body" min="0" step="0.01" />
+                      <p className="font-body text-xs text-muted-foreground">For insurance documentation purposes.</p>
+                    </div>
+                  )}
                   {/* ── File Attachments Section ── */}
                   <div className="space-y-2">
                     <Label className="font-body">Photos & Documents</Label>
@@ -538,6 +564,7 @@ const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
                                 {item.last_maintained && <span><strong>Last maintained:</strong> {format(new Date(item.last_maintained), "MMM d, yyyy")}</span>}
                                 {item.expected_replacement && <span><strong>Replace by:</strong> {format(new Date(item.expected_replacement), "MMM yyyy")}</span>}
                                 {item.warranty_expiry && <span><strong>Warranty:</strong> {format(new Date(item.warranty_expiry), "MMM yyyy")}</span>}
+                                {item.estimated_value && <span><strong>Value:</strong> ${Number(item.estimated_value).toLocaleString()}</span>}
                               </div>
                               {item.notes && (
                                 <p className="mt-1 font-body text-xs text-muted-foreground italic">{item.notes}</p>

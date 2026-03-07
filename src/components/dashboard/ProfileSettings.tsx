@@ -55,6 +55,20 @@ const ProfileSettings = () => {
     enabled: !!user,
   });
 
+  // Query item counts for transfer summary
+  const { data: transferItemCounts } = useQuery({
+    queryKey: ["transfer_item_counts", transferPropertyId],
+    queryFn: async () => {
+      const [{ count: homeCount }, { count: personalCount }, { count: maintenanceCount }] = await Promise.all([
+        supabase.from("home_items").select("*", { count: "exact", head: true }).eq("property_id", transferPropertyId).eq("item_type", "home_component"),
+        supabase.from("home_items").select("*", { count: "exact", head: true }).eq("property_id", transferPropertyId).eq("item_type", "personal_item"),
+        supabase.from("maintenance_logs").select("*", { count: "exact", head: true }).eq("property_id", transferPropertyId),
+      ]);
+      return { homeComponents: homeCount ?? 0, personalItems: personalCount ?? 0, maintenanceLogs: maintenanceCount ?? 0 };
+    },
+    enabled: !!transferPropertyId,
+  });
+
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name ?? "");
@@ -309,12 +323,29 @@ const ProfileSettings = () => {
                 <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-2">
                   <p className="font-body text-sm font-semibold text-destructive">This action cannot be undone.</p>
                   <p className="font-body text-sm text-muted-foreground">
-                    You are about to permanently transfer ownership of <strong className="text-foreground">{userProperties.find((p) => p.id === transferPropertyId)?.name}</strong> and all associated data — maintenance logs, documents, contacts, and recurring templates — to <strong className="text-foreground">{transferEmail}</strong>.
-                  </p>
-                  <p className="font-body text-sm text-muted-foreground">
-                    Once the recipient accepts, you will no longer have access to this property or its records.
+                    You are about to permanently transfer ownership of <strong className="text-foreground">{userProperties.find((p) => p.id === transferPropertyId)?.name}</strong> and all associated data to <strong className="text-foreground">{transferEmail}</strong>.
                   </p>
                 </div>
+
+                {/* Transfer summary */}
+                {transferItemCounts && (
+                  <div className="rounded-lg border border-border bg-secondary/30 p-4 space-y-2">
+                    <p className="font-body text-sm font-semibold">Included in transfer:</p>
+                    <ul className="font-body text-sm text-muted-foreground space-y-1 ml-4 list-disc">
+                      <li>{transferItemCounts.homeComponents} home component{transferItemCounts.homeComponents !== 1 ? "s" : ""}</li>
+                      <li>{transferItemCounts.maintenanceLogs} maintenance record{transferItemCounts.maintenanceLogs !== 1 ? "s" : ""}</li>
+                      <li>Property details, documents, contacts</li>
+                    </ul>
+                    {transferItemCounts.personalItems > 0 && (
+                      <>
+                        <p className="font-body text-sm font-semibold mt-3">Not included:</p>
+                        <ul className="font-body text-sm text-muted-foreground space-y-1 ml-4 list-disc">
+                          <li>{transferItemCounts.personalItems} personal item{transferItemCounts.personalItems !== 1 ? "s" : ""} (these stay in your account)</li>
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
