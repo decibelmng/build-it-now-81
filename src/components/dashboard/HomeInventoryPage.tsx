@@ -125,7 +125,7 @@ const HomeInventoryPage = () => {
 
           <TabsContent value="home_component">
             {selectedPropertyId && (
-              <HomeInventory propertyId={selectedPropertyId} itemType="home_component" />
+              <HomeInventory propertyId={selectedPropertyId} itemType="home_component" warrantyFilter={showExpiringSoon} />
             )}
           </TabsContent>
 
@@ -145,7 +145,7 @@ const HomeInventoryPage = () => {
               </div>
             )}
             {selectedPropertyId && (
-              <HomeInventory propertyId={selectedPropertyId} itemType="personal_item" />
+              <HomeInventory propertyId={selectedPropertyId} itemType="personal_item" warrantyFilter={showExpiringSoon} />
             )}
 
             {/* Archived personal items from transferred properties */}
