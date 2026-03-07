@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -13,7 +13,6 @@ import SavingsTracking from "@/components/dashboard/SavingsTracking";
 import HomeContacts from "@/components/dashboard/HomeContacts";
 import PropertyTimeline from "@/components/dashboard/PropertyTimeline";
 import ProfileSettings from "@/components/dashboard/ProfileSettings";
-import DashboardSearch from "@/components/dashboard/DashboardSearch";
 import OnboardingWizard from "@/components/dashboard/OnboardingWizard";
 import RecurringTemplates from "@/components/dashboard/RecurringTemplates";
 import PropertySharing from "@/components/dashboard/PropertySharing";
@@ -26,8 +25,8 @@ import ContractorLinks from "@/components/dashboard/ContractorLinks";
 import ContractorSubmissions from "@/components/dashboard/ContractorSubmissions";
 import HomeInventoryPage from "@/components/dashboard/HomeInventoryPage";
 import TaxInvestmentPage from "@/components/dashboard/TaxInvestmentPage";
+import SearchCommandPalette from "@/components/dashboard/SearchCommandPalette";
 import { useToast } from "@/hooks/use-toast";
-
 
 type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "tax-investment" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
 
@@ -41,6 +40,20 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState<Section>("overview");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+
+  // Cmd+K shortcut for search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   // Handle upgrade success/cancel from Stripe redirect
   useEffect(() => {
@@ -67,7 +80,6 @@ const Dashboard = () => {
       });
   }, [user, navigate]);
 
-  // Check if user has any properties — show onboarding if not
   const { data: properties, isSuccess: propertiesLoaded } = useQuery({
     queryKey: ["properties_onboarding", user?.id],
     queryFn: async () => {
@@ -84,7 +96,6 @@ const Dashboard = () => {
     }
   }, [propertiesLoaded, properties]);
 
-  // Listen for navigate-section events from child components
   useEffect(() => {
     const handler = (e: Event) => {
       const section = (e as CustomEvent).detail as Section;
@@ -98,6 +109,19 @@ const Dashboard = () => {
     await signOut();
     navigate("/");
   };
+
+  const handleSearchNavigate = useCallback((section: string) => {
+    setActiveSection(section as Section);
+    setSearchOpen(false);
+  }, []);
+
+  const handleQuickAdd = useCallback(() => {
+    setActiveSection("maintenance");
+    // Small delay to ensure the component mounts, then trigger add
+    setTimeout(() => {
+      setQuickAddOpen(true);
+    }, 100);
+  }, []);
 
   if (showOnboarding) {
     return (
@@ -114,11 +138,13 @@ const Dashboard = () => {
         onSectionChange={setActiveSection}
         onSignOut={handleSignOut}
         displayName={profile?.display_name ?? null}
+        onOpenSearch={() => setSearchOpen(true)}
+        onQuickAdd={handleQuickAdd}
       />
 
       <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
         <div className="mx-auto max-w-5xl px-3 py-4 sm:px-8 sm:py-8">
-          {activeSection === "overview" && <DashboardOverview />}
+          {activeSection === "overview" && <DashboardOverview onNavigate={(s: string) => setActiveSection(s as Section)} />}
           {activeSection === "properties" && <PropertyCards />}
           {activeSection === "home-inventory" && <HomeInventoryPage />}
           {activeSection === "maintenance" && <MaintenanceLogSection onNavigate={(s: string) => setActiveSection(s as Section)} />}
@@ -137,12 +163,13 @@ const Dashboard = () => {
             tier === "pro" ? <AnalyticsInsights /> : <FeatureGate featureName="Analytics & Insights" onUpgrade={() => setShowUpgrade(true)} />
           )}
           {activeSection === "settings" && <ProfileSettings />}
-          {activeSection === "search" && <DashboardSearch />}
+          {activeSection === "search" && <SearchCommandPalette open={true} onOpenChange={() => setActiveSection("overview")} onNavigate={handleSearchNavigate} />}
           {activeSection === "contractor-links" && <ContractorLinks />}
           {activeSection === "contractor-submissions" && <ContractorSubmissions />}
         </div>
       </main>
 
+      <SearchCommandPalette open={searchOpen} onOpenChange={setSearchOpen} onNavigate={handleSearchNavigate} />
       <UpgradeModal open={showUpgrade} onOpenChange={setShowUpgrade} />
     </div>
   );
