@@ -1,13 +1,19 @@
 /**
- * Predictive Savings Forecaster
- * Calculates future home maintenance costs based on property data and tracked items.
- * Uses the Home Systems Registry when available to only predict costs for systems the home actually has.
+ * Predictive Savings Forecaster — Two-Tier Model
+ * Calculates future costs based on enabled components from the Home Systems Registry.
  */
 
-import { SYSTEMS_CATALOG, type HomeSystemsRegistry } from "@/lib/homeSystemsRegistry";
+import {
+  SYSTEMS_CATALOG,
+  getEnabledComponents,
+  avgReplacementCost,
+  migrateOldRegistry,
+  type HomeSystemsRegistry,
+} from "@/lib/homeSystemsRegistry";
 
 export interface SystemCostProfile {
   key: string;
+  systemKey: string;
   label: string;
   category: string;
   replacementCost: number;
@@ -15,24 +21,51 @@ export interface SystemCostProfile {
   annualCost: number;
 }
 
-// Build SYSTEM_PROFILES from SYSTEMS_CATALOG for backward compatibility
-export const SYSTEM_PROFILES: SystemCostProfile[] = SYSTEMS_CATALOG.map((s) => ({
-  key: s.key,
-  label: s.label,
-  category: s.category,
-  replacementCost: s.replacementCost,
-  lifespanYears: s.lifespanYears,
-  annualCost: s.annualCost,
-}));
+/** Build flat component profiles from the catalog for backward compatibility */
+function buildComponentProfiles(): SystemCostProfile[] {
+  const profiles: SystemCostProfile[] = [];
+  for (const sys of SYSTEMS_CATALOG) {
+    for (const comp of sys.components) {
+      profiles.push({
+        key: `${sys.key}:${comp.key}`,
+        systemKey: sys.key,
+        label: comp.label,
+        category: mapSystemToCategory(sys.key),
+        replacementCost: avgReplacementCost(comp),
+        lifespanYears: comp.lifespanYears,
+        annualCost: comp.annualCost,
+      });
+    }
+  }
+  return profiles;
+}
 
-// Map variant category names to their canonical SYSTEM_PROFILES category
+function mapSystemToCategory(systemKey: string): string {
+  const map: Record<string, string> = {
+    roofing: "roofing",
+    hvac: "hvac",
+    plumbing: "plumbing",
+    electrical: "electrical",
+    exterior: "exterior",
+    interior: "structural",
+    appliances: "appliance",
+    bathrooms: "plumbing",
+    foundation: "structural",
+    outdoor: "exterior",
+    specialty: "general",
+  };
+  return map[systemKey] || "general";
+}
+
+export const SYSTEM_PROFILES: SystemCostProfile[] = buildComponentProfiles();
+
+// Map variant category names to their canonical form
 const CATEGORY_ALIASES: Record<string, string> = {
   roof: "roofing",
   "hvac system": "hvac",
-  "hvac_system": "hvac",
+  hvac_system: "hvac",
 };
 
-/** Normalize a category to its canonical form */
 export function normalizeCategory(cat: string): string {
   const lower = cat.toLowerCase().trim();
   return CATEGORY_ALIASES[lower] || lower;
@@ -43,8 +76,6 @@ export const ANNUAL_MAINTENANCE: Record<string, number> = {
   electrical: 200,
 };
 
-const MAJOR_SYSTEM_CATEGORIES = ["roofing", "hvac", "plumbing", "electrical", "appliance"];
-
 export interface HomeItem {
   id: string;
   name: string;
@@ -52,6 +83,7 @@ export interface HomeItem {
   install_date: string | null;
   expected_replacement: string | null;
   estimated_value: number | null;
+  system_key?: string | null;
 }
 
 export interface PropertyInfo {
@@ -82,7 +114,7 @@ export function calculateForecast(
   property: PropertyInfo,
   homeItems: HomeItem[],
   forecastYears: number = 10,
-  homeSystems?: HomeSystemsRegistry | null,
+  rawHomeSystems?: any | null,
   registryCompleted?: boolean
 ): ForecastResult {
   const now = new Date();
@@ -90,31 +122,45 @@ export function calculateForecast(
   const homeAge = property.year_built ? currentYear - property.year_built : 20;
   const homeValue = property.purchase_price || 350000;
 
+  // Migrate old format if needed
+  const homeSystems: HomeSystemsRegistry | null = rawHomeSystems
+    ? (migrateOldRegistry(rawHomeSystems) || rawHomeSystems)
+    : null;
   const hasRegistry = !!homeSystems && !!registryCompleted;
 
-  // Track which categories have personalized data
   const personalizedCategories = new Set<string>();
+  const personalizedCompKeys = new Set<string>();
   const events: ForecastEvent[] = [];
 
-  // Normalize item categories
   const normalizedItems = homeItems.map((item) => ({
     ...item,
     category: normalizeCategory(item.category),
   }));
 
-  // 1. Process tracked home items for personalized predictions
+  // 1. Process tracked items with install dates
   normalizedItems.forEach((item) => {
     if (!item.install_date) return;
 
-    const installYear = new Date(item.install_date).getFullYear();
-    const profile = SYSTEM_PROFILES.find((p) => p.category === item.category);
+    // Find matching component profile
+    let profile: SystemCostProfile | undefined;
+    if (item.system_key) {
+      profile = SYSTEM_PROFILES.find((p) => p.key === item.system_key);
+    }
+    if (!profile) {
+      profile = SYSTEM_PROFILES.find((p) => p.category === item.category);
+    }
     if (!profile) return;
 
     // If registry exists and this system is disabled, skip
-    if (hasRegistry && homeSystems![profile.key] && !homeSystems![profile.key].enabled) return;
+    if (hasRegistry) {
+      const sysEntry = homeSystems![profile.systemKey];
+      if (sysEntry && !sysEntry.enabled) return;
+    }
 
     personalizedCategories.add(item.category);
+    personalizedCompKeys.add(profile.key);
 
+    const installYear = new Date(item.install_date).getFullYear();
     const lifespan = profile.lifespanYears;
     const age = currentYear - installYear;
     const yearsRemaining = Math.max(0, lifespan - age);
@@ -141,17 +187,17 @@ export function calculateForecast(
     }
   });
 
-  // 2. Add estimates for uncovered categories
-  SYSTEM_PROFILES.forEach((profile) => {
-    if (personalizedCategories.has(profile.category)) return;
+  // 2. Add estimates for uncovered components
+  if (hasRegistry) {
+    // Only include enabled components
+    const enabledComps = getEnabledComponents(homeSystems);
+    for (const comp of enabledComps) {
+      const compKey = `${comp.systemKey}:${comp.key}`;
+      if (personalizedCompKeys.has(compKey)) continue;
 
-    // If registry exists, only include enabled systems
-    if (hasRegistry) {
-      const entry = homeSystems![profile.key];
-      if (!entry?.enabled) return;
+      const profile = SYSTEM_PROFILES.find((p) => p.key === compKey);
+      if (!profile) continue;
 
-      // Multiply by quantity
-      const quantity = entry.quantity || 1;
       const estimatedAge = homeAge % profile.lifespanYears;
       const yearsToNext = profile.lifespanYears - estimatedAge;
       const replacementYear = currentYear + yearsToNext;
@@ -159,39 +205,49 @@ export function calculateForecast(
       if (replacementYear <= currentYear + forecastYears) {
         events.push({
           year: replacementYear,
-          label: `${profile.label} — Est. Replacement`,
-          cost: profile.replacementCost * quantity,
-          category: profile.category,
-          isPersonalized: false,
-        });
-      }
-    } else {
-      // No registry — iterate all systems as generic estimates (backward compatible)
-      const estimatedAge = homeAge % profile.lifespanYears;
-      const yearsToNext = profile.lifespanYears - estimatedAge;
-      const replacementYear = currentYear + yearsToNext;
-
-      if (replacementYear <= currentYear + forecastYears) {
-        events.push({
-          year: replacementYear,
-          label: `${profile.label} — Est. Replacement`,
-          cost: profile.replacementCost,
+          label: `${comp.label} — Est. Replacement`,
+          cost: profile.replacementCost * comp.quantity,
           category: profile.category,
           isPersonalized: false,
         });
       }
     }
-  });
+  } else {
+    // No registry — use all autoCreate components as generic estimates
+    for (const sys of SYSTEMS_CATALOG) {
+      for (const comp of sys.components) {
+        if (!comp.autoCreate) continue;
+        const compKey = `${sys.key}:${comp.key}`;
+        if (personalizedCompKeys.has(compKey)) continue;
 
-  // 3. Calculate annual baseline
+        const profile = SYSTEM_PROFILES.find((p) => p.key === compKey);
+        if (!profile) continue;
+        if (personalizedCategories.has(profile.category)) continue;
+
+        const estimatedAge = homeAge % profile.lifespanYears;
+        const yearsToNext = profile.lifespanYears - estimatedAge;
+        const replacementYear = currentYear + yearsToNext;
+
+        if (replacementYear <= currentYear + forecastYears) {
+          events.push({
+            year: replacementYear,
+            label: `${comp.label} — Est. Replacement`,
+            cost: profile.replacementCost,
+            category: profile.category,
+            isPersonalized: false,
+          });
+        }
+      }
+    }
+  }
+
+  // 3. Annual baseline
   let annualBaseline = homeValue * 0.01;
-
   Object.entries(ANNUAL_MAINTENANCE).forEach(([cat, cost]) => {
     if (!personalizedCategories.has(cat)) {
-      // If registry exists, only add if system is enabled
       if (hasRegistry) {
-        const matchingProfile = SYSTEM_PROFILES.find((p) => p.category === cat);
-        if (matchingProfile && homeSystems![matchingProfile.key]?.enabled) {
+        const matchingSys = SYSTEMS_CATALOG.find((s) => mapSystemToCategory(s.key) === cat);
+        if (matchingSys && homeSystems![matchingSys.key]?.enabled) {
           annualBaseline += cost;
         }
       } else {
@@ -199,58 +255,54 @@ export function calculateForecast(
       }
     }
   });
-
   annualBaseline = Math.max(annualBaseline, homeValue * 0.01);
 
-  // 4. Build yearly totals
+  // 4. Yearly totals
   const yearlyTotals: { year: number; predicted: number; baseline: number }[] = [];
   let totalOverForecast = 0;
-
   for (let i = 1; i <= forecastYears; i++) {
     const year = currentYear + i;
     const yearEvents = events.filter((e) => e.year === year);
     const eventCosts = yearEvents.reduce((sum, e) => sum + e.cost, 0);
     const yearTotal = annualBaseline + eventCosts;
     totalOverForecast += yearTotal;
-
-    yearlyTotals.push({
-      year,
-      predicted: Math.round(yearTotal),
-      baseline: Math.round(annualBaseline),
-    });
+    yearlyTotals.push({ year, predicted: Math.round(yearTotal), baseline: Math.round(annualBaseline) });
   }
 
-  // 5. Recommended monthly savings
+  // 5. Monthly savings
   const recommendedMonthlySavings = Math.round(totalOverForecast / (forecastYears * 12));
 
-  // 6. Confidence score
-  let confidence = 20; // Base: having a property
+  // 6. Confidence
+  let confidence = 20;
   if (registryCompleted) confidence += 15;
   if (property.purchase_price) confidence += 15;
 
-  const documentedSystems = new Set(normalizedItems.filter((i) => i.install_date).map((i) => i.category));
-
-  // +10 per enabled system with personalized data
   if (hasRegistry) {
-    SYSTEM_PROFILES.forEach((p) => {
-      if (homeSystems![p.key]?.enabled && documentedSystems.has(p.category)) {
-        confidence += 10;
+    // +10 per system with at least one personalized component
+    const systemsWithData = new Set<string>();
+    for (const item of normalizedItems) {
+      if (!item.install_date) continue;
+      if (item.system_key) {
+        const sysKey = item.system_key.split(":")[0];
+        systemsWithData.add(sysKey);
       }
-    });
+    }
+    confidence += systemsWithData.size * 10;
   } else {
-    MAJOR_SYSTEM_CATEGORIES.forEach((cat) => {
+    const documentedSystems = new Set(normalizedItems.filter((i) => i.install_date).map((i) => i.category));
+    const majorCats = ["roofing", "hvac", "plumbing", "electrical", "appliance"];
+    majorCats.forEach((cat) => {
       if (documentedSystems.has(cat)) confidence += 10;
     });
   }
 
-  // Additional items with dates (non-major)
   const itemsWithDates = normalizedItems.filter(
-    (i) => i.install_date && !MAJOR_SYSTEM_CATEGORIES.includes(i.category)
+    (i) => i.install_date && !["roofing", "hvac", "plumbing", "electrical", "appliance"].includes(i.category)
   );
   confidence += Math.min(itemsWithDates.length * 5, 15);
   confidence = Math.min(confidence, 100);
 
-  // 7. Suggested items
+  // 7. Suggestions
   const suggestedItems: { label: string; impact: string }[] = [];
 
   if (!registryCompleted) {
@@ -267,26 +319,31 @@ export function calculateForecast(
     });
   }
 
-  SYSTEM_PROFILES.forEach((profile) => {
-    // Only suggest for enabled systems (or all if no registry)
-    if (hasRegistry && !homeSystems![profile.key]?.enabled) return;
-    if (personalizedCategories.has(profile.category)) return;
-
-    const existingItem = normalizedItems.find((i) => i.category === profile.category);
-    if (existingItem) {
+  // Suggest details for enabled components without data
+  if (hasRegistry) {
+    const enabledComps = getEnabledComponents(homeSystems);
+    for (const comp of enabledComps) {
+      const compKey = `${comp.systemKey}:${comp.key}`;
+      if (personalizedCompKeys.has(compKey)) continue;
       suggestedItems.push({
-        label: `Update your ${profile.label.toLowerCase()} install date`,
-        impact: `Personalizes $${profile.annualCost}/yr in predictions`,
+        label: `Add your ${comp.label.toLowerCase()} details`,
+        impact: `Personalizes $${comp.annualCost}/yr in predictions`,
       });
-    } else {
+    }
+  } else {
+    SYSTEM_PROFILES.filter((p) => {
+      const sys = SYSTEMS_CATALOG.find((s) => s.key === p.systemKey);
+      const comp = sys?.components.find((c) => `${sys.key}:${c.key}` === p.key);
+      return comp?.autoCreate;
+    }).forEach((profile) => {
+      if (personalizedCompKeys.has(profile.key)) return;
       suggestedItems.push({
         label: `Add your ${profile.label.toLowerCase()} details`,
         impact: `Personalizes $${profile.annualCost}/yr in predictions`,
       });
-    }
-  });
+    });
+  }
 
-  // Sort: registry setup first, then purchase price, then rest
   suggestedItems.sort((a, b) => {
     if (a.label.includes("home systems")) return -1;
     if (b.label.includes("home systems")) return 1;

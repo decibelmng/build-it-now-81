@@ -15,10 +15,11 @@ import {
 
 interface RegistryMigrationCardProps {
   propertyId: string;
+  bathroomCount?: number;
   onNavigate?: (section: string) => void;
 }
 
-const RegistryMigrationCard = ({ propertyId, onNavigate }: RegistryMigrationCardProps) => {
+const RegistryMigrationCard = ({ propertyId, bathroomCount, onNavigate }: RegistryMigrationCardProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -55,31 +56,28 @@ const RegistryMigrationCard = ({ propertyId, onNavigate }: RegistryMigrationCard
     enabled: !!propertyId,
   });
 
-  // Don't show if registry already completed, dismissed, or no items
   if (dismissed) return null;
   if (!property || (property as any).registry_completed) return null;
   if (existingItems.length === 0) return null;
 
   const { registry: inferred, itemUpdates } = inferRegistryFromExistingItems(
-    existingItems.map((i: any) => ({ id: i.id, category: i.category, system_key: i.system_key }))
+    existingItems.map((i: any) => ({ id: i.id, category: i.category, system_key: i.system_key })),
+    bathroomCount
   );
 
   const saveAndSync = async (reg: HomeSystemsRegistry) => {
     if (!user) return;
     setSaving(true);
     try {
-      // Save registry
       await supabase
         .from("properties")
         .update({ home_systems: reg, registry_completed: true } as any)
         .eq("id", propertyId);
 
-      // Update system_key on existing items
       for (const upd of itemUpdates) {
         await supabase.from("home_items").update({ system_key: upd.system_key } as any).eq("id", upd.id);
       }
 
-      // Sync skeletons
       const freshItems = await supabase
         .from("home_items")
         .select("id, system_key, is_registry_skeleton, is_active, data_completeness, category")
@@ -90,7 +88,8 @@ const RegistryMigrationCard = ({ propertyId, onNavigate }: RegistryMigrationCard
         (freshItems.data || []).map((i: any) => ({
           id: i.id, system_key: i.system_key, is_registry_skeleton: i.is_registry_skeleton,
           is_active: i.is_active, data_completeness: i.data_completeness, category: i.category,
-        }))
+        })),
+        bathroomCount
       );
 
       queryClient.invalidateQueries({ queryKey: ["properties"] });
@@ -111,7 +110,7 @@ const RegistryMigrationCard = ({ propertyId, onNavigate }: RegistryMigrationCard
         <CardContent className="p-5">
           <h3 className="font-display text-base font-semibold mb-1">🏠 Personalize your savings forecast</h3>
           <p className="font-body text-sm text-muted-foreground mb-3">
-            We detected {existingItems.length} system{existingItems.length !== 1 ? "s" : ""} in your home based on your existing inventory. Confirm which systems you have to get a more accurate forecast.
+            We detected {existingItems.length} item{existingItems.length !== 1 ? "s" : ""} in your home. Confirm which systems you have to get a more accurate forecast.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button

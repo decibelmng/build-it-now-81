@@ -13,6 +13,7 @@ import {
   getDefaultRegistry,
   syncRegistryToInventory,
   SYSTEMS_CATALOG,
+  migrateOldRegistry,
   type HomeSystemsRegistry,
 } from "@/lib/homeSystemsRegistry";
 
@@ -22,21 +23,29 @@ interface HomeSystemsSettingsProps {
   homeSystems: HomeSystemsRegistry | null;
   registryCompleted: boolean;
   onNavigate?: (section: string) => void;
+  bathroomCount?: number;
 }
 
 const HomeSystemsSettings = ({
   propertyId,
   propertyType,
-  homeSystems,
+  homeSystems: rawHomeSystems,
   registryCompleted,
   onNavigate,
+  bathroomCount,
 }: HomeSystemsSettingsProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [setupOpen, setSetupOpen] = useState(false);
+
+  // Migrate old format if needed
+  const homeSystems = rawHomeSystems
+    ? (migrateOldRegistry(rawHomeSystems, bathroomCount) || rawHomeSystems as HomeSystemsRegistry)
+    : null;
+
   const [localRegistry, setLocalRegistry] = useState<HomeSystemsRegistry>(
-    homeSystems || getDefaultRegistry(propertyType)
+    homeSystems || getDefaultRegistry(propertyType, bathroomCount)
   );
   const [saving, setSaving] = useState(false);
   const [confirmDisable, setConfirmDisable] = useState<{
@@ -45,7 +54,7 @@ const HomeSystemsSettings = ({
     itemCount: number;
   } | null>(null);
 
-  // Fetch enrichment data for enabled systems
+  // Fetch enrichment data for enabled systems (using system:component keys)
   const { data: enrichmentData = {} } = useQuery({
     queryKey: ["system_enrichment", propertyId],
     queryFn: async () => {
@@ -84,7 +93,6 @@ const HomeSystemsSettings = ({
         .eq("id", propertyId);
       if (error) throw error;
 
-      // Get existing items for sync
       const { data: existingItems = [] } = await supabase
         .from("home_items")
         .select("id, system_key, is_registry_skeleton, is_active, data_completeness, category")
@@ -93,13 +101,10 @@ const HomeSystemsSettings = ({
       await syncRegistryToInventory(
         propertyId, user.id, newRegistry,
         (existingItems || []).map((i: any) => ({
-          id: i.id,
-          system_key: i.system_key,
-          is_registry_skeleton: i.is_registry_skeleton,
-          is_active: i.is_active,
-          data_completeness: i.data_completeness,
-          category: i.category,
-        }))
+          id: i.id, system_key: i.system_key, is_registry_skeleton: i.is_registry_skeleton,
+          is_active: i.is_active, data_completeness: i.data_completeness, category: i.category,
+        })),
+        bathroomCount
       );
 
       queryClient.invalidateQueries({ queryKey: ["properties"] });
@@ -119,15 +124,15 @@ const HomeSystemsSettings = ({
       const nowEnabled = newRegistry[key]?.enabled;
 
       if (wasEnabled && !nowEnabled) {
-        const enrichment = enrichmentData[key];
-        if (enrichment && enrichment.avgCompleteness > 0) {
+        // Count enriched items across all components
+        const sysItems = Object.entries(enrichmentData)
+          .filter(([k]) => k.startsWith(`${key}:`))
+          .reduce((acc, [, v]) => ({ count: acc.count + v.count, avg: acc.avg + v.avgCompleteness }), { count: 0, avg: 0 });
+
+        if (sysItems.count > 0 && sysItems.avg > 0) {
           const sys = SYSTEMS_CATALOG.find((s) => s.key === key);
-          setConfirmDisable({
-            key,
-            label: sys?.label || key,
-            itemCount: enrichment.count,
-          });
-          return; // Don't save yet, wait for confirmation
+          setConfirmDisable({ key, label: sys?.label || key, itemCount: sysItems.count });
+          return;
         }
       }
     }
@@ -144,7 +149,6 @@ const HomeSystemsSettings = ({
       }
     }
 
-    // Auto-save
     await saveRegistry(newRegistry);
   };
 
@@ -189,15 +193,9 @@ const HomeSystemsSettings = ({
             <DialogHeader>
               <DialogTitle className="font-display">What does your home have?</DialogTitle>
             </DialogHeader>
-            <SystemsToggleGrid
-              registry={localRegistry}
-              onChange={setLocalRegistry}
-              showAccuracy
-            />
+            <SystemsToggleGrid registry={localRegistry} onChange={setLocalRegistry} showAccuracy />
             <div className="flex gap-3 pt-4">
-              <Button variant="outline" onClick={() => setSetupOpen(false)} className="rounded-full font-body">
-                Cancel
-              </Button>
+              <Button variant="outline" onClick={() => setSetupOpen(false)} className="rounded-full font-body">Cancel</Button>
               <Button
                 onClick={async () => {
                   await saveRegistry(localRegistry);
@@ -216,7 +214,6 @@ const HomeSystemsSettings = ({
     );
   }
 
-  // Full settings view
   return (
     <>
       <div className="mt-6">
