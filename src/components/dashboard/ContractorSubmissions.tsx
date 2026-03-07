@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2, XCircle, Clock, Eye, UserPlus, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { indexContractorSubmissionFiles } from "@/lib/documentIndexing";
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "destructive" }> = {
   pending: { label: "Pending", icon: Clock, variant: "secondary" },
@@ -94,8 +95,9 @@ const ContractorSubmissions = () => {
       if (logError) throw logError;
 
       // If add_to_contacts, add the contractor as a contact
+      let contactId: string | null = null;
       if (submission.add_to_contacts) {
-        await supabase.from("home_contacts").insert({
+        const { data: newContact } = await supabase.from("home_contacts").insert({
           property_id: submission.property_id,
           user_id: user!.id,
           name: submission.contractor_contact_name,
@@ -103,8 +105,16 @@ const ContractorSubmissions = () => {
           email: submission.contractor_email || null,
           phone: submission.contractor_phone || null,
           role: "contractor",
-        });
+        }).select("id").single();
+        contactId = newContact?.id || null;
       }
+
+      // Auto-index contractor submission files into documents table
+      await indexContractorSubmissionFiles({
+        submission,
+        user_id: user!.id,
+        contact_id: contactId,
+      });
     },
     onSuccess: (_, submission) => {
       queryClient.invalidateQueries({ queryKey: ["contractor_submissions"] });

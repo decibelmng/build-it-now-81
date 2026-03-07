@@ -16,6 +16,7 @@ import ServiceLinkPopover from "@/components/dashboard/ServiceLinkPopover";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
+import { indexMaintenancePhoto, removeDocumentIndex } from "@/lib/documentIndexing";
 
 type Property = Tables<"properties">;
 
@@ -172,8 +173,10 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       let contact_id: string | null = form.contact_id || null;
 
       // Upload new photo if selected
+      let uploadedFilePath: string | null = null;
       if (photoFile && user) {
         const filePath = `${user.id}/${Date.now()}_${photoFile.name}`;
+        uploadedFilePath = filePath;
         const { error: uploadError } = await supabase.storage.from("maintenance-photos").upload(filePath, photoFile);
         if (uploadError) throw uploadError;
         const { data: urlData } = await supabase.storage.from("maintenance-photos").createSignedUrl(filePath, 31536000);
@@ -219,11 +222,22 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         if (!editingId) payload.completed_date = new Date().toISOString().split("T")[0];
       }
 
+      let logId = editingId;
       if (editingId) {
+        // If replacing photo, remove old document index
+        if (uploadedFilePath && photoFile) {
+          // Try to find old file path from image_url and remove its index
+          const { data: oldLog } = await supabase.from("maintenance_logs").select("image_url").eq("id", editingId).single();
+          if (oldLog?.image_url) {
+            // Extract old file path from signed URL - find the path portion
+            const oldPathMatch = oldLog.image_url.match(/maintenance-photos\/([^?]+)/);
+            if (oldPathMatch) await removeDocumentIndex(oldPathMatch[1]);
+          }
+        }
         const { error } = await supabase.from("maintenance_logs").update(payload).eq("id", editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("maintenance_logs").insert({
+        const { data: newLog, error } = await supabase.from("maintenance_logs").insert({
           user_id: user!.id,
           property_id: form.property_id,
           title: form.title,
@@ -234,8 +248,24 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           contact_id,
           image_url: image_url !== undefined ? image_url : null,
           scope: form.scope,
-        });
+        }).select("id").single();
         if (error) throw error;
+        logId = newLog.id;
+      }
+
+      // Auto-index the uploaded photo into documents table
+      if (uploadedFilePath && photoFile && logId) {
+        await indexMaintenancePhoto({
+          file_path: uploadedFilePath,
+          file_name: photoFile.name,
+          file_type: photoFile.type,
+          file_size: photoFile.size,
+          property_id: form.property_id,
+          user_id: user!.id,
+          maintenance_log_id: logId,
+          log_title: form.title,
+          log_date: form.scheduled_date || undefined,
+        });
       }
     },
     onSuccess: () => {
