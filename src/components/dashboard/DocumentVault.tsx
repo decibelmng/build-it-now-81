@@ -167,12 +167,24 @@ const DocumentVault = () => {
               <div className="space-y-2">
                 <Label className="font-body">File *</Label>
                 <div
-                  className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border/50 p-8 transition-colors hover:border-accent/40"
+                  className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors ${
+                    fileDragOver ? "border-accent bg-accent/10" : "border-border/50 hover:border-accent/40"
+                  }`}
                   onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setFileDragOver(true); }}
+                  onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setFileDragOver(true); }}
+                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setFileDragOver(false); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setFileDragOver(false);
+                    const dropped = e.dataTransfer.files?.[0];
+                    if (dropped) setFile(dropped);
+                  }}
                 >
                   <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
                   <p className="font-body text-sm text-muted-foreground">
-                    {file ? file.name : "Click to select a file"}
+                    {file ? file.name : fileDragOver ? "Drop file here" : "Click or drag a file here"}
                   </p>
                   <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
                 </div>
