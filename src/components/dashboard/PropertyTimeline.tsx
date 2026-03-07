@@ -334,6 +334,7 @@ const PropertyTimeline = () => {
           { type: "utility", label: "Utilities", icon: PlugZap },
           { type: "transfer", label: "Transfer", icon: ArrowRightLeft },
           { type: "document", label: "Documents", icon: FileText },
+        ].map(({ type, label, icon: Icon }) => {
           const active = visibleTypes.has(type);
           return (
             <div key={type} className="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2">
