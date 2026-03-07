@@ -181,15 +181,26 @@ export function calculateForecast(
 
   confidence = Math.min(confidence, 100);
 
-  // 7. Suggest most impactful items to add
+  // 7. Suggest most impactful items to add or update
   const suggestedItems: { label: string; impact: string }[] = [];
+  const allItemCategories = new Set(homeItems.map((i) => i.category));
 
   if (!property.purchase_price) {
     suggestedItems.push({ label: "Set your home's purchase price", impact: "Improves baseline estimate by 15%" });
   }
 
   SYSTEM_PROFILES.forEach((profile) => {
-    if (!personalizedCategories.has(profile.category)) {
+    if (personalizedCategories.has(profile.category)) return; // fully tracked, skip
+
+    const existingItem = homeItems.find((i) => i.category === profile.category);
+    if (existingItem) {
+      // Component exists but missing install_date — suggest updating it
+      suggestedItems.push({
+        label: `Update your ${profile.label.toLowerCase()} install date`,
+        impact: `Personalizes $${profile.annualCost}/yr in predictions`,
+      });
+    } else {
+      // No component at all — suggest adding one
       suggestedItems.push({
         label: `Add your ${profile.label.toLowerCase()} details`,
         impact: `Personalizes $${profile.annualCost}/yr in predictions`,

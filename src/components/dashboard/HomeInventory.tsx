@@ -74,15 +74,37 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
   const dialogFileInputRef = useRef<HTMLInputElement>(null);
   const [fileDragOver, setFileDragOver] = useState(false);
 
-  // Listen for "add-home-component" events from Savings Forecast suggestions
+  const itemsRef = useRef<any[]>([]);
   useEffect(() => {
     const handler = (e: Event) => {
-      const { category } = (e as CustomEvent).detail || {};
-      if (itemType === "home_component") {
-        setEditingItem(null);
-        setItemForm({ ...emptyItemForm, category: category || "general", item_type: "home_component" });
-        setItemOpen(true);
+      const { category, mode } = (e as CustomEvent).detail || {};
+      if (itemType !== "home_component") return;
+
+      if (mode === "edit") {
+        const existing = itemsRef.current.find((i: any) => i.category === category);
+        if (existing) {
+          setEditingItem(existing.id);
+          setItemForm({
+            name: existing.name || "",
+            category: existing.category || "general",
+            brand: existing.brand || "",
+            model: existing.model || "",
+            serial_number: existing.serial_number || "",
+            install_date: existing.install_date || "",
+            last_maintained: existing.last_maintained || "",
+            expected_replacement: existing.expected_replacement || "",
+            warranty_expiry: existing.warranty_expiry || "",
+            notes: existing.notes || "",
+            estimated_value: existing.estimated_value ? String(existing.estimated_value) : "",
+            item_type: "home_component",
+          });
+          setItemOpen(true);
+          return;
+        }
       }
+      setEditingItem(null);
+      setItemForm({ ...emptyItemForm, category: category || "general", item_type: "home_component" });
+      setItemOpen(true);
     };
     window.addEventListener("add-home-component", handler);
     return () => window.removeEventListener("add-home-component", handler);
@@ -109,6 +131,9 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     },
     enabled: !!user && !!propertyId,
   });
+
+  // Keep ref in sync for event handler
+  useEffect(() => { itemsRef.current = items; }, [items]);
 
   // Fetch all attachments for items in this property
   const itemIds = items.map((i: any) => i.id);
