@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
   Home, Wrench, Droplets, Zap, Wind, Hammer, TreePine, Cog,
-  CheckCircle2, Clock, AlertTriangle, Building, DollarSign, TrendingUp, Gem, Package, PlugZap, ArrowRightLeft,
+  CheckCircle2, Clock, AlertTriangle, Building, DollarSign, TrendingUp, Gem, Package, PlugZap, ArrowRightLeft, FileText,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
@@ -41,7 +41,7 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; var
 
 interface TimelineEvent {
   id: string;
-  type: "construction" | "maintenance" | "major_repair" | "improvement" | "inventory" | "utility" | "transfer";
+  type: "construction" | "maintenance" | "major_repair" | "improvement" | "inventory" | "utility" | "transfer" | "document";
   date: string;
   title: string;
   description?: string | null;
@@ -56,7 +56,7 @@ const PropertyTimeline = () => {
   const { user } = useAuth();
   const [selectedProperty, setSelectedProperty] = useState<string>("all");
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
-  const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(["construction", "maintenance", "major_repair", "improvement", "inventory", "utility", "transfer"]));
+  const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(["construction", "maintenance", "major_repair", "improvement", "inventory", "utility", "transfer", "document"]));
 
   const toggleType = (type: string) => {
     setVisibleTypes((prev) => {
@@ -124,6 +124,19 @@ const PropertyTimeline = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("property_transfers")
+        .select("*, properties(name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: documents = [] } = useQuery({
+    queryKey: ["documents_timeline", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("documents")
         .select("*, properties(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -238,6 +251,24 @@ const PropertyTimeline = () => {
     });
   });
 
+  // Add document events
+  const filteredDocs = selectedProperty === "all" ? documents : documents.filter((d: any) => d.property_id === selectedProperty);
+
+  filteredDocs.forEach((doc: any) => {
+    const docDate = doc.document_date || doc.uploaded_at?.split("T")[0] || doc.created_at?.split("T")[0];
+    if (!docDate) return;
+    events.push({
+      id: `doc-${doc.id}`,
+      type: "document",
+      date: docDate,
+      title: doc.title || doc.name || doc.file_name,
+      description: [doc.description, doc.category ? doc.category.replace(/_/g, " ") : null].filter(Boolean).join(" · ") || null,
+      category: "document",
+      cost: null,
+      propertyName: doc.properties?.name,
+    });
+  });
+
   events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   // Apply type filter — construction is always visible
@@ -302,6 +333,7 @@ const PropertyTimeline = () => {
           { type: "inventory", label: "Inventory", icon: Cog },
           { type: "utility", label: "Utilities", icon: PlugZap },
           { type: "transfer", label: "Transfer", icon: ArrowRightLeft },
+          { type: "document", label: "Documents", icon: FileText },
         ].map(({ type, label, icon: Icon }) => {
           const active = visibleTypes.has(type);
           return (
@@ -443,10 +475,13 @@ const PropertyTimeline = () => {
           {filteredEvents.map((event) => {
             const isConstruction = event.type === "construction";
             const isTransfer = event.type === "transfer";
+            const isDocument = event.type === "document";
             const cat = isConstruction
               ? { label: "Construction", icon: Building, color: "bg-accent/20 text-accent" }
               : isTransfer
               ? { label: "Transfer", icon: ArrowRightLeft, color: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400" }
+              : isDocument
+              ? { label: "Document", icon: FileText, color: "bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-400" }
               : categoryConfig[event.category] ?? categoryConfig.general;
             const CatIcon = cat.icon;
             const statusCfg = event.status ? statusConfig[event.status] ?? statusConfig.pending : null;
