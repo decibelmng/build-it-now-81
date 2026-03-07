@@ -34,11 +34,26 @@ type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "d
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { tier, refreshSubscription } = useSubscription();
   const [profile, setProfile] = useState<{ display_name: string | null; persona: string | null } | null>(null);
-  const [activeSection, setActiveSection] = useState<Section>("overview");
+
+  // Derive activeSection from URL search params so browser back/forward works
+  const sectionParam = searchParams.get("section") as Section | null;
+  const activeSection: Section = sectionParam && isValidSection(sectionParam) ? sectionParam : "overview";
+
+  const setActiveSection = useCallback((section: Section) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (section === "overview") {
+        next.delete("section");
+      } else {
+        next.set("section", section);
+      }
+      return next;
+    });
+  }, [setSearchParams]);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
