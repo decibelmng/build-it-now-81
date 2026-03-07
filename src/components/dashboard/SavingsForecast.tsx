@@ -227,16 +227,18 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
                     if (item.label.includes("purchase price")) {
                       onNavigate?.("properties");
                     } else {
-                      // Find the matching system profile category for this suggestion
                       const matchedProfile = SYSTEM_PROFILES.find(
                         (p) => item.label.toLowerCase().includes(p.label.toLowerCase())
                       );
+                      const isUpdate = item.label.startsWith("Update");
                       onNavigate?.("home-inventory");
-                      // Dispatch event to auto-open add dialog with pre-selected category
                       setTimeout(() => {
                         window.dispatchEvent(
                           new CustomEvent("add-home-component", {
-                            detail: { category: matchedProfile?.category || "general" },
+                            detail: {
+                              category: matchedProfile?.category || "general",
+                              mode: isUpdate ? "edit" : "add",
+                            },
                           })
                         );
                       }, 150);
