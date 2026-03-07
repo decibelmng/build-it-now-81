@@ -6,12 +6,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Shield } from "lucide-react";
+import { Shield, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import SystemToggleGrid from "./SystemToggleGrid";
 import {
   getDefaultRegistry,
   syncRegistryToInventory,
+  backfillSystemKeys,
   SYSTEMS_CATALOG,
   migrateOldRegistry,
   type HomeSystemsRegistry,
@@ -206,10 +207,43 @@ const HomeSystemsSettings = ({
     );
   }
 
+  const [rescanning, setRescanning] = useState(false);
+
+  const handleRescan = async () => {
+    if (!user) return;
+    setRescanning(true);
+    try {
+      const result = await backfillSystemKeys(propertyId, user.id);
+      queryClient.invalidateQueries({ queryKey: ["home_items"] });
+      queryClient.invalidateQueries({ queryKey: ["maintenance"] });
+      queryClient.invalidateQueries({ queryKey: ["documents_hub"] });
+      toast({
+        title: "Re-scan complete",
+        description: `Updated ${result.logsUpdated} logs, ${result.docsUpdated} documents, ${result.itemsUpdated} items.`,
+      });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setRescanning(false);
+    }
+  };
+
   return (
     <>
       <div className="mt-6">
-        <h3 className="font-display text-lg font-semibold mb-4">Home Systems</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display text-lg font-semibold">Home Systems</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full font-body text-xs gap-1.5"
+            onClick={handleRescan}
+            disabled={rescanning}
+          >
+            <RefreshCw className={`h-3 w-3 ${rescanning ? "animate-spin" : ""}`} />
+            {rescanning ? "Scanning..." : "Re-scan & Link"}
+          </Button>
+        </div>
         <SystemToggleGrid
           registry={localRegistry}
           onChange={handleRegistryChange}

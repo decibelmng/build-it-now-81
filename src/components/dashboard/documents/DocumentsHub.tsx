@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Upload, LayoutGrid, List, Star, GroupIcon, Wrench, User, Package } from "lucide-react";
+import { FileText, Upload, LayoutGrid, List, Star, GroupIcon, Wrench, User, Package, Wind } from "lucide-react";
+import { SYSTEMS_CATALOG } from "@/lib/homeSystemsRegistry";
 import DocumentFilters from "./DocumentFilters";
 import DocumentGrid from "./DocumentGrid";
 import DocumentList from "./DocumentList";
@@ -23,7 +24,7 @@ const DocumentsHub = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [groupByCategory, setGroupByCategory] = useState(false);
+  const [groupMode, setGroupMode] = useState<"none" | "category" | "system">("none");
   const [filters, setFilters] = useState<Filters>({ ...DEFAULT_FILTERS });
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -109,6 +110,10 @@ const DocumentsHub = () => {
           q = q.eq("contact_id", filters.contactId);
         }
 
+        if (filters.systemKey !== "all") {
+          q = q.eq("system_key", filters.systemKey);
+        }
+
         const dateCol = filters.dateField;
         if (filters.dateFrom) q = q.gte(dateCol, filters.dateFrom);
         if (filters.dateTo) q = q.lte(dateCol, filters.dateTo);
@@ -189,7 +194,7 @@ const DocumentsHub = () => {
   };
 
   // Group documents by category group
-  const groupedDocuments = groupByCategory
+  const groupedDocuments = groupMode === "category"
     ? Object.entries(CATEGORY_GROUPS).reduce(
         (acc, [key, group]) => {
           const groupDocs = documents.filter((d: any) =>
@@ -200,6 +205,25 @@ const DocumentsHub = () => {
         },
         {} as Record<string, { label: string; docs: any[] }>
       )
+    : null;
+
+  // Group documents by system
+  const systemGroupedDocuments = groupMode === "system"
+    ? (() => {
+        const groups: Record<string, { label: string; icon: string; docs: any[] }> = {};
+        const unlinked: any[] = [];
+        for (const doc of documents) {
+          const sysKey = (doc as any).system_key;
+          if (!sysKey) { unlinked.push(doc); continue; }
+          const sys = SYSTEMS_CATALOG.find((s) => s.key === sysKey);
+          if (!groups[sysKey]) {
+            groups[sysKey] = { label: sys?.label || sysKey, icon: sys?.icon || "📄", docs: [] };
+          }
+          groups[sysKey].docs.push(doc);
+        }
+        if (unlinked.length > 0) groups["__unlinked__"] = { label: "Unlinked", icon: "📦", docs: unlinked };
+        return groups;
+      })()
     : null;
 
   return (
@@ -215,14 +239,40 @@ const DocumentsHub = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-border">
+            <Button
+              variant={groupMode === "none" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-9 px-2 text-xs rounded-r-none"
+              onClick={() => setGroupMode("none")}
+            >
+              All
+            </Button>
+            <Button
+              variant={groupMode === "category" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-9 px-2 text-xs rounded-none border-x border-border"
+              onClick={() => setGroupMode(groupMode === "category" ? "none" : "category")}
+            >
+              Category
+            </Button>
+            <Button
+              variant={groupMode === "system" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-9 px-2 text-xs rounded-l-none"
+              onClick={() => setGroupMode(groupMode === "system" ? "none" : "system")}
+            >
+              System
+            </Button>
+          </div>
           <Button
-            variant={groupByCategory ? "secondary" : "ghost"}
+            variant="ghost"
             size="icon"
             className="h-9 w-9"
-            onClick={() => setGroupByCategory(!groupByCategory)}
-            title="Group by category"
+            onClick={() => {}}
+            title="Group options"
           >
-            <GroupIcon className="h-4 w-4" />
+            <GroupIcon className="h-4 w-4 opacity-0" />
           </Button>
           <div className="flex rounded-lg border border-border">
             <Button
@@ -320,11 +370,25 @@ const DocumentsHub = () => {
             Clear all filters
           </Button>
         </div>
-      ) : groupByCategory && groupedDocuments ? (
+      ) : groupMode === "category" && groupedDocuments ? (
         Object.entries(groupedDocuments).map(([key, group]) => (
           <div key={key} className="space-y-3">
             <div className="flex items-center gap-2">
               <h3 className="font-display text-sm font-semibold">{group.label}</h3>
+              <Badge variant="secondary" className="text-xs">{group.docs.length}</Badge>
+            </div>
+            {view === "grid" ? (
+              <DocumentGrid docs={group.docs} onSelect={setSelectedDocId} />
+            ) : (
+              <DocumentList docs={group.docs} onSelect={setSelectedDocId} />
+            )}
+          </div>
+        ))
+      ) : groupMode === "system" && systemGroupedDocuments ? (
+        Object.entries(systemGroupedDocuments).map(([key, group]) => (
+          <div key={key} className="space-y-3">
+            <div className="flex items-center gap-2">
+              <h3 className="font-display text-sm font-semibold">{group.icon} {group.label}</h3>
               <Badge variant="secondary" className="text-xs">{group.docs.length}</Badge>
             </div>
             {view === "grid" ? (

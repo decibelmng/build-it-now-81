@@ -13,6 +13,9 @@ import { format } from "date-fns";
 import { indexContractorSubmissionFiles } from "@/lib/documentIndexing";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 import ExpenseTypeField from "@/components/dashboard/ExpenseTypeField";
+import { matchLogToComponent } from "@/lib/componentMatcher";
+import { SERVICE_CATEGORY_TO_SYSTEM } from "@/lib/homeSystemsRegistry";
+import ComponentUpdateSheet from "@/components/dashboard/ComponentUpdateSheet";
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "destructive" }> = {
   pending: { label: "Pending", icon: Clock, variant: "secondary" },
@@ -27,6 +30,7 @@ const ContractorSubmissions = () => {
   const [selected, setSelected] = useState<any>(null);
   const [tab, setTab] = useState("pending");
   const [overrideExpenseType, setOverrideExpenseType] = useState<string | null>(null);
+  const [componentUpdateData, setComponentUpdateData] = useState<any>(null);
 
   const { data: submissions = [] } = useQuery({
     queryKey: ["contractor_submissions", user?.id],
@@ -63,6 +67,21 @@ const ContractorSubmissions = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["contractor_submissions"] }),
   });
 
+  // Fetch components for matching
+  const { data: allComponents = [] } = useQuery({
+    queryKey: ["home_items_for_match", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("home_items")
+        .select("id, name, category, item_type, system_key")
+        .eq("item_type", "home_component")
+        .or("is_active.is.null,is_active.eq.true");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
   const approveAndCreateLog = useMutation({
     mutationFn: async (submission: any) => {
       // Update submission status
@@ -72,25 +91,32 @@ const ContractorSubmissions = () => {
         .eq("id", submission.id);
       if (updateError) throw updateError;
 
-      // Create maintenance log from submission
+      // Map service category to system key and maintenance category
+      const systemKey = SERVICE_CATEGORY_TO_SYSTEM[submission.service_category] || null;
       const categoryMap: Record<string, string> = {
         "HVAC": "hvac", "Plumbing": "plumbing", "Electrical": "electrical",
         "Roofing": "roofing", "Landscaping": "landscaping", "Appliance Repair": "appliance",
         "General Maintenance": "general", "Painting": "general", "Pest Control": "general", "Other": "general",
       };
 
-      // Use override if set, otherwise use submission value
       const finalExpenseType = overrideExpenseType ?? submission.expense_type ?? "repair";
+      const logCategory = categoryMap[submission.service_category] || "general";
+      const logTitle = `${submission.service_category} — ${submission.contractor_company_name}`;
+      const logDesc = submission.service_description +
+        (submission.warranty_info ? `\n\nWarranty: ${submission.warranty_info}` : "") +
+        (submission.notes ? `\n\nNotes: ${submission.notes}` : "") +
+        `\n\n[Submitted by contractor: ${submission.contractor_contact_name}, ${submission.contractor_company_name}]`;
 
-      const { error: logError } = await supabase.from("maintenance_logs").insert({
+      // Try to match to a component
+      const match = matchLogToComponent(logTitle, logDesc, logCategory, allComponents);
+      const componentId = match.confidence >= 0.6 ? match.componentId : null;
+
+      const { data: newLog, error: logError } = await supabase.from("maintenance_logs").insert({
         property_id: submission.property_id,
         user_id: user!.id,
-        title: `${submission.service_category} — ${submission.contractor_company_name}`,
-        description: submission.service_description +
-          (submission.warranty_info ? `\n\nWarranty: ${submission.warranty_info}` : "") +
-          (submission.notes ? `\n\nNotes: ${submission.notes}` : "") +
-          `\n\n[Submitted by contractor: ${submission.contractor_contact_name}, ${submission.contractor_company_name}]`,
-        category: categoryMap[submission.service_category] || "general",
+        title: logTitle,
+        description: logDesc,
+        category: logCategory,
         cost: submission.cost,
         expense_type: finalExpenseType,
         scheduled_date: submission.service_date,
@@ -98,8 +124,25 @@ const ContractorSubmissions = () => {
         status: "completed",
         scope: "routine",
         image_url: submission.photos?.[0] || null,
-      });
+        component_id: componentId,
+        system_key: systemKey,
+      }).select("id").single();
       if (logError) throw logError;
+
+      // Insert junction rows for matched component
+      if (componentId && newLog) {
+        await supabase.from("maintenance_log_components").insert({
+          log_id: newLog.id,
+          component_id: componentId,
+        });
+      }
+
+      // Update system_key on submission
+      if (systemKey) {
+        await supabase.from("contractor_submissions")
+          .update({ system_key: systemKey } as any)
+          .eq("id", submission.id);
+      }
 
       // If add_to_contacts, add the contractor as a contact
       let contactId: string | null = null;
@@ -118,12 +161,15 @@ const ContractorSubmissions = () => {
 
       // Auto-index contractor submission files into documents table
       await indexContractorSubmissionFiles({
-        submission,
+        submission: { ...submission, system_key: systemKey },
         user_id: user!.id,
         contact_id: contactId,
       });
+
+      // Return data for ComponentUpdateSheet
+      return { componentId, match, submission };
     },
-    onSuccess: (_, submission) => {
+    onSuccess: (result, submission) => {
       queryClient.invalidateQueries({ queryKey: ["contractor_submissions"] });
       queryClient.invalidateQueries({ queryKey: ["maintenance"] });
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
@@ -134,6 +180,24 @@ const ContractorSubmissions = () => {
           : "Added to maintenance log.",
       });
       setSelected(null);
+
+      // Show ComponentUpdateSheet if we matched a component
+      if (result?.componentId && result.match.confidence >= 0.6) {
+        const comp = allComponents.find((c: any) => c.id === result.componentId);
+        if (comp) {
+          setComponentUpdateData({
+            componentId: result.componentId,
+            componentType: comp.name,
+            confidence: result.match.confidence,
+            isNewComponent: false,
+            logTitle: `${submission.service_category} — ${submission.contractor_company_name}`,
+            logCategory: submission.service_category.toLowerCase(),
+            logCost: submission.cost,
+            logDate: submission.service_date,
+            propertyId: submission.property_id,
+          });
+        }
+      }
     },
     onError: () => toast({ title: "Error", description: "Failed to approve submission", variant: "destructive" }),
   });
@@ -321,6 +385,29 @@ const ContractorSubmissions = () => {
           )}
         </DialogContent>
       </Dialog>
+      {/* Component Update Sheet for approved submissions */}
+      {componentUpdateData && (
+        <ComponentUpdateSheet
+          open={!!componentUpdateData}
+          onOpenChange={(open) => { if (!open) setComponentUpdateData(null); }}
+          match={{
+            componentId: componentUpdateData.componentId,
+            componentType: componentUpdateData.componentType,
+            confidence: componentUpdateData.confidence,
+            isNewComponent: componentUpdateData.isNewComponent,
+          }}
+          logTitle={componentUpdateData.logTitle}
+          logCategory={componentUpdateData.logCategory}
+          logCost={componentUpdateData.logCost}
+          logDate={componentUpdateData.logDate}
+          logId=""
+          propertyId={componentUpdateData.propertyId}
+          onComplete={() => {
+            setComponentUpdateData(null);
+            queryClient.invalidateQueries({ queryKey: ["home_items"] });
+          }}
+        />
+      )}
     </div>
   );
 };
