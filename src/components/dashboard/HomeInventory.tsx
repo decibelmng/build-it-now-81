@@ -343,6 +343,21 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     return null;
   };
 
+  const getFreshnessIndicator = (lastUpdatedAt: string | null) => {
+    if (!lastUpdatedAt) return { color: "text-destructive", fill: "fill-destructive", label: "Needs attention — never updated" };
+    const months = differenceInMonths(new Date(), new Date(lastUpdatedAt));
+    if (months <= 6) {
+      const ago = format(new Date(lastUpdatedAt), "MMM d, yyyy");
+      return { color: "text-accent", fill: "fill-accent", label: `Updated ${ago}` };
+    }
+    if (months <= 12) {
+      const ago = format(new Date(lastUpdatedAt), "MMM d, yyyy");
+      return { color: "text-yellow-500", fill: "fill-yellow-500", label: `Last updated ${ago}` };
+    }
+    const ago = format(new Date(lastUpdatedAt), "MMM d, yyyy");
+    return { color: "text-destructive", fill: "fill-destructive", label: `Needs attention — last updated ${ago}` };
+  };
+
   // ── Export functions ──
   const exportCSV = () => {
     const headers = ["Name", "Category", "Brand/Manufacturer", "Model", "Serial Number", "Install Date", "Last Maintained", "Expected Replacement", "Warranty Expiry", "Notes"];
