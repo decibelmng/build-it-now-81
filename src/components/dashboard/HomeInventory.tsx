@@ -171,7 +171,8 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
           warranty_expiry: existing.warranty_expiry || "",
           notes: existing.notes || "",
           estimated_value: existing.estimated_value ? String(existing.estimated_value) : "",
-          item_type: "home_component",
+           item_type: "home_component",
+          system_key: existing.system_key || "",
         });
         setItemOpen(true);
         return;
