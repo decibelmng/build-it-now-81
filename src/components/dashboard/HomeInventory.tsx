@@ -221,6 +221,14 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
           estimated_value: payload.estimated_value,
           notes: payload.notes,
         });
+        // Skeleton graduation: if user added meaningful data, mark as no longer skeleton
+        const editedItem = items.find((i: any) => i.id === editingItem);
+        if (editedItem && (editedItem as any).is_registry_skeleton) {
+          const hasMeaningfulData = payload.install_date || payload.brand || payload.model || payload.warranty_expiry;
+          if (hasMeaningfulData) {
+            payload.is_registry_skeleton = false;
+          }
+        }
         const { error } = await supabase.from("home_items").update(payload).eq("id", editingItem);
         if (error) throw error;
       } else {
