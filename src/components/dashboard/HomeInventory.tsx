@@ -81,8 +81,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
       if (itemType !== "home_component") return;
 
       if (mode === "edit") {
-        // Find existing component in this category and open it for editing
-        const existing = items.find((i: any) => i.category === category);
+        const existing = itemsRef.current.find((i: any) => i.category === category);
         if (existing) {
           setEditingItem(existing.id);
           setItemForm({
@@ -103,14 +102,13 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
           return;
         }
       }
-      // Default: open add dialog with category pre-selected
       setEditingItem(null);
       setItemForm({ ...emptyItemForm, category: category || "general", item_type: "home_component" });
       setItemOpen(true);
     };
     window.addEventListener("add-home-component", handler);
     return () => window.removeEventListener("add-home-component", handler);
-  }, [itemType, items]);
+  }, [itemType]);
 
   const { data: items = [], isLoading: itemsLoading } = useQuery({
     queryKey: ["home_items", propertyId, itemType, warrantyFilter],
