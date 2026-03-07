@@ -20,21 +20,24 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   properties: { id: string; name: string }[];
   onComplete: () => void;
+  defaultLinkKey?: "maintenance_log_id" | "home_item_id";
+  defaultLinkValue?: string;
+  defaultCategory?: string;
 }
 
-const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete }: Props) => {
+const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defaultLinkKey, defaultLinkValue, defaultCategory }: Props) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [files, setFiles] = useState<File[]>([]);
   const [form, setForm] = useState({
     property_id: properties.length === 1 ? properties[0]?.id || "" : "",
-    category: "other",
+    category: defaultCategory || "other",
     title: "",
     description: "",
     document_date: "",
     tags: "",
-    maintenance_log_id: "",
-    home_item_id: "",
+    maintenance_log_id: defaultLinkKey === "maintenance_log_id" ? (defaultLinkValue || "") : "",
+    home_item_id: defaultLinkKey === "home_item_id" ? (defaultLinkValue || "") : "",
     contact_id: "",
   });
   const [uploading, setUploading] = useState(false);

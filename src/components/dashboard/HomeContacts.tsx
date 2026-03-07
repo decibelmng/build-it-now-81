@@ -10,9 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Phone, Mail, Trash2, Building2, Wrench, DollarSign, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { Plus, Users, Phone, Mail, Trash2, Building2, Wrench, DollarSign, ChevronDown, ChevronUp, Zap, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 
 const roles = [
   { value: "plumber", label: "Plumber" },
@@ -87,6 +88,26 @@ const HomeContacts = () => {
       return data;
     },
     enabled: !!user,
+  });
+
+  // Batch document counts for contacts
+  const contactIds = contacts.map((c: any) => c.id);
+  const { data: contactDocCounts = {} } = useQuery({
+    queryKey: ["doc_counts_contacts", contactIds],
+    queryFn: async () => {
+      if (contactIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from("documents")
+        .select("contact_id")
+        .in("contact_id", contactIds);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      (data || []).forEach((d: any) => {
+        counts[d.contact_id] = (counts[d.contact_id] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: contactIds.length > 0,
   });
 
   const addContact = useMutation({
@@ -259,14 +280,23 @@ const HomeContacts = () => {
                           )}
                         </div>
                         {/* Linked stats */}
-                        {stats.jobs > 0 && (
+                        {(stats.jobs > 0 || (contactDocCounts as Record<string, number>)[contact.id] > 0) && (
                           <div className="mt-1.5 flex items-center gap-3 font-body text-xs">
-                            <span className="inline-flex items-center gap-1 text-accent font-medium">
-                              <Wrench className="h-3 w-3" />{stats.jobs} job{stats.jobs !== 1 ? "s" : ""}
-                            </span>
-                            <span className="inline-flex items-center gap-1 text-accent font-medium">
-                              <DollarSign className="h-3 w-3" />${stats.totalSpend.toLocaleString()}
-                            </span>
+                            {stats.jobs > 0 && (
+                              <span className="inline-flex items-center gap-1 text-accent font-medium">
+                                <Wrench className="h-3 w-3" />{stats.jobs} job{stats.jobs !== 1 ? "s" : ""}
+                              </span>
+                            )}
+                            {stats.totalSpend > 0 && (
+                              <span className="inline-flex items-center gap-1 text-accent font-medium">
+                                <DollarSign className="h-3 w-3" />${stats.totalSpend.toLocaleString()}
+                              </span>
+                            )}
+                            {(contactDocCounts as Record<string, number>)[contact.id] > 0 && (
+                              <span className="inline-flex items-center gap-1 text-muted-foreground font-medium">
+                                <Paperclip className="h-3 w-3" />{(contactDocCounts as Record<string, number>)[contact.id]} doc{(contactDocCounts as Record<string, number>)[contact.id] !== 1 ? "s" : ""}
+                              </span>
+                            )}
                           </div>
                         )}
                         {contact.notes && (
@@ -276,7 +306,7 @@ const HomeContacts = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="font-body text-xs">{getRoleLabel(contact.role)}</Badge>
-                        <Button variant="ghost" size="icon" className={`h-8 w-8 ${stats.jobs === 0 ? "invisible" : ""}`} onClick={() => setExpandedContact(isExpanded ? null : contact.id)}>
+                        <Button variant="ghost" size="icon" className={`h-8 w-8 ${stats.jobs === 0 && !((contactDocCounts as Record<string, number>)[contact.id] > 0) ? "invisible" : ""}`} onClick={() => setExpandedContact(isExpanded ? null : contact.id)}>
                           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteContact.mutate(contact.id)}>
@@ -285,29 +315,38 @@ const HomeContacts = () => {
                     </div>
                   </div>
 
-                  {/* Expanded repair history */}
-                  {isExpanded && stats.jobs > 0 && (
-                    <div className="mt-3 border-t border-border/50 pt-3 space-y-2">
-                      <p className="font-body text-xs font-medium text-muted-foreground">Repair History</p>
-                      {stats.logs.map((log: any) => (
-                        <div key={log.id} className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-body text-xs font-medium">{log.title}</p>
-                              {log.reference_code && (
-                                <span className="font-mono text-[10px] bg-background px-1.5 py-0.5 rounded text-muted-foreground">{log.reference_code}</span>
+                  {/* Expanded repair history & documents */}
+                  {isExpanded && (
+                    <div className="mt-3 border-t border-border/50 pt-3 space-y-3">
+                      {stats.jobs > 0 && (
+                        <div className="space-y-2">
+                          <p className="font-body text-xs font-medium text-muted-foreground">Repair History</p>
+                          {stats.logs.map((log: any) => (
+                            <div key={log.id} className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-body text-xs font-medium">{log.title}</p>
+                                  {log.reference_code && (
+                                    <span className="font-mono text-[10px] bg-background px-1.5 py-0.5 rounded text-muted-foreground">{log.reference_code}</span>
+                                  )}
+                                </div>
+                                <p className="font-body text-xs text-muted-foreground">
+                                  {log.properties?.name} · {log.category}
+                                  {log.completed_date ? ` · ${format(new Date(log.completed_date), "MMM d, yyyy")}` : ""}
+                                </p>
+                              </div>
+                              {log.cost && (
+                                <span className="font-body text-xs font-medium">${Number(log.cost).toLocaleString()}</span>
                               )}
                             </div>
-                            <p className="font-body text-xs text-muted-foreground">
-                              {log.properties?.name} · {log.category}
-                              {log.completed_date ? ` · ${format(new Date(log.completed_date), "MMM d, yyyy")}` : ""}
-                            </p>
-                          </div>
-                          {log.cost && (
-                            <span className="font-body text-xs font-medium">${Number(log.cost).toLocaleString()}</span>
-                          )}
+                          ))}
                         </div>
-                      ))}
+                      )}
+                      <LinkedDocuments
+                        contactId={contact.id}
+                        propertyId={contact.property_id}
+                        propertyName={contact.properties?.name}
+                      />
                     </div>
                   )}
                 </CardContent>
