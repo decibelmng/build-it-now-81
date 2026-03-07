@@ -108,7 +108,7 @@ const Dashboard = () => {
         <div className="mx-auto max-w-5xl px-3 py-4 sm:px-8 sm:py-8">
           {activeSection === "overview" && <DashboardOverview />}
           {activeSection === "properties" && <PropertyCards />}
-          {activeSection === "maintenance" && <MaintenanceLogSection />}
+          {activeSection === "maintenance" && <MaintenanceLogSection onNavigate={(s: string) => setActiveSection(s as Section)} />}
           {activeSection === "documents" && <DocumentVault />}
           {activeSection === "savings" && <SavingsTracking />}
           {activeSection === "contacts" && <HomeContacts />}
