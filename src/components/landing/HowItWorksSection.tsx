@@ -1,26 +1,26 @@
-import { Home, Wrench, FileDown } from "lucide-react";
+import { PlusCircle, Layers, Shield } from "lucide-react";
 
 const steps = [
   {
     number: "01",
-    icon: Home,
+    icon: PlusCircle,
     title: "Add your home",
     description:
-      "Enter your address and purchase price. We pull public details automatically so you start with a foundation.",
+      "Enter your address and basic details. We'll pull public records to give you a head start.",
   },
   {
     number: "02",
-    icon: Wrench,
-    title: "Log as you go",
+    icon: Layers,
+    title: "Build your digital twin",
     description:
-      "Add expenses and snap receipts, or share a link with your contractor to log their work directly. Every entry is classified and filed automatically.",
+      "Log your home's components, track maintenance, upload documents, and classify improvements — all in one place.",
   },
   {
     number: "03",
-    icon: FileDown,
-    title: "Export when you sell",
+    icon: Shield,
+    title: "Stay protected",
     description:
-      "Generate a professional tax report with every improvement, receipt, and contractor detail itemized — ready for your CPA or TurboTax.",
+      "Your home's history grows with every entry. When you need it — for insurance, taxes, or selling — everything is organized and ready.",
   },
 ];
 
@@ -33,7 +33,7 @@ const HowItWorksSection = () => {
             Simple & Fast
           </p>
           <h2 className="mb-4 font-display text-4xl font-bold text-foreground md:text-5xl">
-            Three minutes to start saving thousands.
+            Get started in minutes.
           </h2>
         </div>
 

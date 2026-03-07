@@ -1,41 +1,41 @@
-import { DollarSign, FileText, Camera, Link, ClipboardList, ArrowRightLeft } from "lucide-react";
+import { Home, Package, Clock, DollarSign, FileText, Link } from "lucide-react";
 
 const features = [
   {
-    icon: DollarSign,
-    title: "Capital Improvement Tracker",
+    icon: Home,
+    title: "Home Inventory",
     description:
-      "Every expense is automatically classified as a capital improvement or routine repair. Your running cost basis updates in real time — no spreadsheets, no shoeboxes of receipts.",
+      "Track every component and system in your home — roof, HVAC, water heater, appliances, flooring — with install dates, warranties, and documentation.",
+  },
+  {
+    icon: Package,
+    title: "Personal Property",
+    description:
+      "Catalog your furniture, electronics, and valuables separately for insurance records. Personal items stay private and never transfer with the home.",
+  },
+  {
+    icon: Clock,
+    title: "Maintenance Timeline",
+    description:
+      "A chronological record of every repair, service call, and improvement — searchable, organized, and always at your fingertips.",
+  },
+  {
+    icon: DollarSign,
+    title: "Investment & Tax Tracker",
+    description:
+      "Every improvement is classified and tallied toward your cost basis. When you sell, generate an IRS-ready report to reduce your capital gains tax.",
   },
   {
     icon: FileText,
-    title: "IRS-Ready Reports",
+    title: "Document Vault",
     description:
-      "Generate a professional tax report with one click: itemized improvements, contractor details, and receipt images — ready to hand to your CPA.",
-  },
-  {
-    icon: Camera,
-    title: "Receipt & Document Vault",
-    description:
-      "Snap a photo of a receipt or upload a PDF. HomeLog automatically files it under the right project, contractor, and category. Never lose a receipt again.",
+      "Receipts, warranties, manuals, inspection reports, your deed — everything uploaded, categorized, and linked to the right item or project.",
   },
   {
     icon: Link,
     title: "Contractor Service Links",
     description:
-      "Send your contractor a link to log their own work, upload photos, and attach invoices — directly into your home's timeline. No app download required.",
-  },
-  {
-    icon: ClipboardList,
-    title: "Complete Home Inventory",
-    description:
-      "Track every component, system, and appliance with install dates, warranties, and documentation. Know what you have and when it needs attention.",
-  },
-  {
-    icon: ArrowRightLeft,
-    title: "Transferable Home History",
-    description:
-      "Sell your home with a complete digital history attached. Increase buyer confidence, strengthen your negotiating position, and stand out in the market.",
+      "Share a link with any contractor to log their work, upload photos, and attach invoices directly to your home's timeline. No app needed.",
   },
 ];
 
@@ -48,7 +48,7 @@ const FeaturesSection = () => {
             The Full Platform
           </p>
           <h2 className="mb-4 font-display text-4xl font-bold text-foreground md:text-5xl">
-            Everything you need to protect your home investment.
+            Your home's complete digital history — in one place.
           </h2>
         </div>
 
