@@ -33,12 +33,11 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
         .order("created_at", { ascending: false });
       if (error) throw error;
       // Sort by service date (scheduled_date > completed_date > created_at)
-      return (data || []).sort((a, b) => {
+      return (data ?? []).sort((a, b) => {
         const dateA = a.scheduled_date || a.completed_date || a.created_at;
         const dateB = b.scheduled_date || b.completed_date || b.created_at;
         return new Date(dateB).getTime() - new Date(dateA).getTime();
       });
-      return data;
     },
     enabled: !!user,
   });
