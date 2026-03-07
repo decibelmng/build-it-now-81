@@ -84,6 +84,7 @@ export interface HomeItem {
   expected_replacement: string | null;
   estimated_value: number | null;
   system_key?: string | null;
+  is_registry_skeleton?: boolean;
 }
 
 export interface PropertyInfo {
