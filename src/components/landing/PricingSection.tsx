@@ -8,7 +8,7 @@ const tiers = [
     name: "Free",
     price: "$0",
     period: "forever",
-    description: "Track improvements and build your cost basis.",
+    description: "Track your home, log maintenance, and build your digital twin.",
     cta: "Get Started Free",
     ctaLink: "/auth?mode=signup",
     highlighted: false,
@@ -30,7 +30,7 @@ const tiers = [
     name: "Pro",
     price: "$4.99",
     period: "/month",
-    description: "The complete toolkit for protecting your investment.",
+    description: "IRS-ready tax reports, unlimited document storage, and full export capabilities.",
     cta: "Start Pro",
     ctaLink: "/auth?mode=signup",
     highlighted: true,
@@ -54,20 +54,20 @@ const tiers = [
 
 const PricingSection = () => {
   return (
-    <section id="pricing" className="relative overflow-hidden bg-secondary py-24 sm:py-32">
+    <section id="pricing" className="relative overflow-hidden bg-section-warm py-24 sm:py-32">
       <div className="mx-auto max-w-5xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center mb-16">
           <h2
             className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl opacity-0 animate-fade-up"
             style={{ animationDelay: "0.1s" }}
           >
-            The most valuable home tool costs less than one lost receipt.
+            Start free. Upgrade when you're ready.
           </h2>
           <p
             className="mt-4 font-body text-base text-muted-foreground opacity-0 animate-fade-up"
             style={{ animationDelay: "0.2s" }}
           >
-            Start free. Upgrade when you're ready for IRS-ready reports.
+            HomeLog pays for itself the first time you use a documented improvement to reduce your tax bill.
           </p>
         </div>
 

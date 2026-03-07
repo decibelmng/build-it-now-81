@@ -8,11 +8,12 @@ const CTASection = () => {
       <div className="container mx-auto px-6">
         <div className="mx-auto max-w-3xl rounded-3xl bg-primary p-12 text-center shadow-premium md:p-16">
           <h2 className="mb-4 font-display text-3xl font-bold text-primary-foreground md:text-5xl">
-            Every day you wait is another receipt{" "}
-            <span className="text-gradient-amber">you might lose.</span>
+            Your home's history{" "}
+            <span className="text-gradient-amber">starts today.</span>
           </h2>
           <p className="mx-auto mb-8 max-w-lg font-body text-lg text-primary-foreground/75">
-            It takes 3 minutes to add your home. It could save you thousands when you sell.
+            Every repair, every improvement, every receipt — organized,
+            protected, and ready when you need it.
           </p>
           <Button
             asChild
@@ -25,7 +26,7 @@ const CTASection = () => {
             </Link>
           </Button>
           <p className="mt-4 font-body text-sm text-primary-foreground/50">
-            No credit card required. Free plan available forever.
+            No credit card required.
           </p>
         </div>
       </div>

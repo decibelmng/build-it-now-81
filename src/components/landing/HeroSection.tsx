@@ -1,6 +1,6 @@
 import heroHome from "@/assets/hero-home.jpg";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const HeroSection = () => {
@@ -19,43 +19,29 @@ const HeroSection = () => {
       {/* Content */}
       <div className="container relative z-10 mx-auto px-6 py-24">
         <div className="max-w-2xl">
-          <div
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber/30 bg-amber/10 px-4 py-2 text-sm text-amber-light opacity-0 animate-fade-up"
-          >
-            <Shield className="h-4 w-4" />
-            <span className="font-body">Stop Losing Money on Undocumented Improvements</span>
-          </div>
-
           <h1
             className="mb-6 font-display text-5xl font-bold leading-tight tracking-tight text-primary-foreground opacity-0 animate-fade-up md:text-6xl lg:text-7xl"
-            style={{ animationDelay: "0.15s" }}
           >
-            Every home improvement you don't track{" "}
-            <span className="text-gradient-amber">costs you money when you sell.</span>
+            Protect your home.{" "}
+            <span className="text-gradient-amber">Protect your investment.</span>
           </h1>
 
           <p
             className="mb-10 max-w-lg font-body text-lg leading-relaxed text-primary-foreground/80 opacity-0 animate-fade-up"
-            style={{ animationDelay: "0.3s" }}
+            style={{ animationDelay: "0.15s" }}
           >
-            HomeLog tracks your capital improvements, organizes your receipts,
-            and generates IRS-ready reports — so you keep more of your home's equity.
-          </p>
-
-          <p
-            className="mb-10 max-w-lg font-body text-base font-bold text-primary-foreground/90 opacity-0 animate-fade-up"
-            style={{ animationDelay: "0.35s" }}
-          >
-            The average homeowner misses $10,000–$50,000 in trackable improvements over 10 years of ownership.
+            HomeLog is the digital twin for your home — track every detail,
+            document every improvement, and keep your biggest investment
+            organized from the day you buy to the day you sell.
           </p>
 
           <div
             className="flex flex-col gap-4 sm:flex-row opacity-0 animate-fade-up"
-            style={{ animationDelay: "0.45s" }}
+            style={{ animationDelay: "0.3s" }}
           >
             <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold text-base px-8 py-6 rounded-full shadow-premium">
               <Link to="/auth?mode=signup">
-                Start Tracking for Free
+                Get Started Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
