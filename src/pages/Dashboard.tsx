@@ -31,6 +31,9 @@ const TaxInvestmentPage = lazy(() => import("@/components/dashboard/TaxInvestmen
 
 type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "tax-investment" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
 
+const VALID_SECTIONS: Set<string> = new Set<string>(["overview","properties","home-inventory","maintenance","documents","savings","tax-investment","contacts","utilities","timeline","recurring","sharing","export","analytics","settings","search","contractor-links","contractor-submissions"]);
+const isValidSection = (s: string): s is Section => VALID_SECTIONS.has(s);
+
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
