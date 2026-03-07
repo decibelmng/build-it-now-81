@@ -217,7 +217,7 @@ const ContractorSubmissions = () => {
       </Tabs>
 
       {/* Detail Dialog */}
-      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+      <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setOverrideExpenseType(null); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           {selected && (
             <>
