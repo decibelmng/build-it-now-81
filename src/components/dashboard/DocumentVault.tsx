@@ -36,6 +36,7 @@ const DocumentVault = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [fileDragOver, setFileDragOver] = useState(false);
   const [form, setForm] = useState({ name: "", property_id: "", category: "other" });
   const [previewDoc, setPreviewDoc] = useState<{ url: string; type: string; name: string } | null>(null);
 
