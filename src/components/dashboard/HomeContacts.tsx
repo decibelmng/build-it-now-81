@@ -10,9 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Phone, Mail, Trash2, Building2, Wrench, DollarSign, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { Plus, Users, Phone, Mail, Trash2, Building2, Wrench, DollarSign, ChevronDown, ChevronUp, Zap, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 
 const roles = [
   { value: "plumber", label: "Plumber" },

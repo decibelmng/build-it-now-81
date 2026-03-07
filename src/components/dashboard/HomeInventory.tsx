@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import UpgradeModal from "./UpgradeModal";
 import { format, differenceInDays, isPast } from "date-fns";
 import { indexInventoryAttachment, removeDocumentIndex } from "@/lib/documentIndexing";
+import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 
 const homeComponentCategories = [
   { value: "hvac", label: "HVAC", icon: Wind },
@@ -652,10 +653,17 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
                                 <span className="ml-1">{isExpanded ? "▾" : "▸"}</span>
                               </button>
                               {isExpanded && (
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                  {itemAttachments.map((att: any) => (
-                                    <AttachmentItem key={att.id} att={att} />
-                                  ))}
+                                <div className="mt-2 space-y-3">
+                                  <div className="flex flex-wrap gap-2">
+                                    {itemAttachments.map((att: any) => (
+                                      <AttachmentItem key={att.id} att={att} />
+                                    ))}
+                                  </div>
+                                  <LinkedDocuments
+                                    homeItemId={item.id}
+                                    propertyId={propertyId}
+                                    defaultCategory="inventory_photo"
+                                  />
                                 </div>
                               )}
                             </div>
