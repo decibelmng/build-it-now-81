@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil, Paperclip, TrendingUp, ListFilter } from "lucide-react";
+import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil, Paperclip, TrendingUp, ListFilter, Trash2 } from "lucide-react";
 import FilePicker from "@/components/ui/file-picker";
 import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
 import ServiceLinkPopover from "@/components/dashboard/ServiceLinkPopover";
@@ -348,6 +348,18 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["maintenance_logs"] }),
   });
 
+  const deleteLog = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("maintenance_logs").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["maintenance_logs"] });
+      toast({ title: "Maintenance log deleted" });
+    },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   return (
@@ -651,6 +663,9 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                       )}
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(log)}>
                         <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => { if (confirm("Delete this maintenance log?")) deleteLog.mutate(log.id); }}>
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                       <Badge variant={cfg.variant} className="font-body text-xs">
                         <StatusIcon className="mr-1 h-3 w-3" />{cfg.label}
