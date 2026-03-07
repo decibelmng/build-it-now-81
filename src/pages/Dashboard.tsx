@@ -8,7 +8,7 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import PropertyCards from "@/components/dashboard/PropertyCards";
 import MaintenanceLogSection from "@/components/dashboard/MaintenanceLog";
-import DocumentVault from "@/components/dashboard/DocumentVault";
+import DocumentsHub from "@/components/dashboard/documents/DocumentsHub";
 import SavingsTracking from "@/components/dashboard/SavingsTracking";
 import HomeContacts from "@/components/dashboard/HomeContacts";
 import PropertyTimeline from "@/components/dashboard/PropertyTimeline";
@@ -111,7 +111,7 @@ const Dashboard = () => {
           {activeSection === "properties" && <PropertyCards />}
           {activeSection === "home-inventory" && <HomeInventoryPage />}
           {activeSection === "maintenance" && <MaintenanceLogSection onNavigate={(s: string) => setActiveSection(s as Section)} />}
-          {activeSection === "documents" && <DocumentVault />}
+          {activeSection === "documents" && <DocumentsHub />}
           {activeSection === "savings" && <SavingsTracking />}
           {activeSection === "contacts" && <HomeContacts />}
           {activeSection === "utilities" && <PropertyUtilities />}
