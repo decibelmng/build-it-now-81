@@ -19,19 +19,30 @@ import { useToast } from "@/hooks/use-toast";
 import UpgradeModal from "./UpgradeModal";
 import { format, differenceInDays, isPast } from "date-fns";
 
-const itemCategories = [
+const homeComponentCategories = [
   { value: "hvac", label: "HVAC", icon: Wind },
   { value: "plumbing", label: "Plumbing", icon: Droplets },
   { value: "electrical", label: "Electrical", icon: Zap },
   { value: "appliance", label: "Appliance", icon: Refrigerator },
   { value: "structural", label: "Structural", icon: Package },
   { value: "exterior", label: "Exterior", icon: Package },
-  { value: "personal", label: "Personal Property", icon: Gem },
   { value: "general", label: "General", icon: Package },
+];
+
+const personalItemCategories = [
+  { value: "furniture", label: "Furniture", icon: Package },
+  { value: "electronics", label: "Electronics", icon: Zap },
+  { value: "art_decor", label: "Art & Decor", icon: Gem },
+  { value: "tools", label: "Tools & Equipment", icon: Package },
+  { value: "sporting", label: "Sporting Goods", icon: Package },
+  { value: "instruments", label: "Musical Instruments", icon: Package },
+  { value: "jewelry", label: "Jewelry & Valuables", icon: Gem },
+  { value: "other", label: "Other", icon: Package },
 ];
 
 interface HomeInventoryProps {
   propertyId: string;
+  itemType?: "home_component" | "personal_item";
 }
 
 const emptyItemForm = {
