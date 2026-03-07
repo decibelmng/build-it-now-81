@@ -74,7 +74,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
   const dialogFileInputRef = useRef<HTMLInputElement>(null);
   const [fileDragOver, setFileDragOver] = useState(false);
 
-  // Listen for "add-home-component" events from Savings Forecast suggestions
+  const itemsRef = useRef<any[]>([]);
   useEffect(() => {
     const handler = (e: Event) => {
       const { category, mode } = (e as CustomEvent).detail || {};
