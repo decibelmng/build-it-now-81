@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil, Paperclip, TrendingUp, ListFilter, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil, Paperclip, TrendingUp, ListFilter, Trash2, ChevronsUpDown, Check, Package } from "lucide-react";
 import FilePicker from "@/components/ui/file-picker";
 import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
 import ServiceLinkPopover from "@/components/dashboard/ServiceLinkPopover";
@@ -22,6 +24,9 @@ import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 import ExpenseTypeField from "@/components/dashboard/ExpenseTypeField";
 import BulkClassifyDialog from "@/components/dashboard/BulkClassifyDialog";
 import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
+import { matchLogToComponent } from "@/lib/componentMatcher";
+import ComponentUpdateSheet from "@/components/dashboard/ComponentUpdateSheet";
+import { cn } from "@/lib/utils";
 
 type Property = Tables<"properties">;
 
@@ -97,6 +102,27 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
   const [form, setForm] = useState({ ...emptyForm });
   const [bulkClassifyOpen, setBulkClassifyOpen] = useState(false);
 
+  // Related Component state
+  const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
+  const [componentComboOpen, setComponentComboOpen] = useState(false);
+  const [showNewComponent, setShowNewComponent] = useState(false);
+  const [newComponentName, setNewComponentName] = useState("");
+  const [newComponentType, setNewComponentType] = useState("general");
+
+  // Post-save bottom sheet state
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetData, setSheetData] = useState<{
+    logId: string;
+    componentId: string | null;
+    componentName: string | null;
+    componentType: string | null;
+    isNewComponent: boolean;
+    logDate: string;
+    logCost: string;
+    logContactName: string;
+    propertyId: string;
+  } | null>(null);
+
   const resetForm = () => {
     setForm({ ...emptyForm });
     setEditingId(null);
@@ -104,6 +130,10 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     setExistingImageUrl(null);
     setShowNewVendor(false);
     setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" });
+    setSelectedComponentId(null);
+    setShowNewComponent(false);
+    setNewComponentName("");
+    setNewComponentType("general");
   };
 
   const openCreate = () => {
@@ -126,10 +156,12 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       tax_notes: log.tax_notes || "",
     });
     setEditingId(log.id);
+    setSelectedComponentId(log.component_id || null);
     setExistingImageUrl(log.image_url || null);
     setAttachedFiles([]);
     setShowNewVendor(false);
     setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" });
+    setShowNewComponent(false);
     setOpen(true);
   };
 
@@ -146,12 +178,10 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
   const firstPropertyId = properties.length > 0 ? properties[0].id : undefined;
   const { defaultLink, ensureDefault, linkUrl: defaultLinkUrl } = useDefaultContractorLink(firstPropertyId);
 
-  // Auto-create default link on load
   useEffect(() => {
     ensureDefault();
   }, [firstPropertyId, defaultLink]);
 
-  // Query pending contractor submissions count
   const { data: pendingSubmissionsCount = 0 } = useQuery({
     queryKey: ["pending_submissions_count", user?.id],
     queryFn: async () => {
@@ -175,6 +205,22 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     enabled: !!user,
   });
 
+  // Fetch home components for the selected property
+  const { data: homeComponents = [] } = useQuery({
+    queryKey: ["home_components_for_property", form.property_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("home_items")
+        .select("id, name, category, item_type, data_completeness, install_date, brand, model, warranty_expiry, last_maintained, notes, estimated_value")
+        .eq("property_id", form.property_id)
+        .eq("item_type", "home_component")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!form.property_id,
+  });
+
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["maintenance_logs", user?.id],
     queryFn: async () => {
@@ -188,7 +234,6 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     enabled: !!user,
   });
 
-  // Batch document counts for all logs
   const logIds = logs.map((l: any) => l.id);
   const { data: docCounts = {} } = useQuery({
     queryKey: ["doc_counts_maintenance", logIds],
@@ -210,14 +255,11 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
 
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
 
-  // No longer needed — replaced by FilePicker
-
   const saveMutation = useMutation({
     mutationFn: async () => {
-      let image_url: string | null | undefined = undefined; // undefined = don't change
+      let image_url: string | null | undefined = undefined;
       let contact_id: string | null = form.contact_id || null;
 
-      // Upload new files if selected
       const uploadedPaths: { path: string; file: File }[] = [];
       if (attachedFiles.length > 0 && user) {
         for (const file of attachedFiles) {
@@ -226,7 +268,6 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           if (uploadError) continue;
           uploadedPaths.push({ path: filePath, file });
         }
-        // Use first image as image_url for thumbnail
         const firstImage = uploadedPaths.find((u) => u.file.type.startsWith("image/"));
         if (firstImage) {
           const { data: urlData } = await supabase.storage.from("maintenance-photos").createSignedUrl(firstImage.path, 31536000);
@@ -234,7 +275,6 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         }
       }
 
-      // If creating a new vendor inline
       if (showNewVendor && newVendor.name && form.property_id) {
         const { data: newContact, error: contactError } = await supabase
           .from("home_contacts")
@@ -253,6 +293,24 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         contact_id = newContact.id;
       }
 
+      // Handle inline new component creation
+      let component_id: string | null = selectedComponentId;
+      if (showNewComponent && newComponentName) {
+        const { data: newComp, error: compErr } = await supabase
+          .from("home_items")
+          .insert({
+            user_id: user!.id,
+            property_id: form.property_id,
+            name: newComponentName,
+            category: newComponentType,
+            item_type: "home_component",
+          })
+          .select("id")
+          .single();
+        if (compErr) throw compErr;
+        component_id = newComp.id;
+      }
+
       const payload: Record<string, unknown> = {
         property_id: form.property_id,
         title: form.title,
@@ -265,24 +323,20 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         scope: form.scope,
         expense_type: form.expense_type,
         tax_notes: form.tax_notes || null,
+        component_id: component_id || null,
       };
 
       if (image_url !== undefined) payload.image_url = image_url;
 
-      // Update completed_date based on status
       if (form.status === "completed") {
-        // Set completed_date to the scheduled_date if available, otherwise today
         if (!editingId) payload.completed_date = form.scheduled_date || new Date().toISOString().split("T")[0];
       }
 
       let logId = editingId;
       if (editingId) {
-        // If replacing photo, remove old document index
         if (uploadedPaths.length > 0) {
-          // Try to find old file path from image_url and remove its index
           const { data: oldLog } = await supabase.from("maintenance_logs").select("image_url").eq("id", editingId).single();
           if (oldLog?.image_url) {
-            // Extract old file path from signed URL - find the path portion
             const oldPathMatch = oldLog.image_url.match(/maintenance-photos\/([^?]+)/);
             if (oldPathMatch) await removeDocumentIndex(oldPathMatch[1]);
           }
@@ -303,12 +357,12 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           scope: form.scope,
           expense_type: form.expense_type,
           tax_notes: form.tax_notes || null,
+          component_id: component_id || null,
         }).select("id").single();
         if (error) throw error;
         logId = newLog.id;
       }
 
-      // Auto-index all uploaded files into documents table
       for (const uploaded of uploadedPaths) {
         if (logId) {
           await indexMaintenancePhoto({
@@ -324,14 +378,60 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           });
         }
       }
+
+      // Run componentMatcher if no component was explicitly selected
+      let matchResult: { componentId: string | null; componentType: string | null; confidence: number; isNewComponent: boolean } | null = null;
+      if (!component_id) {
+        const components = homeComponents.map((c) => ({ id: c.id, name: c.name, category: c.category, item_type: c.item_type }));
+        const result = matchLogToComponent(form.title, form.description, form.category, components);
+        if (result.confidence >= 0.6) {
+          matchResult = result;
+        }
+      }
+
+      // Find contact name for the sheet
+      let contactName = "";
+      if (contact_id) {
+        const c = contacts.find((ct) => ct.id === contact_id);
+        contactName = c ? c.name : "";
+      } else if (showNewVendor) {
+        contactName = newVendor.name;
+      }
+
+      return { logId: logId!, component_id, matchResult, contactName };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["maintenance_logs"] });
       queryClient.invalidateQueries({ queryKey: ["home_contacts"] });
       queryClient.invalidateQueries({ queryKey: ["maintenance_logs_for_contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["home_items"] });
       setOpen(false);
+
+      const shouldShowSheet = result.component_id || result.matchResult;
+      if (shouldShowSheet && !editingId) {
+        const matchedComp = result.component_id
+          ? homeComponents.find((c) => c.id === result.component_id)
+          : result.matchResult?.componentId
+            ? homeComponents.find((c) => c.id === result.matchResult!.componentId)
+            : null;
+
+        setSheetData({
+          logId: result.logId,
+          componentId: result.component_id || result.matchResult?.componentId || null,
+          componentName: matchedComp?.name || result.matchResult?.componentType || null,
+          componentType: matchedComp?.category || result.matchResult?.componentType || null,
+          isNewComponent: result.matchResult?.isNewComponent ?? false,
+          logDate: form.scheduled_date,
+          logCost: form.cost,
+          logContactName: result.contactName,
+          propertyId: form.property_id,
+        });
+        setSheetOpen(true);
+      } else {
+        toast({ title: editingId ? "Maintenance log updated!" : "Maintenance log added!" });
+      }
+
       resetForm();
-      toast({ title: editingId ? "Maintenance log updated!" : "Maintenance log added!" });
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -362,9 +462,10 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  const selectedComponent = homeComponents.find((c) => c.id === selectedComponentId);
+
   return (
     <div>
-      {/* Pending submissions banner */}
       {pendingSubmissionsCount > 0 && (
         <div className="mb-4 flex items-center justify-between rounded-lg border border-accent/30 bg-accent/10 px-4 py-3">
           <p className="text-sm font-medium">
@@ -405,7 +506,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-4">
             <div className="space-y-2">
               <Label className="font-body">Property *</Label>
-              <Select value={form.property_id} onValueChange={(v) => setForm({ ...form, property_id: v })}>
+              <Select value={form.property_id} onValueChange={(v) => { setForm({ ...form, property_id: v }); setSelectedComponentId(null); }}>
                 <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
                 <SelectContent>
                   {properties.map((p) => (
@@ -418,6 +519,120 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
               <Label className="font-body">Title *</Label>
               <Input placeholder="Fix leaky faucet" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required className="font-body" />
             </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label className="font-body">Category</Label>
+                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                  <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c.value} value={c.value} className="font-body">{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-body">Cost ($)</Label>
+                <Input type="number" step="0.01" placeholder="150" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} className="font-body" />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-body">Scheduled</Label>
+                <Input type="date" value={form.scheduled_date} onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })} className="font-body" />
+              </div>
+            </div>
+
+            {/* Related Component — positioned after category, before description */}
+            {form.property_id && (
+              <div className="space-y-1.5">
+                <Label className="font-body flex items-center gap-1"><Package className="h-3.5 w-3.5" /> Related Component</Label>
+                {!showNewComponent ? (
+                  <>
+                    <Popover open={componentComboOpen} onOpenChange={setComponentComboOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" aria-expanded={componentComboOpen} className="w-full justify-between font-body font-normal h-9 text-sm">
+                          {selectedComponent ? (
+                            <span>{selectedComponent.name} <span className="text-muted-foreground">· {selectedComponent.category}</span></span>
+                          ) : (
+                            <span className="text-muted-foreground">Link to a home component (optional)</span>
+                          )}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search components..." className="font-body" />
+                          <CommandList>
+                            <CommandEmpty className="font-body text-sm py-3 text-center">No components found.</CommandEmpty>
+                            <CommandGroup>
+                              {selectedComponentId && (
+                                <CommandItem
+                                  value="__clear__"
+                                  onSelect={() => { setSelectedComponentId(null); setComponentComboOpen(false); }}
+                                  className="font-body text-sm text-muted-foreground"
+                                >
+                                  Clear selection
+                                </CommandItem>
+                              )}
+                              {homeComponents.map((comp) => (
+                                <CommandItem
+                                  key={comp.id}
+                                  value={comp.name}
+                                  onSelect={() => { setSelectedComponentId(comp.id); setComponentComboOpen(false); }}
+                                  className="font-body text-sm"
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", selectedComponentId === comp.id ? "opacity-100" : "opacity-0")} />
+                                  {comp.name}
+                                  <span className="ml-auto text-xs text-muted-foreground">{comp.category}</span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                            <CommandGroup>
+                              <CommandItem
+                                value="__new__"
+                                onSelect={() => { setShowNewComponent(true); setSelectedComponentId(null); setComponentComboOpen(false); }}
+                                className="font-body text-sm text-accent"
+                              >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add New Component
+                              </CommandItem>
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <p className="font-body text-xs text-muted-foreground">Linking helps keep your home records in sync automatically</p>
+                  </>
+                ) : (
+                  <div className="rounded-lg border border-border/50 p-3 space-y-2 bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <span className="font-body text-xs font-medium text-muted-foreground">New Component</span>
+                      <Button type="button" variant="ghost" size="sm" className="font-body text-xs h-6" onClick={() => { setShowNewComponent(false); setNewComponentName(""); setNewComponentType("general"); }}>
+                        Cancel
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="font-body text-xs">Name *</Label>
+                        <Input placeholder="e.g. HVAC System" value={newComponentName} onChange={(e) => setNewComponentName(e.target.value)} className="font-body h-8 text-sm" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="font-body text-xs">Type</Label>
+                        <Select value={newComponentType} onValueChange={setNewComponentType}>
+                          <SelectTrigger className="font-body h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {categories.map((c) => (
+                              <SelectItem key={c.value} value={c.value} className="font-body text-sm">{c.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label className="font-body">Description</Label>
               <Textarea placeholder="Details about the maintenance..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="font-body" />
@@ -502,28 +717,6 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <Label className="font-body">Category</Label>
-                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                  <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c.value} value={c.value} className="font-body">{c.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="font-body">Cost ($)</Label>
-                <Input type="number" step="0.01" placeholder="150" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} className="font-body" />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-body">Scheduled</Label>
-                <Input type="date" value={form.scheduled_date} onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })} className="font-body" />
-              </div>
-            </div>
-
             {/* Expense Type */}
             <ExpenseTypeField
               value={form.expense_type}
@@ -544,7 +737,6 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
               </Select>
             </div>
 
-            {/* Status selector (visible when editing) */}
             {editingId && (
               <div className="space-y-2">
                 <Label className="font-body">Status</Label>
@@ -559,7 +751,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
               </div>
             )}
 
-            <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={saveMutation.isPending || !form.property_id || (showNewVendor && !newVendor.name)}>
+            <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={saveMutation.isPending || !form.property_id || (showNewVendor && !newVendor.name) || (showNewComponent && !newComponentName)}>
               {saveMutation.isPending ? "Saving..." : editingId ? "Save Changes" : "Add Entry"}
             </Button>
           </form>
@@ -572,6 +764,24 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           {previewImage && <img src={previewImage} alt="Maintenance photo" className="w-full rounded-lg" />}
         </DialogContent>
       </Dialog>
+
+      {/* Post-save component update sheet */}
+      {sheetData && (
+        <ComponentUpdateSheet
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+          logId={sheetData.logId}
+          logDate={sheetData.logDate}
+          logCost={sheetData.logCost}
+          logContactName={sheetData.logContactName}
+          componentId={sheetData.componentId}
+          componentName={sheetData.componentName}
+          componentType={sheetData.componentType}
+          isNewComponent={sheetData.isNewComponent}
+          propertyId={sheetData.propertyId}
+          existingComponent={sheetData.componentId ? homeComponents.find((c) => c.id === sheetData.componentId) : null}
+        />
+      )}
 
       {properties.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
@@ -699,7 +909,6 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                     </div>
                   </div>
 
-                  {/* Expandable Documents Section */}
                   {isExpanded && (
                     <div className="mt-3 border-t border-border/50 pt-3">
                       <LinkedDocuments
