@@ -38,7 +38,7 @@ const TaxReportDialog = ({ open, onOpenChange }: TaxReportDialogProps) => {
         .from("maintenance_logs")
         .select("*, home_contacts(name, company), properties(name, address)")
         .not("cost", "is", null)
-        .order("completed_date", { ascending: true });
+        .order("scheduled_date", { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -83,14 +83,14 @@ const TaxReportDialog = ({ open, onOpenChange }: TaxReportDialogProps) => {
   });
 
   const years = Array.from(new Set(allLogs.map((l: any) => {
-    const d = l.completed_date || l.scheduled_date || l.created_at;
+    const d = l.scheduled_date || l.completed_date || l.created_at;
     return d ? format(parseISO(d), "yyyy") : null;
   }).filter(Boolean) as string[])).sort().reverse();
 
   const filterByRange = (logs: any[]) => {
     if (dateRange === "all") return logs;
     return logs.filter((l: any) => {
-      const d = l.completed_date || l.scheduled_date || l.created_at;
+      const d = l.scheduled_date || l.completed_date || l.created_at;
       return d && format(parseISO(d), "yyyy") === dateRange;
     });
   };
@@ -118,7 +118,7 @@ const TaxReportDialog = ({ open, onOpenChange }: TaxReportDialogProps) => {
   const exportCSV = (improvements: any[], repairs: any[]) => {
     const headers = ["Date", "Title", "Description", "Category", "Contractor", "Cost", "Expense Type", "Receipt Count", "Tax Notes"];
     const toRow = (l: any) => {
-      const d = l.completed_date || l.scheduled_date || l.created_at;
+      const d = l.scheduled_date || l.completed_date || l.created_at;
       const contractor = l.home_contacts?.company || l.home_contacts?.name || "";
       const docCount = (docCounts as Record<string, number>)[l.id] || 0;
       return [
@@ -156,7 +156,7 @@ const TaxReportDialog = ({ open, onOpenChange }: TaxReportDialogProps) => {
     const repTotal = repairs.reduce((s, l: any) => s + (Number(l.cost) || 0), 0);
 
     const tableRows = (entries: any[]) => entries.map((l: any, i: number) => {
-      const d = l.completed_date || l.scheduled_date || l.created_at;
+      const d = l.scheduled_date || l.completed_date || l.created_at;
       const contractor = l.home_contacts?.company || l.home_contacts?.name || "—";
       const docCount = (docCounts as Record<string, number>)[l.id] || 0;
       return `<tr>
