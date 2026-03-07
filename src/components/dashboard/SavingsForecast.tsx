@@ -25,7 +25,7 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("id, year_built, purchase_price, sqft")
+        .select("id, year_built, purchase_price, sqft, home_systems, registry_completed")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data;
