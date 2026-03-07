@@ -74,6 +74,20 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
   const dialogFileInputRef = useRef<HTMLInputElement>(null);
   const [fileDragOver, setFileDragOver] = useState(false);
 
+  // Listen for "add-home-component" events from Savings Forecast suggestions
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { category } = (e as CustomEvent).detail || {};
+      if (itemType === "home_component") {
+        setEditingItem(null);
+        setItemForm({ ...emptyItemForm, category: category || "general", item_type: "home_component" });
+        setItemOpen(true);
+      }
+    };
+    window.addEventListener("add-home-component", handler);
+    return () => window.removeEventListener("add-home-component", handler);
+  }, [itemType]);
+
   const { data: items = [], isLoading: itemsLoading } = useQuery({
     queryKey: ["home_items", propertyId, itemType, warrantyFilter],
     queryFn: async () => {
