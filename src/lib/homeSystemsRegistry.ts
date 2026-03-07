@@ -537,6 +537,37 @@ function mapSystemToCategory(systemKey: string): string {
   return map[systemKey] || "general";
 }
 
+export { mapSystemToCategory };
+
+/** Map contractor service_category to system key */
+export const SERVICE_CATEGORY_TO_SYSTEM: Record<string, string | null> = {
+  "HVAC": "hvac",
+  "Plumbing": "plumbing",
+  "Electrical": "electrical",
+  "Roofing": "roofing",
+  "Appliance Repair": "appliances",
+  "Painting": "exterior",
+  "Landscaping": "outdoor",
+  "General Maintenance": null,
+  "Pest Control": null,
+  "Other": null,
+};
+
+/** Map system key to maintenance category (for backward compat) */
+export const SYSTEM_TO_CATEGORY: Record<string, string> = {
+  roofing: "roofing",
+  hvac: "hvac",
+  plumbing: "plumbing",
+  electrical: "electrical",
+  exterior: "exterior",
+  interior: "interior",
+  appliances: "appliance",
+  bathrooms: "plumbing",
+  foundation: "structural",
+  outdoor: "landscaping",
+  specialty: "general",
+};
+
 // ─── Inference for existing users ───
 
 export function inferRegistryFromExistingItems(
