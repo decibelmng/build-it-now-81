@@ -27,6 +27,7 @@ import { consumePendingInventoryAction } from "@/lib/pendingInventoryAction";
 import { SYSTEMS_CATALOG, getEnabledComponents, avgReplacementCost, migrateOldRegistry, type HomeSystemsRegistry } from "@/lib/homeSystemsRegistry";
 
 const homeComponentCategories = [
+  { value: "roofing", label: "Roofing", icon: Package },
   { value: "hvac", label: "HVAC", icon: Wind },
   { value: "plumbing", label: "Plumbing", icon: Droplets },
   { value: "electrical", label: "Electrical", icon: Zap },

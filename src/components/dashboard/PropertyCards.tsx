@@ -393,6 +393,7 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
                 homeSystems={(properties.find((p) => p.id === selectedPropertyId) as any)?.home_systems || null}
                 registryCompleted={(properties.find((p) => p.id === selectedPropertyId) as any)?.registry_completed || false}
                 onNavigate={onNavigate}
+                bathroomCount={properties.find((p) => p.id === selectedPropertyId)?.bathrooms || undefined}
               />
               <CostBasisSummarySection propertyId={selectedPropertyId} />
             </div>
