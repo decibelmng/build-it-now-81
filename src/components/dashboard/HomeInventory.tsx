@@ -134,9 +134,31 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
       };
       let itemId = editingItem;
       if (editingItem) {
+        // Manual edit: clear log link and update timestamp
+        payload.last_updated_from_log_id = null;
+        payload.last_updated_at = new Date().toISOString();
+        // Recalculate completeness
+        payload.data_completeness = calculateComponentCompleteness({
+          install_date: payload.install_date,
+          brand: payload.brand,
+          model: payload.model,
+          warranty_expiry: payload.warranty_expiry,
+          last_maintained: payload.last_maintained,
+          estimated_value: payload.estimated_value,
+          notes: payload.notes,
+        });
         const { error } = await supabase.from("home_items").update(payload).eq("id", editingItem);
         if (error) throw error;
       } else {
+        payload.data_completeness = calculateComponentCompleteness({
+          install_date: payload.install_date,
+          brand: payload.brand,
+          model: payload.model,
+          warranty_expiry: payload.warranty_expiry,
+          last_maintained: payload.last_maintained,
+          estimated_value: payload.estimated_value,
+          notes: payload.notes,
+        });
         const { data, error } = await supabase.from("home_items").insert(payload).select("id").single();
         if (error) throw error;
         itemId = data.id;
