@@ -654,6 +654,11 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                     const status = getReplacementStatus(item.expected_replacement);
                     const itemAttachments = allAttachments.filter((a: any) => a.home_item_id === item.id);
                     const isExpanded = expandedAttachments === item.id;
+                    const freshness = itemType === "home_component" ? getFreshnessIndicator(item.last_updated_at) : null;
+                    const completeness = item.data_completeness ?? 0;
+                    const completenessRadius = 14;
+                    const completenessCircumference = 2 * Math.PI * completenessRadius;
+                    const completenessOffset = completenessCircumference - (completeness / 100) * completenessCircumference;
                     return (
                       <Card key={item.id} className="border-border/50">
                         <CardContent className="p-4">
@@ -661,6 +666,23 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h5 className="font-body text-sm font-semibold">{item.name}</h5>
+                                {/* Completeness Badge */}
+                                {itemType === "home_component" && (
+                                  <div className="relative inline-flex items-center justify-center" title={`${completeness}% complete`}>
+                                    <svg width="32" height="32" className="-rotate-90">
+                                      <circle cx="16" cy="16" r={completenessRadius} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                                      <circle
+                                        cx="16" cy="16" r={completenessRadius} fill="none"
+                                        stroke="hsl(var(--accent))"
+                                        strokeWidth="3"
+                                        strokeDasharray={completenessCircumference}
+                                        strokeDashoffset={completenessOffset}
+                                        strokeLinecap="round"
+                                      />
+                                    </svg>
+                                    <span className="absolute font-body text-[8px] font-bold">{completeness}%</span>
+                                  </div>
+                                )}
                                 {status && (
                                   <Badge variant={status.variant} className="text-[10px] px-1.5 py-0">
                                     <AlertTriangle className="mr-1 h-3 w-3" />{status.label}
@@ -677,6 +699,13 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                                   </Badge>
                                 )}
                               </div>
+                              {/* Freshness Indicator */}
+                              {freshness && (
+                                <div className="mt-1 flex items-center gap-1.5">
+                                  <Circle className={`h-2 w-2 ${freshness.fill} ${freshness.color} shrink-0`} />
+                                  <span className={`font-body text-[10px] ${freshness.color}`}>{freshness.label}</span>
+                                </div>
+                              )}
                               <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-body text-xs text-muted-foreground">
                                 {item.brand && <span><strong>Manufacturer:</strong> {item.brand}</span>}
                                 {item.model && <span><strong>Model:</strong> {item.model}</span>}
@@ -744,6 +773,15 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                                 </div>
                               )}
                             </div>
+                          )}
+
+                          {/* Maintenance History (home components only) */}
+                          {itemType === "home_component" && (
+                            <ComponentMaintenanceHistory
+                              componentId={item.id}
+                              propertyId={propertyId}
+                              component={item}
+                            />
                           )}
                         </CardContent>
                       </Card>
