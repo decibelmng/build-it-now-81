@@ -279,14 +279,31 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      {/* Pending submissions banner */}
+      {pendingSubmissionsCount > 0 && (
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-accent/30 bg-accent/10 px-4 py-3">
+          <p className="text-sm font-medium">
+            You have <span className="font-bold">{pendingSubmissionsCount}</span> pending contractor submission{pendingSubmissionsCount !== 1 ? "s" : ""} to review
+          </p>
+          <Button variant="outline" size="sm" onClick={() => onNavigate?.("contractor-submissions")}>
+            Review
+          </Button>
+        </div>
+      )}
+
+      <div className="mb-6 flex items-center justify-between gap-2 flex-wrap">
         <div>
           <h2 className="font-display text-2xl font-bold">Maintenance Log</h2>
           <p className="font-body text-sm text-muted-foreground">Track repairs, upgrades, and scheduled maintenance</p>
         </div>
-        <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0} onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" /> Add Entry
-        </Button>
+        <div className="flex items-center gap-2">
+          {defaultLinkUrl && (
+            <ServiceLinkPopover linkUrl={defaultLinkUrl} onNavigateToLinks={() => onNavigate?.("contractor-links")} />
+          )}
+          <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0} onClick={openCreate}>
+            <Plus className="mr-2 h-4 w-4" /> Add Entry
+          </Button>
+        </div>
       </div>
 
       {/* Add/Edit dialog */}
