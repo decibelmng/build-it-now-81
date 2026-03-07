@@ -370,6 +370,19 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         component_id: component_id || null,
       };
 
+      // Compute system_key from selected components
+      if (selectedComponentIds.length > 0 || component_id) {
+        const allIds = showNewComponent && component_id ? [component_id] : selectedComponentIds;
+        const selectedComps = homeComponents.filter((c) => allIds.includes(c.id));
+        const systemPrefixes = new Set(selectedComps.map((c: any) => (c.system_key as string)?.split(":")[0]).filter(Boolean));
+        if (systemPrefixes.size === 1) {
+          payload.system_key = Array.from(systemPrefixes)[0];
+        } else if (systemPrefixes.size > 1) {
+          const primaryComp = homeComponents.find((c) => c.id === (component_id || allIds[0]));
+          payload.system_key = (primaryComp as any)?.system_key?.split(":")[0] || null;
+        }
+      }
+
       if (image_url !== undefined) payload.image_url = image_url;
 
       if (form.status === "completed") {
@@ -956,7 +969,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                           )}
                         </div>
                         <p className="font-body text-xs text-muted-foreground">
-                          {log.properties?.name} · {categories.find((c) => c.value === log.category)?.label ?? log.category}
+                          {log.properties?.name} · {legacyCategories.find((c) => c.value === log.category)?.label ?? log.category}
                           {log.cost ? ` · $${Number(log.cost).toFixed(2)}` : ""}
                         </p>
                         {log.home_contacts && (
