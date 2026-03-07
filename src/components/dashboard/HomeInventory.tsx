@@ -263,6 +263,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
       install_date: item.install_date || "", last_maintained: item.last_maintained || "",
       expected_replacement: item.expected_replacement || "", warranty_expiry: item.warranty_expiry || "",
       notes: item.notes || "",
+      estimated_value: item.estimated_value ? String(item.estimated_value) : "",
     });
     setItemOpen(true);
   };
