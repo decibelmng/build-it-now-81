@@ -315,29 +315,38 @@ const HomeContacts = () => {
                     </div>
                   </div>
 
-                  {/* Expanded repair history */}
-                  {isExpanded && stats.jobs > 0 && (
-                    <div className="mt-3 border-t border-border/50 pt-3 space-y-2">
-                      <p className="font-body text-xs font-medium text-muted-foreground">Repair History</p>
-                      {stats.logs.map((log: any) => (
-                        <div key={log.id} className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-body text-xs font-medium">{log.title}</p>
-                              {log.reference_code && (
-                                <span className="font-mono text-[10px] bg-background px-1.5 py-0.5 rounded text-muted-foreground">{log.reference_code}</span>
+                  {/* Expanded repair history & documents */}
+                  {isExpanded && (
+                    <div className="mt-3 border-t border-border/50 pt-3 space-y-3">
+                      {stats.jobs > 0 && (
+                        <div className="space-y-2">
+                          <p className="font-body text-xs font-medium text-muted-foreground">Repair History</p>
+                          {stats.logs.map((log: any) => (
+                            <div key={log.id} className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-body text-xs font-medium">{log.title}</p>
+                                  {log.reference_code && (
+                                    <span className="font-mono text-[10px] bg-background px-1.5 py-0.5 rounded text-muted-foreground">{log.reference_code}</span>
+                                  )}
+                                </div>
+                                <p className="font-body text-xs text-muted-foreground">
+                                  {log.properties?.name} · {log.category}
+                                  {log.completed_date ? ` · ${format(new Date(log.completed_date), "MMM d, yyyy")}` : ""}
+                                </p>
+                              </div>
+                              {log.cost && (
+                                <span className="font-body text-xs font-medium">${Number(log.cost).toLocaleString()}</span>
                               )}
                             </div>
-                            <p className="font-body text-xs text-muted-foreground">
-                              {log.properties?.name} · {log.category}
-                              {log.completed_date ? ` · ${format(new Date(log.completed_date), "MMM d, yyyy")}` : ""}
-                            </p>
-                          </div>
-                          {log.cost && (
-                            <span className="font-body text-xs font-medium">${Number(log.cost).toLocaleString()}</span>
-                          )}
+                          ))}
                         </div>
-                      ))}
+                      )}
+                      <LinkedDocuments
+                        contactId={contact.id}
+                        propertyId={contact.property_id}
+                        propertyName={contact.properties?.name}
+                      />
                     </div>
                   )}
                 </CardContent>
