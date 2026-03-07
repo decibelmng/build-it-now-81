@@ -90,6 +90,26 @@ const HomeContacts = () => {
     enabled: !!user,
   });
 
+  // Batch document counts for contacts
+  const contactIds = contacts.map((c: any) => c.id);
+  const { data: contactDocCounts = {} } = useQuery({
+    queryKey: ["doc_counts_contacts", contactIds],
+    queryFn: async () => {
+      if (contactIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from("documents")
+        .select("contact_id")
+        .in("contact_id", contactIds);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      (data || []).forEach((d: any) => {
+        counts[d.contact_id] = (counts[d.contact_id] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: contactIds.length > 0,
+  });
+
   const addContact = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("home_contacts").insert({
