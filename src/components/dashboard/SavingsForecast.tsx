@@ -11,6 +11,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { calculateForecast } from "@/lib/savingsForecast";
 import type { HomeItem, PropertyInfo } from "@/lib/savingsForecast";
 import { SYSTEM_PROFILES } from "@/lib/savingsForecast";
+import { setPendingInventoryAction } from "@/lib/pendingInventoryAction";
 
 interface SavingsForecastProps {
   onNavigate?: (section: string) => void;
