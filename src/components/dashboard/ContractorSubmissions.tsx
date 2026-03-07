@@ -390,22 +390,16 @@ const ContractorSubmissions = () => {
         <ComponentUpdateSheet
           open={!!componentUpdateData}
           onOpenChange={(open) => { if (!open) setComponentUpdateData(null); }}
-          match={{
-            componentId: componentUpdateData.componentId,
-            componentType: componentUpdateData.componentType,
-            confidence: componentUpdateData.confidence,
-            isNewComponent: componentUpdateData.isNewComponent,
-          }}
+          componentId={componentUpdateData.componentId}
+          componentName={componentUpdateData.componentType}
+          componentType={componentUpdateData.componentType}
+          isNewComponent={componentUpdateData.isNewComponent}
           logTitle={componentUpdateData.logTitle}
-          logCategory={componentUpdateData.logCategory}
-          logCost={componentUpdateData.logCost}
-          logDate={componentUpdateData.logDate}
           logId=""
+          logDate={componentUpdateData.logDate || ""}
+          logCost={String(componentUpdateData.logCost || "")}
+          logContactName=""
           propertyId={componentUpdateData.propertyId}
-          onComplete={() => {
-            setComponentUpdateData(null);
-            queryClient.invalidateQueries({ queryKey: ["home_items"] });
-          }}
         />
       )}
     </div>

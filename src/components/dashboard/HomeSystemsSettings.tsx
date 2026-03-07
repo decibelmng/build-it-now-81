@@ -48,6 +48,7 @@ const HomeSystemsSettings = ({
     homeSystems || getDefaultRegistry(propertyType, bathroomCount)
   );
   const [saving, setSaving] = useState(false);
+  const [rescanning, setRescanning] = useState(false);
   const [confirmDisable, setConfirmDisable] = useState<{
     key: string;
     label: string;
@@ -206,8 +207,6 @@ const HomeSystemsSettings = ({
       </>
     );
   }
-
-  const [rescanning, setRescanning] = useState(false);
 
   const handleRescan = async () => {
     if (!user) return;
