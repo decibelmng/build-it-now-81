@@ -132,6 +132,9 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     enabled: !!user && !!propertyId,
   });
 
+  // Keep ref in sync for event handler
+  useEffect(() => { itemsRef.current = items; }, [items]);
+
   // Fetch all attachments for items in this property
   const itemIds = items.map((i: any) => i.id);
   const { data: allAttachments = [] } = useQuery({
