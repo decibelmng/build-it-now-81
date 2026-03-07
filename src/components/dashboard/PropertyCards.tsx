@@ -15,6 +15,7 @@ import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
 import type { Tables } from "@/integrations/supabase/types";
 import PurchaseInfoSection from "@/components/dashboard/PurchaseInfoSection";
 import CostBasisSummarySection from "@/components/dashboard/CostBasisSummarySection";
+import HomeSystemsSettings from "@/components/dashboard/HomeSystemsSettings";
 
 type Property = Tables<"properties">;
 
