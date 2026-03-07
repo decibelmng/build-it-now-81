@@ -10,6 +10,7 @@ import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
 import QuickStartChecklist from "./QuickStartChecklist";
 import QuickLogCard from "./QuickLogCard";
 import WarrantyAlerts from "./WarrantyAlerts";
+import ComponentBackfillCard from "./ComponentBackfillCard";
 
 const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
@@ -194,6 +195,9 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
           </Card>
         ))}
       </div>
+
+      {/* Component Backfill Card */}
+      <ComponentBackfillCard propertyId={properties[0]?.id} onNavigate={(s) => onNavigate?.(s)} />
 
       {/* Quick Log */}
       <QuickLogCard />
