@@ -1,11 +1,20 @@
 import { Home } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
-const scrollTo = (id: string) => {
-  const el = document.getElementById(id);
-  if (el) {
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
+const useScrollToSection = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  return (id: string) => {
+    if (location.pathname !== "/") {
+      navigate("/#" + id);
+    } else {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  };
 };
 
 const Navbar = () => {
