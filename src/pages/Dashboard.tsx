@@ -145,28 +145,30 @@ const Dashboard = () => {
 
       <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
         <div className="mx-auto max-w-5xl px-3 py-4 sm:px-8 sm:py-8">
-          {activeSection === "overview" && <DashboardOverview onNavigate={(s: string) => setActiveSection(s as Section)} />}
-          {activeSection === "properties" && <PropertyCards />}
-          {activeSection === "home-inventory" && <HomeInventoryPage />}
-          {activeSection === "maintenance" && <MaintenanceLogSection onNavigate={(s: string) => setActiveSection(s as Section)} />}
-          {activeSection === "documents" && <DocumentsHub />}
-          {activeSection === "savings" && <SavingsTracking onNavigate={(s: string) => setActiveSection(s as Section)} />}
-          {activeSection === "tax-investment" && <TaxInvestmentPage />}
-          {activeSection === "contacts" && <HomeContacts />}
-          {activeSection === "utilities" && <PropertyUtilities />}
-          {activeSection === "timeline" && <PropertyTimeline />}
-          {activeSection === "recurring" && <RecurringTemplates />}
-          {activeSection === "sharing" && <PropertySharing />}
-          {activeSection === "export" && (
-            tier === "pro" ? <ExportReports /> : <FeatureGate featureName="Export & Reports" onUpgrade={() => setShowUpgrade(true)} />
-          )}
-          {activeSection === "analytics" && (
-            tier === "pro" ? <AnalyticsInsights /> : <FeatureGate featureName="Analytics & Insights" onUpgrade={() => setShowUpgrade(true)} />
-          )}
-          {activeSection === "settings" && <ProfileSettings />}
-          {activeSection === "search" && <SearchCommandPalette open={true} onOpenChange={() => setActiveSection("overview")} onNavigate={handleSearchNavigate} />}
-          {activeSection === "contractor-links" && <ContractorLinks />}
-          {activeSection === "contractor-submissions" && <ContractorSubmissions />}
+          <Suspense fallback={<div className="p-8"><div className="h-8 w-48 rounded bg-muted animate-pulse mb-4" /><div className="h-64 rounded bg-muted animate-pulse" /></div>}>
+            {activeSection === "overview" && <DashboardOverview onNavigate={(s: string) => setActiveSection(s as Section)} />}
+            {activeSection === "properties" && <PropertyCards />}
+            {activeSection === "home-inventory" && <HomeInventoryPage />}
+            {activeSection === "maintenance" && <MaintenanceLogSection onNavigate={(s: string) => setActiveSection(s as Section)} />}
+            {activeSection === "documents" && <DocumentsHub />}
+            {activeSection === "savings" && <SavingsTracking onNavigate={(s: string) => setActiveSection(s as Section)} />}
+            {activeSection === "tax-investment" && <TaxInvestmentPage />}
+            {activeSection === "contacts" && <HomeContacts />}
+            {activeSection === "utilities" && <PropertyUtilities />}
+            {activeSection === "timeline" && <PropertyTimeline />}
+            {activeSection === "recurring" && <RecurringTemplates />}
+            {activeSection === "sharing" && <PropertySharing />}
+            {activeSection === "export" && (
+              tier === "pro" ? <ExportReports /> : <FeatureGate featureName="Export & Reports" onUpgrade={() => setShowUpgrade(true)} />
+            )}
+            {activeSection === "analytics" && (
+              tier === "pro" ? <AnalyticsInsights /> : <FeatureGate featureName="Analytics & Insights" onUpgrade={() => setShowUpgrade(true)} />
+            )}
+            {activeSection === "settings" && <ProfileSettings />}
+            {activeSection === "search" && <SearchCommandPalette open={true} onOpenChange={() => setActiveSection("overview")} onNavigate={handleSearchNavigate} />}
+            {activeSection === "contractor-links" && <ContractorLinks />}
+            {activeSection === "contractor-submissions" && <ContractorSubmissions />}
+          </Suspense>
         </div>
       </main>
 
