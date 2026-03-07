@@ -20,6 +20,19 @@ export const SYSTEM_PROFILES: SystemCostProfile[] = [
   { label: "Flooring", category: "structural", replacementCost: 3000, lifespanYears: 20, annualCost: 150 },
 ];
 
+// Map variant category names to their canonical SYSTEM_PROFILES category
+const CATEGORY_ALIASES: Record<string, string> = {
+  roof: "roofing",
+  "hvac system": "hvac",
+  "hvac_system": "hvac",
+};
+
+/** Normalize a category to its canonical form */
+export function normalizeCategory(cat: string): string {
+  const lower = cat.toLowerCase().trim();
+  return CATEGORY_ALIASES[lower] || lower;
+}
+
 export const ANNUAL_MAINTENANCE: Record<string, number> = {
   plumbing: 300,
   electrical: 200,
