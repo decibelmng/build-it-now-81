@@ -656,6 +656,7 @@ export type Database = {
           bedrooms: number | null
           city: string | null
           created_at: string
+          home_systems: Json | null
           id: string
           image_url: string | null
           latitude: number | null
@@ -666,6 +667,7 @@ export type Database = {
           purchase_closing_costs: number | null
           purchase_date: string | null
           purchase_price: number | null
+          registry_completed: boolean
           sale_closing_costs: number | null
           sale_date: string | null
           sale_price: number | null
@@ -683,6 +685,7 @@ export type Database = {
           bedrooms?: number | null
           city?: string | null
           created_at?: string
+          home_systems?: Json | null
           id?: string
           image_url?: string | null
           latitude?: number | null
@@ -693,6 +696,7 @@ export type Database = {
           purchase_closing_costs?: number | null
           purchase_date?: string | null
           purchase_price?: number | null
+          registry_completed?: boolean
           sale_closing_costs?: number | null
           sale_date?: string | null
           sale_price?: number | null
@@ -710,6 +714,7 @@ export type Database = {
           bedrooms?: number | null
           city?: string | null
           created_at?: string
+          home_systems?: Json | null
           id?: string
           image_url?: string | null
           latitude?: number | null
@@ -720,6 +725,7 @@ export type Database = {
           purchase_closing_costs?: number | null
           purchase_date?: string | null
           purchase_price?: number | null
+          registry_completed?: boolean
           sale_closing_costs?: number | null
           sale_date?: string | null
           sale_price?: number | null
