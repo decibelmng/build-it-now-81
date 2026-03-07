@@ -436,8 +436,15 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
                   </div>
                   <div className="space-y-2">
                     <Label className="font-body">Notes</Label>
-                    <Textarea placeholder="Additional details, appraised value, condition notes..." value={itemForm.notes} onChange={(e) => setItemForm({ ...itemForm, notes: e.target.value })} className="font-body" rows={3} />
+                    <Textarea placeholder="Additional details, condition notes..." value={itemForm.notes} onChange={(e) => setItemForm({ ...itemForm, notes: e.target.value })} className="font-body" rows={3} />
                   </div>
+                  {itemType === "personal_item" && (
+                    <div className="space-y-2">
+                      <Label className="font-body">Estimated Value ($)</Label>
+                      <Input type="number" placeholder="e.g. 500" value={itemForm.estimated_value} onChange={(e) => setItemForm({ ...itemForm, estimated_value: e.target.value })} className="font-body" min="0" step="0.01" />
+                      <p className="font-body text-xs text-muted-foreground">For insurance documentation purposes.</p>
+                    </div>
+                  )}
                   {/* ── File Attachments Section ── */}
                   <div className="space-y-2">
                     <Label className="font-body">Photos & Documents</Label>
