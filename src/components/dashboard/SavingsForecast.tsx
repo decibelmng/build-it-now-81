@@ -231,7 +231,7 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
                   key={i}
                   className="w-full flex items-center justify-between rounded-lg border border-border/50 bg-background px-3 py-2.5 text-left hover:border-accent/50 transition-colors group"
                   onClick={() => {
-                    if (item.label.includes("purchase price")) {
+                    if (item.label.includes("home systems") || item.label.includes("purchase price")) {
                       onNavigate?.("properties");
                     } else {
                       const matchedProfile = SYSTEM_PROFILES.find(
