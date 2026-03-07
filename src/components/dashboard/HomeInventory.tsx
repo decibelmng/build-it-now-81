@@ -86,6 +86,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
         .select("*")
         .eq("property_id", propertyId)
         .eq("item_type", itemType)
+        .or("is_active.is.null,is_active.eq.true")
         .order("category", { ascending: true })
         .order("name", { ascending: true });
       if (warrantyFilter) {
