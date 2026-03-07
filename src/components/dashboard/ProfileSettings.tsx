@@ -55,6 +55,20 @@ const ProfileSettings = () => {
     enabled: !!user,
   });
 
+  // Query item counts for transfer summary
+  const { data: transferItemCounts } = useQuery({
+    queryKey: ["transfer_item_counts", transferPropertyId],
+    queryFn: async () => {
+      const [{ count: homeCount }, { count: personalCount }, { count: maintenanceCount }] = await Promise.all([
+        supabase.from("home_items").select("*", { count: "exact", head: true }).eq("property_id", transferPropertyId).eq("item_type", "home_component"),
+        supabase.from("home_items").select("*", { count: "exact", head: true }).eq("property_id", transferPropertyId).eq("item_type", "personal_item"),
+        supabase.from("maintenance_logs").select("*", { count: "exact", head: true }).eq("property_id", transferPropertyId),
+      ]);
+      return { homeComponents: homeCount ?? 0, personalItems: personalCount ?? 0, maintenanceLogs: maintenanceCount ?? 0 };
+    },
+    enabled: !!transferPropertyId,
+  });
+
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name ?? "");
