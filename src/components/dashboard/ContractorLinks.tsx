@@ -199,17 +199,26 @@ const ContractorLinks = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Links List */}
-      {links.length === 0 ? (
+      {/* Quick Share Card */}
+      {defaultLinkUrl && <QuickShareCard linkUrl={defaultLinkUrl} />}
+
+      {/* Custom Links Section */}
+      <div className="flex items-center gap-2 pt-2">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Custom Links</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
+      {customLinks.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
             <Link2 className="h-10 w-10 text-muted-foreground/40" />
-            <p className="text-muted-foreground">No contractor links yet. Generate one to get started.</p>
+            <p className="text-muted-foreground">No custom contractor links yet. Generate one for scoped or time-limited access.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {links.map((link: any) => {
+          {customLinks.map((link: any) => {
             const isExpired = link.expires_at && new Date(link.expires_at) < new Date();
             const submissionCount = link.contractor_submissions?.length || 0;
 
