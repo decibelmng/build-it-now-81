@@ -411,23 +411,21 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
               )}
             </div>
 
-            {/* Photo attachment */}
+            {/* File attachments */}
             <div className="space-y-2">
-              <Label className="font-body flex items-center gap-1"><Camera className="h-3.5 w-3.5" /> Photo (optional)</Label>
-              <div
-                className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border/50 p-4 transition-colors hover:border-accent/40"
-                onClick={() => photoInputRef.current?.click()}
-              >
-                {photoPreview ? (
-                  <img src={photoPreview} alt="Preview" className="h-32 w-full rounded-lg object-cover" />
-                ) : (
-                  <>
-                    <Camera className="mb-1 h-6 w-6 text-muted-foreground" />
-                    <p className="font-body text-xs text-muted-foreground">Click to attach a photo</p>
-                  </>
-                )}
-                <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
-              </div>
+              <Label className="font-body">Attachments (optional)</Label>
+              {existingImageUrl && attachedFiles.length === 0 && (
+                <div className="mb-2">
+                  <img src={existingImageUrl} alt="Existing" className="h-24 rounded-lg object-cover" />
+                  <p className="font-body text-[10px] text-muted-foreground mt-1">Current photo — add new files below to replace</p>
+                </div>
+              )}
+              <FilePicker
+                files={attachedFiles}
+                onChange={setAttachedFiles}
+                maxFiles={10}
+                label="Click to add photos or documents"
+              />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
