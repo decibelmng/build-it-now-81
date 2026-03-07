@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { Home, Wrench, DollarSign, Clock, CheckCircle2, AlertTriangle, FileText, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Home, Wrench, DollarSign, Clock, CheckCircle2, AlertTriangle, FileText, Users, TrendingUp, X } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
 
 const DashboardOverview = () => {
   const { user } = useAuth();
@@ -78,12 +81,98 @@ const DashboardOverview = () => {
     completed: "text-sage",
   };
 
+  const { data: costBasis } = useCostBasisAggregated();
+  const [dismissedBanner, setDismissedBanner] = useState(false);
+
+  const hasCosts = totalSpent > 0;
+  const hasPurchasePrice = costBasis?.hasPurchasePrice ?? false;
+  const showOnboardingBanner = hasCosts && !hasPurchasePrice && !dismissedBanner;
+
+  const fmtCurrency = (n: number) =>
+    `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
   return (
     <div>
       <div className="mb-6">
         <h2 className="font-display text-2xl font-bold">Dashboard</h2>
         <p className="font-body text-sm text-muted-foreground">Your home management at a glance</p>
       </div>
+
+      {/* Onboarding banner — missing purchase price */}
+      {showOnboardingBanner && (
+        <div className="mb-6 relative flex items-start gap-3 rounded-lg border border-accent/30 bg-accent/5 p-4">
+          <TrendingUp className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-body text-sm">
+              You've logged <strong>{fmtCurrency(totalSpent)}</strong> in home expenses. Add your purchase price to start tracking your adjusted cost basis — this could save you thousands on capital gains tax when you sell.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2 rounded-full font-body text-xs"
+              onClick={() => {
+                // Navigate to properties section
+                const event = new CustomEvent("navigate-section", { detail: "properties" });
+                window.dispatchEvent(event);
+              }}
+            >
+              Add Purchase Price
+            </Button>
+          </div>
+          <button onClick={() => setDismissedBanner(true)} className="text-muted-foreground hover:text-foreground shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Investment Tracker Card */}
+      <Card className="mb-8 border-border/50">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="h-5 w-5 text-accent" />
+            <h3 className="font-display text-base font-semibold">Your Home Investment</h3>
+          </div>
+          {hasPurchasePrice ? (
+            <>
+              <div className="grid grid-cols-3 gap-4 mb-3">
+                <div>
+                  <p className="font-body text-xs text-muted-foreground">Purchase Price</p>
+                  <p className="font-display text-lg font-bold">{fmtCurrency(costBasis!.totalPurchasePrice)}</p>
+                </div>
+                <div>
+                  <p className="font-body text-xs text-muted-foreground">Total Improvements</p>
+                  <p className="font-display text-lg font-bold text-sage">{fmtCurrency(costBasis!.totalImprovements)}</p>
+                </div>
+                <div>
+                  <p className="font-body text-xs text-muted-foreground">Adjusted Cost Basis</p>
+                  <p className="font-display text-xl font-bold text-accent">{fmtCurrency(costBasis!.totalAdjustedBasis)}</p>
+                </div>
+              </div>
+              <p className="font-body text-xs text-muted-foreground">
+                {costBasis!.improvementCount} capital improvement{costBasis!.improvementCount !== 1 ? "s" : ""} totaling {fmtCurrency(costBasis!.totalImprovements)}
+                {costBasis!.earliestPurchaseDate ? ` since ${format(parseISO(costBasis!.earliestPurchaseDate), "MMM yyyy")}` : ""}
+              </p>
+            </>
+          ) : (
+            <div className="py-4 text-center">
+              <p className="font-body text-sm text-muted-foreground mb-3">
+                Track your home investment to save on taxes when you sell. Homeowners save an average of $5,000–$15,000 by properly documenting capital improvements.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full font-body"
+                onClick={() => {
+                  const event = new CustomEvent("navigate-section", { detail: "properties" });
+                  window.dispatchEvent(event);
+                }}
+              >
+                Get Started
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stat cards */}
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-3">

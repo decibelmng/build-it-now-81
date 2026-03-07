@@ -21,6 +21,7 @@ import { indexMaintenancePhoto, removeDocumentIndex } from "@/lib/documentIndexi
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 import ExpenseTypeField from "@/components/dashboard/ExpenseTypeField";
 import BulkClassifyDialog from "@/components/dashboard/BulkClassifyDialog";
+import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
 
 type Property = Tables<"properties">;
 
@@ -58,6 +59,30 @@ const vendorRoles = [
 ];
 
 const emptyForm = { title: "", description: "", category: "general", property_id: "", cost: "", scheduled_date: "", contact_id: "", status: "pending", scope: "routine", expense_type: "repair", tax_notes: "" };
+
+const MaintenanceCostBar = () => {
+  const { data: costBasis } = useCostBasisAggregated();
+  if (!costBasis) return null;
+  const { totalImprovements, totalRepairs, improvementCount, repairCount } = costBasis;
+  if (totalImprovements === 0 && totalRepairs === 0) return null;
+  const fmt = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-lg bg-secondary/50 px-4 py-2.5 font-body text-sm">
+      <span className="flex items-center gap-1.5">
+        <TrendingUp className="h-3.5 w-3.5 text-sage" />
+        <span className="text-muted-foreground">Capital Improvements:</span>
+        <span className="font-semibold">{fmt(totalImprovements)}</span>
+        <span className="text-xs text-muted-foreground">({improvementCount} entries)</span>
+      </span>
+      <span className="flex items-center gap-1.5">
+        <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-muted-foreground">Repairs & Maintenance:</span>
+        <span className="font-semibold">{fmt(totalRepairs)}</span>
+        <span className="text-xs text-muted-foreground">({repairCount} entries)</span>
+      </span>
+    </div>
+  );
+};
 
 const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
@@ -338,6 +363,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           </Button>
         </div>
       )}
+
+      <MaintenanceCostBar />
 
       <div className="mb-6 flex items-center justify-between gap-2 flex-wrap">
         <div>

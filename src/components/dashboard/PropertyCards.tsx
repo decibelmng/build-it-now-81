@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
 import type { Tables } from "@/integrations/supabase/types";
 import PurchaseInfoSection from "@/components/dashboard/PurchaseInfoSection";
+import CostBasisSummarySection from "@/components/dashboard/CostBasisSummarySection";
 
 type Property = Tables<"properties">;
 
@@ -381,6 +382,7 @@ const PropertyCards = () => {
               <PurchaseInfoSection
                 property={properties.find((p) => p.id === selectedPropertyId)!}
               />
+              <CostBasisSummarySection propertyId={selectedPropertyId} />
             </div>
           )}
         </>

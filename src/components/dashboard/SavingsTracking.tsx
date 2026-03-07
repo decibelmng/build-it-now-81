@@ -9,6 +9,7 @@ import {
   DollarSign, TrendingUp, Wrench, CheckCircle2,
   Droplets, Zap, Wind, Hammer, TreePine, Cog, Gem, Package, PlugZap,
 } from "lucide-react";
+import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format, parseISO, startOfMonth } from "date-fns";
 
@@ -28,6 +29,7 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType }>
 
 const SavingsTracking = () => {
   const { user } = useAuth();
+  const { data: costBasis } = useCostBasisAggregated();
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["maintenance_logs_savings", user?.id],
@@ -117,6 +119,16 @@ const SavingsTracking = () => {
         <h2 className="font-display text-2xl font-bold">Savings & Spending</h2>
         <p className="font-body text-sm text-muted-foreground">Track your maintenance costs over time</p>
       </div>
+
+      {/* Cost basis callout */}
+      {costBasis && costBasis.totalImprovements > 0 && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-sage/30 bg-sage/5 px-4 py-3">
+          <TrendingUp className="h-4 w-4 text-sage shrink-0 mt-0.5" />
+          <p className="font-body text-sm text-muted-foreground">
+            Of your total spending, <strong className="text-foreground">${costBasis.totalImprovements.toLocaleString()}</strong> qualifies as capital improvements that increase your cost basis.
+          </p>
+        </div>
+      )}
 
       {/* Category Toggles */}
       {allCategories.length > 0 && (
