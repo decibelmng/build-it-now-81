@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { indexContractorSubmissionFiles } from "@/lib/documentIndexing";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
+import ExpenseTypeField from "@/components/dashboard/ExpenseTypeField";
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "destructive" }> = {
   pending: { label: "Pending", icon: Clock, variant: "secondary" },
@@ -25,6 +26,7 @@ const ContractorSubmissions = () => {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<any>(null);
   const [tab, setTab] = useState("pending");
+  const [overrideExpenseType, setOverrideExpenseType] = useState<string | null>(null);
 
   const { data: submissions = [] } = useQuery({
     queryKey: ["contractor_submissions", user?.id],
@@ -77,6 +79,9 @@ const ContractorSubmissions = () => {
         "General Maintenance": "general", "Painting": "general", "Pest Control": "general", "Other": "general",
       };
 
+      // Use override if set, otherwise use submission value
+      const finalExpenseType = overrideExpenseType ?? submission.expense_type ?? "repair";
+
       const { error: logError } = await supabase.from("maintenance_logs").insert({
         property_id: submission.property_id,
         user_id: user!.id,
@@ -87,7 +92,7 @@ const ContractorSubmissions = () => {
           `\n\n[Submitted by contractor: ${submission.contractor_contact_name}, ${submission.contractor_company_name}]`,
         category: categoryMap[submission.service_category] || "general",
         cost: submission.cost,
-        expense_type: submission.expense_type || "repair",
+        expense_type: finalExpenseType,
         scheduled_date: submission.service_date,
         completed_date: submission.service_date,
         status: "completed",
@@ -212,7 +217,7 @@ const ContractorSubmissions = () => {
       </Tabs>
 
       {/* Detail Dialog */}
-      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+      <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setOverrideExpenseType(null); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           {selected && (
             <>
@@ -293,15 +298,22 @@ const ContractorSubmissions = () => {
                 />
 
                 {selected.status === "pending" && (
-                  <div className="flex gap-2 pt-2">
-                    <Button className="flex-1" onClick={() => approveAndCreateLog.mutate(selected)}
-                      disabled={approveAndCreateLog.isPending}>
-                      <CheckCircle2 className="mr-2 h-4 w-4" />Approve
-                    </Button>
-                    <Button variant="destructive" className="flex-1" onClick={() => reject.mutate(selected.id)}
-                      disabled={reject.isPending}>
-                      <XCircle className="mr-2 h-4 w-4" />Reject
-                    </Button>
+                  <div className="space-y-3 pt-2">
+                    <ExpenseTypeField
+                      value={overrideExpenseType ?? selected.expense_type ?? "repair"}
+                      onChange={(v) => setOverrideExpenseType(v)}
+                      showTaxNotes={false}
+                    />
+                    <div className="flex gap-2">
+                      <Button className="flex-1" onClick={() => approveAndCreateLog.mutate(selected)}
+                        disabled={approveAndCreateLog.isPending}>
+                        <CheckCircle2 className="mr-2 h-4 w-4" />Approve
+                      </Button>
+                      <Button variant="destructive" className="flex-1" onClick={() => reject.mutate(selected.id)}
+                        disabled={reject.isPending}>
+                        <XCircle className="mr-2 h-4 w-4" />Reject
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

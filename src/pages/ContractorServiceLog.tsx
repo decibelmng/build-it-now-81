@@ -225,33 +225,35 @@ const ContractorServiceLog = () => {
               <div>
                 <Label>Type of Work</Label>
                 <div className="mt-1 space-y-2">
-                  <label className="flex items-center gap-3 rounded-lg border border-border p-3 cursor-pointer hover:bg-secondary/30 transition-colors">
+                  <label className="flex items-start gap-3 rounded-lg border border-border p-3 cursor-pointer hover:bg-secondary/30 transition-colors">
                     <input
                       type="radio"
                       name="expense_type"
                       value="repair"
                       checked={form.expense_type === "repair"}
                       onChange={() => setForm((f) => ({ ...f, expense_type: "repair" }))}
-                      className="accent-foreground"
+                      className="accent-foreground mt-0.5"
                     />
                     <div>
-                      <p className="text-sm font-medium">Repair — Fixed or maintained something existing</p>
+                      <p className="text-sm font-medium">Repair</p>
+                      <p className="text-xs text-muted-foreground">Fixed or maintained something to keep it working (e.g. patched a leak, replaced a part, routine service)</p>
                     </div>
                   </label>
-                  <label className="flex items-center gap-3 rounded-lg border border-border p-3 cursor-pointer hover:bg-secondary/30 transition-colors">
+                  <label className="flex items-start gap-3 rounded-lg border border-border p-3 cursor-pointer hover:bg-secondary/30 transition-colors">
                     <input
                       type="radio"
                       name="expense_type"
                       value="capital_improvement"
                       checked={form.expense_type === "capital_improvement"}
                       onChange={() => setForm((f) => ({ ...f, expense_type: "capital_improvement" }))}
-                      className="accent-foreground"
+                      className="accent-foreground mt-0.5"
                     />
                     <div>
-                      <p className="text-sm font-medium">Improvement — Added something new or upgraded existing</p>
+                      <p className="text-sm font-medium">Improvement</p>
+                      <p className="text-xs text-muted-foreground">Replaced a full system, added something new, or upgraded existing (e.g. new roof, new HVAC, remodel)</p>
                     </div>
                   </label>
-                  <p className="text-xs text-muted-foreground">This helps the homeowner track improvements for tax purposes.</p>
+                  <p className="text-xs text-muted-foreground">This helps the homeowner track capital improvements for tax purposes. If you replaced or installed an entire system, choose Improvement. If you fixed or serviced something, choose Repair.</p>
                 </div>
               </div>
               <div>

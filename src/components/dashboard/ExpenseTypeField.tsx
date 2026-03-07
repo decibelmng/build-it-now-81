@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { TrendingUp, Wrench, FileText } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { TrendingUp, Wrench, FileText, HelpCircle } from "lucide-react";
 
 interface ExpenseTypeFieldProps {
   value: string;
@@ -13,6 +14,7 @@ interface ExpenseTypeFieldProps {
 
 const ExpenseTypeField = ({ value, onChange, taxNotes, onTaxNotesChange, showTaxNotes = true }: ExpenseTypeFieldProps) => {
   const [showNotes, setShowNotes] = useState(!!taxNotes);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   return (
     <div className="space-y-2">
@@ -45,9 +47,23 @@ const ExpenseTypeField = ({ value, onChange, taxNotes, onTaxNotesChange, showTax
       </div>
       <p className="font-body text-xs text-muted-foreground">
         {value === "capital_improvement"
-          ? "Improvements add value to your home and reduce capital gains tax when you sell. Examples: new roof, kitchen remodel, new HVAC, added deck."
-          : "Repairs maintain your home's current condition. Examples: fixing a leak, patching drywall, routine servicing."}
+          ? "Improvements add to your cost basis and reduce capital gains tax when you sell. This includes work that replaces a full system, adds something new, or upgrades your home. Examples: new roof, new HVAC, kitchen remodel, new windows, added deck, new flooring, finished basement."
+          : "Minor repairs do not qualify as capital improvements under IRS rules and cannot be added to your cost basis. Repairs keep your home in working condition. Examples: patching shingles, fixing a leaky faucet, patching drywall, painting for maintenance, unclogging a drain, routine servicing."}
       </p>
+
+      <Collapsible open={helpOpen} onOpenChange={setHelpOpen}>
+        <CollapsibleTrigger className="font-body text-xs text-accent hover:underline flex items-center gap-1">
+          <HelpCircle className="h-3 w-3" /> Not sure which to pick?
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-2">
+          <div className="rounded-lg border border-border/50 bg-muted/30 p-3 font-body text-xs text-muted-foreground space-y-1.5">
+            <p>The IRS distinguishes based on what the work does — not how much it costs.</p>
+            <p><strong>Improvement:</strong> Replacing an entire system (full roof, complete HVAC, all plumbing), adding something new, or upgrading your home.</p>
+            <p><strong>Repair:</strong> Fixing part of a system to keep it running (patching a leak, replacing a few shingles, servicing equipment).</p>
+            <p>When in doubt, choose <strong>Repair</strong> — your tax advisor can reclassify later using your documentation from HomeLog.</p>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {showTaxNotes && onTaxNotesChange && (
         <>
