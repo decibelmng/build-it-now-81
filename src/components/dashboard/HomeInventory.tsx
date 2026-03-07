@@ -437,7 +437,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
                       <Select value={itemForm.category} onValueChange={(v) => setItemForm({ ...itemForm, category: v })}>
                         <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          {itemCategories.map((c) => (
+                          {((itemForm.item_type || itemType) === "personal_item" ? personalItemCategories : homeComponentCategories).map((c) => (
                             <SelectItem key={c.value} value={c.value} className="font-body">{c.label}</SelectItem>
                           ))}
                         </SelectContent>
