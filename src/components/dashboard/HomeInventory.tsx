@@ -13,13 +13,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Package, Zap, Droplets, Wind, Refrigerator, Trash2, Edit2,
-  AlertTriangle, Gem, Upload, FileText, Image, Download, Loader2, Paperclip, X, Lock
+  AlertTriangle, Gem, Upload, FileText, Image, Download, Loader2, Paperclip, X, Lock, Circle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import UpgradeModal from "./UpgradeModal";
-import { format, differenceInDays, isPast } from "date-fns";
+import { format, differenceInDays, differenceInMonths, isPast } from "date-fns";
 import { indexInventoryAttachment, removeDocumentIndex } from "@/lib/documentIndexing";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
+import ComponentMaintenanceHistory from "./ComponentMaintenanceHistory";
+import { calculateComponentCompleteness } from "@/lib/componentCompleteness";
 
 const homeComponentCategories = [
   { value: "hvac", label: "HVAC", icon: Wind },
