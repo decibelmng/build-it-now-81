@@ -379,6 +379,8 @@ export type Database = {
           expected_replacement: string | null
           id: string
           install_date: string | null
+          is_active: boolean
+          is_registry_skeleton: boolean
           item_type: string
           last_maintained: string | null
           last_updated_at: string | null
@@ -388,6 +390,7 @@ export type Database = {
           notes: string | null
           property_id: string | null
           serial_number: string | null
+          system_key: string | null
           updated_at: string
           user_id: string
           warranty_expiry: string | null
@@ -401,6 +404,8 @@ export type Database = {
           expected_replacement?: string | null
           id?: string
           install_date?: string | null
+          is_active?: boolean
+          is_registry_skeleton?: boolean
           item_type?: string
           last_maintained?: string | null
           last_updated_at?: string | null
@@ -410,6 +415,7 @@ export type Database = {
           notes?: string | null
           property_id?: string | null
           serial_number?: string | null
+          system_key?: string | null
           updated_at?: string
           user_id: string
           warranty_expiry?: string | null
@@ -423,6 +429,8 @@ export type Database = {
           expected_replacement?: string | null
           id?: string
           install_date?: string | null
+          is_active?: boolean
+          is_registry_skeleton?: boolean
           item_type?: string
           last_maintained?: string | null
           last_updated_at?: string | null
@@ -432,6 +440,7 @@ export type Database = {
           notes?: string | null
           property_id?: string | null
           serial_number?: string | null
+          system_key?: string | null
           updated_at?: string
           user_id?: string
           warranty_expiry?: string | null
