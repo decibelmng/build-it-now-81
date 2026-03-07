@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Home, Wrench, DollarSign, Clock, CheckCircle2, AlertTriangle, FileText, Users, TrendingUp, X, Shield, Sparkles } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
+import QuickStartChecklist from "./QuickStartChecklist";
+import QuickLogCard from "./QuickLogCard";
+import WarrantyAlerts from "./WarrantyAlerts";
 
 const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
@@ -98,6 +101,9 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
         <p className="font-body text-sm text-muted-foreground">Your home management at a glance</p>
       </div>
 
+      {/* Quick Start Checklist */}
+      <QuickStartChecklist onNavigate={(s) => onNavigate?.(s)} />
+
       {/* Onboarding banner — missing purchase price */}
       {showOnboardingBanner && (
         <div className="mb-6 relative flex items-start gap-3 rounded-lg border border-accent/30 bg-accent/5 p-4">
@@ -183,6 +189,12 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
           </Card>
         ))}
       </div>
+
+      {/* Quick Log */}
+      <QuickLogCard />
+
+      {/* Warranty Alerts */}
+      <WarrantyAlerts onNavigate={(s) => onNavigate?.(s)} />
 
       {/* Recent Activity */}
       <Card className="border-border/50">
