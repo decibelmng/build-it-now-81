@@ -31,14 +31,32 @@ const TaxInvestmentPage = lazy(() => import("@/components/dashboard/TaxInvestmen
 
 type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "tax-investment" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
 
+const VALID_SECTIONS: Set<string> = new Set<string>(["overview","properties","home-inventory","maintenance","documents","savings","tax-investment","contacts","utilities","timeline","recurring","sharing","export","analytics","settings","search","contractor-links","contractor-submissions"]);
+const isValidSection = (s: string): s is Section => VALID_SECTIONS.has(s);
+
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { tier, refreshSubscription } = useSubscription();
   const [profile, setProfile] = useState<{ display_name: string | null; persona: string | null } | null>(null);
-  const [activeSection, setActiveSection] = useState<Section>("overview");
+
+  // Derive activeSection from URL search params so browser back/forward works
+  const sectionParam = searchParams.get("section") as Section | null;
+  const activeSection: Section = sectionParam && isValidSection(sectionParam) ? sectionParam : "overview";
+
+  const setActiveSection = useCallback((section: Section) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (section === "overview") {
+        next.delete("section");
+      } else {
+        next.set("section", section);
+      }
+      return next;
+    });
+  }, [setSearchParams]);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
