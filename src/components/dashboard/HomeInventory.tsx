@@ -69,12 +69,13 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
   const dialogFileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: items = [], isLoading: itemsLoading } = useQuery({
-    queryKey: ["home_items", propertyId],
+    queryKey: ["home_items", propertyId, itemType],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_items")
         .select("*")
         .eq("property_id", propertyId)
+        .eq("item_type", itemType)
         .order("category", { ascending: true })
         .order("name", { ascending: true });
       if (error) throw error;
@@ -102,7 +103,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
 
   const upsertItem = useMutation({
     mutationFn: async () => {
-      const payload = {
+      const payload: any = {
         property_id: propertyId,
         user_id: user!.id,
         name: itemForm.name,
@@ -115,6 +116,8 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
         expected_replacement: itemForm.expected_replacement || null,
         warranty_expiry: itemForm.warranty_expiry || null,
         notes: itemForm.notes || null,
+        item_type: itemType,
+        estimated_value: itemType === "personal_item" && itemForm.estimated_value ? parseFloat(itemForm.estimated_value) : null,
       };
       let itemId = editingItem;
       if (editingItem) {
@@ -146,7 +149,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
+      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId, itemType] });
       queryClient.invalidateQueries({ queryKey: ["home_item_attachments"] });
       setItemOpen(false);
       setEditingItem(null);
@@ -163,7 +166,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
+      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId, itemType] });
       toast({ title: "Item removed" });
     },
   });
