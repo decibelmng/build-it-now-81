@@ -12,8 +12,8 @@ const Footer = () => {
             </span>
           </div>
           <p className="max-w-md font-body text-sm text-primary-foreground/50">
-            The definitive digital passport for your home. Capture, organize, and
-            protect every detail of your property.
+            HomeLog helps homeowners track investments, organize documentation,
+            and save on taxes when they sell.
           </p>
           <div className="flex gap-8 font-body text-sm text-primary-foreground/40">
             <a href="#" className="transition-colors hover:text-primary-foreground/70">Privacy</a>

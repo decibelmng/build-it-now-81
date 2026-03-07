@@ -8,19 +8,21 @@ const tiers = [
     name: "Free",
     price: "$0",
     period: "forever",
-    description: "Everything you need to manage your first home.",
+    description: "Track improvements and build your cost basis.",
     cta: "Get Started Free",
     ctaLink: "/auth?mode=signup",
     highlighted: false,
+    anchor: null,
     features: [
       { text: "1 property", included: true },
+      { text: "Basic cost basis summary", included: true },
       { text: "Maintenance logging & tracking", included: true },
       { text: "Recurring task templates", included: true },
       { text: "Utility tracking", included: true },
       { text: "Document vault", included: true },
       { text: "Home contacts", included: true },
       { text: "Property sharing & transfer", included: true },
-      { text: "Export & Reports", included: false },
+      { text: "IRS-ready tax reports", included: false },
       { text: "Analytics & Insights", included: false },
     ],
   },
@@ -28,12 +30,16 @@ const tiers = [
     name: "Pro",
     price: "$4.99",
     period: "/month",
-    description: "For homeowners who want the complete picture.",
-    cta: "Start Pro Trial",
+    description: "The complete toolkit for protecting your investment.",
+    cta: "Start Pro",
     ctaLink: "/auth?mode=signup",
     highlighted: true,
+    anchor: "The average documented improvement saves $1,500+ in capital gains tax. This pays for itself with a single receipt.",
     features: [
       { text: "Unlimited properties", included: true },
+      { text: "IRS-ready PDF tax reports with attached receipts", included: true },
+      { text: "Unlimited improvement tracking", included: true },
+      { text: "Email reports directly to your CPA", included: true },
       { text: "Maintenance logging & tracking", included: true },
       { text: "Recurring task templates", included: true },
       { text: "Utility tracking", included: true },
@@ -55,13 +61,13 @@ const PricingSection = () => {
             className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl opacity-0 animate-fade-up"
             style={{ animationDelay: "0.1s" }}
           >
-            Simple, Honest Pricing
+            The most valuable home tool costs less than one lost receipt.
           </h2>
           <p
             className="mt-4 font-body text-base text-muted-foreground opacity-0 animate-fade-up"
             style={{ animationDelay: "0.2s" }}
           >
-            Start free. Upgrade when you're ready for the full toolkit.
+            Start free. Upgrade when you're ready for IRS-ready reports.
           </p>
         </div>
 
@@ -92,6 +98,11 @@ const PricingSection = () => {
                   <span className="font-body text-sm text-muted-foreground">{tier.period}</span>
                 </div>
                 <p className="mt-2 font-body text-sm text-muted-foreground">{tier.description}</p>
+                {tier.anchor && (
+                  <p className="mt-3 rounded-lg bg-sage-light px-3 py-2 font-body text-xs leading-relaxed text-sage">
+                    {tier.anchor}
+                  </p>
+                )}
               </div>
 
               <ul className="mb-8 flex-1 space-y-3">
