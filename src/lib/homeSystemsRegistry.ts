@@ -633,3 +633,125 @@ export function inferRegistryFromExistingItems(
 
   return { registry, itemUpdates };
 }
+
+// ─── Backfill system_key on existing records ───
+
+export async function backfillSystemKeys(
+  propertyId: string,
+  userId: string,
+): Promise<{ logsUpdated: number; docsUpdated: number; itemsUpdated: number }> {
+  let logsUpdated = 0;
+  let docsUpdated = 0;
+  let itemsUpdated = 0;
+
+  // 1. Maintenance logs with component_id but no system_key
+  const { data: logsWithComp } = await supabase
+    .from("maintenance_logs")
+    .select("id, component_id")
+    .eq("property_id", propertyId)
+    .eq("user_id", userId)
+    .not("component_id", "is", null)
+    .is("system_key", null);
+
+  if (logsWithComp) {
+    for (const log of logsWithComp) {
+      const { data: item } = await supabase
+        .from("home_items")
+        .select("system_key")
+        .eq("id", log.component_id!)
+        .maybeSingle();
+      if (item?.system_key) {
+        await supabase.from("maintenance_logs")
+          .update({ system_key: item.system_key } as any)
+          .eq("id", log.id);
+        // Also ensure junction row exists
+        await supabase.from("maintenance_log_components")
+          .upsert({ log_id: log.id, component_id: log.component_id } as any, { onConflict: "log_id,component_id" });
+        logsUpdated++;
+      }
+    }
+  }
+
+  // 2. Maintenance logs without component_id — infer system_key from category
+  const { data: logsWithoutComp } = await supabase
+    .from("maintenance_logs")
+    .select("id, category")
+    .eq("property_id", propertyId)
+    .eq("user_id", userId)
+    .is("component_id", null)
+    .is("system_key", null);
+
+  if (logsWithoutComp) {
+    const categoryToSystem: Record<string, string> = {
+      hvac: "hvac", plumbing: "plumbing", electrical: "electrical",
+      roofing: "roofing", appliance: "appliances", landscaping: "outdoor",
+      exterior: "exterior",
+    };
+    for (const log of logsWithoutComp) {
+      const sysKey = categoryToSystem[log.category];
+      if (sysKey) {
+        await supabase.from("maintenance_logs")
+          .update({ system_key: sysKey } as any)
+          .eq("id", log.id);
+        logsUpdated++;
+      }
+    }
+  }
+
+  // 3. Documents with links but no system_key
+  const { data: docsToFix } = await supabase
+    .from("documents")
+    .select("id, home_item_id, maintenance_log_id, contractor_submission_id")
+    .eq("property_id", propertyId)
+    .eq("user_id", userId)
+    .is("system_key", null);
+
+  if (docsToFix) {
+    for (const doc of docsToFix) {
+      let sysKey: string | null = null;
+      if (doc.home_item_id) {
+        const { data: item } = await supabase.from("home_items").select("system_key").eq("id", doc.home_item_id).maybeSingle();
+        sysKey = item?.system_key || null;
+      } else if (doc.maintenance_log_id) {
+        const { data: log } = await supabase.from("maintenance_logs").select("system_key").eq("id", doc.maintenance_log_id).maybeSingle();
+        sysKey = (log as any)?.system_key || null;
+      }
+      if (sysKey) {
+        await supabase.from("documents").update({ system_key: sysKey } as any).eq("id", doc.id);
+        docsUpdated++;
+      }
+    }
+  }
+
+  // 4. Home items without system_key
+  const { data: itemsToFix } = await supabase
+    .from("home_items")
+    .select("id, category")
+    .eq("property_id", propertyId)
+    .eq("user_id", userId)
+    .eq("item_type", "home_component")
+    .is("system_key", null);
+
+  if (itemsToFix) {
+    const categoryToSystem: Record<string, string> = {
+      roofing: "roofing", hvac: "hvac", plumbing: "plumbing",
+      electrical: "electrical", exterior: "exterior", structural: "interior",
+      appliance: "appliances", general: "specialty",
+    };
+    for (const item of itemsToFix) {
+      const sysKey = categoryToSystem[item.category];
+      if (sysKey) {
+        const sys = SYSTEMS_CATALOG.find((s) => s.key === sysKey);
+        const firstComp = sys?.components.find((c) => c.autoCreate);
+        if (firstComp) {
+          await supabase.from("home_items")
+            .update({ system_key: `${sysKey}:${firstComp.key}` } as any)
+            .eq("id", item.id);
+          itemsUpdated++;
+        }
+      }
+    }
+  }
+
+  return { logsUpdated, docsUpdated, itemsUpdated };
+}
