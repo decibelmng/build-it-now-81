@@ -564,6 +564,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
                                 {item.last_maintained && <span><strong>Last maintained:</strong> {format(new Date(item.last_maintained), "MMM d, yyyy")}</span>}
                                 {item.expected_replacement && <span><strong>Replace by:</strong> {format(new Date(item.expected_replacement), "MMM yyyy")}</span>}
                                 {item.warranty_expiry && <span><strong>Warranty:</strong> {format(new Date(item.warranty_expiry), "MMM yyyy")}</span>}
+                                {item.estimated_value && <span><strong>Value:</strong> ${Number(item.estimated_value).toLocaleString()}</span>}
                               </div>
                               {item.notes && (
                                 <p className="mt-1 font-body text-xs text-muted-foreground italic">{item.notes}</p>
