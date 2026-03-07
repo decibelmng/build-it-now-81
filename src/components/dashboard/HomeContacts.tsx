@@ -306,7 +306,7 @@ const HomeContacts = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="font-body text-xs">{getRoleLabel(contact.role)}</Badge>
-                        <Button variant="ghost" size="icon" className={`h-8 w-8 ${stats.jobs === 0 ? "invisible" : ""}`} onClick={() => setExpandedContact(isExpanded ? null : contact.id)}>
+                        <Button variant="ghost" size="icon" className={`h-8 w-8 ${stats.jobs === 0 && !((contactDocCounts as Record<string, number>)[contact.id] > 0) ? "invisible" : ""}`} onClick={() => setExpandedContact(isExpanded ? null : contact.id)}>
                           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteContact.mutate(contact.id)}>
