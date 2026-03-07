@@ -13,6 +13,7 @@ import { Plus, MapPin, BedDouble, Bath, Ruler, Calendar, Loader2, Copy, Check } 
 import { useToast } from "@/hooks/use-toast";
 import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
 import type { Tables } from "@/integrations/supabase/types";
+import PurchaseInfoSection from "@/components/dashboard/PurchaseInfoSection";
 
 type Property = Tables<"properties">;
 
@@ -374,6 +375,14 @@ const PropertyCards = () => {
             ))}
           </div>
 
+          {/* Purchase Info for selected property */}
+          {selectedPropertyId && (
+            <div className="mt-6">
+              <PurchaseInfoSection
+                property={properties.find((p) => p.id === selectedPropertyId)!}
+              />
+            </div>
+          )}
         </>
       )}
     </div>

@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil, Paperclip } from "lucide-react";
+import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil, Paperclip, TrendingUp, ListFilter } from "lucide-react";
 import FilePicker from "@/components/ui/file-picker";
 import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
 import ServiceLinkPopover from "@/components/dashboard/ServiceLinkPopover";
@@ -19,6 +19,8 @@ import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 import { indexMaintenancePhoto, removeDocumentIndex } from "@/lib/documentIndexing";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
+import ExpenseTypeField from "@/components/dashboard/ExpenseTypeField";
+import BulkClassifyDialog from "@/components/dashboard/BulkClassifyDialog";
 
 type Property = Tables<"properties">;
 
@@ -55,7 +57,7 @@ const vendorRoles = [
   { value: "other", label: "Other" },
 ];
 
-const emptyForm = { title: "", description: "", category: "general", property_id: "", cost: "", scheduled_date: "", contact_id: "", status: "pending", scope: "routine" };
+const emptyForm = { title: "", description: "", category: "general", property_id: "", cost: "", scheduled_date: "", contact_id: "", status: "pending", scope: "routine", expense_type: "repair", tax_notes: "" };
 
 const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
@@ -68,6 +70,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
   const [showNewVendor, setShowNewVendor] = useState(false);
   const [newVendor, setNewVendor] = useState({ name: "", role: "other", company: "", phone: "", email: "" });
   const [form, setForm] = useState({ ...emptyForm });
+  const [bulkClassifyOpen, setBulkClassifyOpen] = useState(false);
 
   const resetForm = () => {
     setForm({ ...emptyForm });
@@ -94,6 +97,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       contact_id: log.contact_id || "",
       status: log.status,
       scope: log.scope || "routine",
+      expense_type: log.expense_type || "repair",
+      tax_notes: log.tax_notes || "",
     });
     setEditingId(log.id);
     setExistingImageUrl(log.image_url || null);
@@ -233,6 +238,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         contact_id,
         status: form.status,
         scope: form.scope,
+        expense_type: form.expense_type,
+        tax_notes: form.tax_notes || null,
       };
 
       if (image_url !== undefined) payload.image_url = image_url;
@@ -269,6 +276,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           contact_id,
           image_url: image_url !== undefined ? image_url : null,
           scope: form.scope,
+          expense_type: form.expense_type,
+          tax_notes: form.tax_notes || null,
         }).select("id").single();
         if (error) throw error;
         logId = newLog.id;
@@ -336,6 +345,9 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           <p className="font-body text-sm text-muted-foreground">Track repairs, upgrades, and scheduled maintenance</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="rounded-full font-body text-xs" onClick={() => setBulkClassifyOpen(true)}>
+            <ListFilter className="mr-1 h-3.5 w-3.5" /> Classify Expenses
+          </Button>
           {defaultLinkUrl && (
             <ServiceLinkPopover linkUrl={defaultLinkUrl} onNavigateToLinks={() => onNavigate?.("contractor-links")} />
           )}
@@ -473,6 +485,14 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
               </div>
             </div>
 
+            {/* Expense Type */}
+            <ExpenseTypeField
+              value={form.expense_type}
+              onChange={(v) => setForm({ ...form, expense_type: v })}
+              taxNotes={form.tax_notes}
+              onTaxNotesChange={(v) => setForm({ ...form, tax_notes: v })}
+            />
+
             <div className="space-y-2">
               <Label className="font-body">Scope</Label>
               <Select value={form.scope} onValueChange={(v) => setForm({ ...form, scope: v })}>
@@ -565,6 +585,11 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                               {scopes.find((s) => s.value === log.scope)?.label ?? log.scope}
                             </Badge>
                           )}
+                          {log.expense_type === "capital_improvement" && (
+                            <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30 font-body text-[10px] px-1.5 py-0">
+                              <TrendingUp className="mr-0.5 h-3 w-3" />Improvement
+                            </Badge>
+                          )}
                           {log.reference_code && (
                             <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{log.reference_code}</span>
                           )}
@@ -637,6 +662,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           })}
         </div>
       )}
+
+      <BulkClassifyDialog open={bulkClassifyOpen} onOpenChange={setBulkClassifyOpen} />
     </div>
   );
 };

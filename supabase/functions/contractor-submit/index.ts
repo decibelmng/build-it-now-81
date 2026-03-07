@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
     const warrantyInfo = formData.get("warranty_info") as string | null;
     const notes = formData.get("notes") as string | null;
     const addToContacts = formData.get("add_to_contacts") === "true";
+    const expenseType = (formData.get("expense_type") as string) || "repair";
 
     // Validate required fields
     if (!companyName || !contactName || !serviceDate || !serviceCategory || !serviceDescription) {
@@ -134,6 +135,7 @@ Deno.serve(async (req) => {
         photos: photoPaths,
         receipt_files: receiptPaths,
         add_to_contacts: addToContacts,
+        expense_type: expenseType,
         status: "pending",
       });
 
