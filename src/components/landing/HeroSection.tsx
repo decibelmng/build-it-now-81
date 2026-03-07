@@ -23,24 +23,30 @@ const HeroSection = () => {
             className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber/30 bg-amber/10 px-4 py-2 text-sm text-amber-light opacity-0 animate-fade-up"
           >
             <Shield className="h-4 w-4" />
-            <span className="font-body">The Digital Passport for Your Home</span>
+            <span className="font-body">Stop Losing Money on Undocumented Improvements</span>
           </div>
 
           <h1
             className="mb-6 font-display text-5xl font-bold leading-tight tracking-tight text-primary-foreground opacity-0 animate-fade-up md:text-6xl lg:text-7xl"
             style={{ animationDelay: "0.15s" }}
           >
-            Know Your Home.{" "}
-            <span className="text-gradient-amber">Protect Your Investment.</span>
+            Every home improvement you don't track{" "}
+            <span className="text-gradient-amber">costs you money when you sell.</span>
           </h1>
 
           <p
             className="mb-10 max-w-lg font-body text-lg leading-relaxed text-primary-foreground/80 opacity-0 animate-fade-up"
             style={{ animationDelay: "0.3s" }}
           >
-            HomeLog is the centralized, secure platform that captures every vital
-            detail about your property — from maintenance history to financial
-            planning. Your home's story, all in one place.
+            HomeLog tracks your capital improvements, organizes your receipts,
+            and generates IRS-ready reports — so you keep more of your home's equity.
+          </p>
+
+          <p
+            className="mb-10 max-w-lg font-body text-base font-bold text-primary-foreground/90 opacity-0 animate-fade-up"
+            style={{ animationDelay: "0.35s" }}
+          >
+            The average homeowner misses $10,000–$50,000 in trackable improvements over 10 years of ownership.
           </p>
 
           <div
@@ -49,7 +55,7 @@ const HeroSection = () => {
           >
             <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold text-base px-8 py-6 rounded-full shadow-premium">
               <Link to="/auth?mode=signup">
-                Get Started Free
+                Start Tracking for Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
@@ -59,7 +65,7 @@ const HeroSection = () => {
               className="border border-white/60 text-white hover:bg-white/10 hover:text-white font-body font-medium text-base px-8 py-6 rounded-full backdrop-blur-sm"
               onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth", block: "start" })}
             >
-              See How It Works
+              See how it works ↓
             </Button>
           </div>
         </div>
