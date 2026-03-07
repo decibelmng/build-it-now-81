@@ -224,9 +224,9 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
                   className="w-full flex items-center justify-between rounded-lg border border-border/50 bg-background px-3 py-2.5 text-left hover:border-accent/50 transition-colors group"
                   onClick={() => {
                     if (item.label.includes("purchase price")) {
-                      onNavigate?.("overview");
+                      onNavigate?.("properties");
                     } else {
-                      onNavigate?.("inventory");
+                      onNavigate?.("home-inventory");
                     }
                   }}
                 >
