@@ -27,7 +27,7 @@ const AnalyticsInsights = () => {
       const { data, error } = await supabase
         .from("maintenance_logs")
         .select("*")
-        .order("created_at", { ascending: true });
+        .order("scheduled_date", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data;
     },
@@ -67,7 +67,11 @@ const AnalyticsInsights = () => {
       const key = format(d, "yyyy-MM");
       const label = format(d, "MMM");
       const total = logs
-        .filter((l) => l.cost && l.completed_date && format(parseISO(l.completed_date), "yyyy-MM") === key)
+        .filter((l) => {
+          if (!l.cost) return false;
+          const serviceDate = l.scheduled_date || l.completed_date || l.created_at;
+          return serviceDate && format(parseISO(serviceDate), "yyyy-MM") === key;
+        })
         .reduce((sum, l) => sum + (l.cost || 0), 0);
       months.push({ month: label, total });
     }

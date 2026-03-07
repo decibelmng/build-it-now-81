@@ -271,8 +271,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
 
       // Update completed_date based on status
       if (form.status === "completed") {
-        // Only set completed_date if not already set (for new completions)
-        if (!editingId) payload.completed_date = new Date().toISOString().split("T")[0];
+        // Set completed_date to the scheduled_date if available, otherwise today
+        if (!editingId) payload.completed_date = form.scheduled_date || new Date().toISOString().split("T")[0];
       }
 
       let logId = editingId;

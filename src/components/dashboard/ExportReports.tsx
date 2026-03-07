@@ -52,7 +52,7 @@ const ExportReports = () => {
       let query = supabase
         .from("maintenance_logs")
         .select("*, properties(name)")
-        .order("created_at", { ascending: false });
+        .order("scheduled_date", { ascending: false, nullsFirst: false });
 
       if (selectedProperty !== "all") {
         query = query.eq("property_id", selectedProperty);
@@ -61,9 +61,9 @@ const ExportReports = () => {
       const { data, error } = await query;
       if (error) throw error;
 
-      const headers = ["Date", "Property", "Title", "Category", "Status", "Cost", "Scheduled Date", "Completed Date", "Description"];
+      const headers = ["Service Date", "Property", "Title", "Category", "Status", "Cost", "Scheduled Date", "Completed Date", "Description"];
       const rows = (data || []).map((log: any) => [
-        format(new Date(log.created_at), "yyyy-MM-dd"),
+        format(new Date(log.scheduled_date || log.completed_date || log.created_at), "yyyy-MM-dd"),
         log.properties?.name || "",
         log.title,
         log.category,
