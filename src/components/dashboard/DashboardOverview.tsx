@@ -196,6 +196,9 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
         ))}
       </div>
 
+      {/* Component Backfill Card */}
+      <ComponentBackfillCard propertyId={properties[0]?.id} onNavigate={(s) => onNavigate?.(s)} />
+
       {/* Quick Log */}
       <QuickLogCard />
 
