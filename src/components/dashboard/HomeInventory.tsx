@@ -921,13 +921,12 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
               <div className="space-y-5">
                 {systemOrder.filter((sk) => grouped[sk]).map((sysKey) => {
                   const sys = SYSTEMS_CATALOG.find((s) => s.key === sysKey)!;
-                  const SysIcon = (Icons as any)[sys.iconName] as React.ComponentType<{ className?: string }>;
                   const comps = grouped[sysKey];
 
                   return (
                     <div key={sysKey}>
                       <div className="flex items-center gap-2 mb-2">
-                        {SysIcon && <SysIcon className="h-3.5 w-3.5 text-muted-foreground" />}
+                        <span className="text-sm">{sys.icon}</span>
                         <span className="font-body text-xs font-medium text-muted-foreground">{sys.label}</span>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
