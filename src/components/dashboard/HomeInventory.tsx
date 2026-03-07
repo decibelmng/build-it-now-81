@@ -388,7 +388,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
               </DialogTrigger>
               <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="font-display">{editingItem ? "Edit Item" : "Add Home Item"}</DialogTitle>
+                  <DialogTitle className="font-display">{editingItem ? "Edit Item" : itemType === "personal_item" ? "Add Personal Item" : "Add Home Component"}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={(e) => { e.preventDefault(); upsertItem.mutate(); }} className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
