@@ -119,23 +119,9 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     ensureDefault();
   }, [firstPropertyId, defaultLink]);
 
-  // Query pending contractor submissions
-  const { data: pendingCount = 0 } = useQuery({
-    queryKey: ["pending_submissions_count", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contractor_submissions")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending");
-      if (error) throw error;
-      return data?.length ?? 0;
-    },
-    enabled: !!user,
-  });
-
-  // Use count from header for accurate count
+  // Query pending contractor submissions count
   const { data: pendingSubmissionsCount = 0 } = useQuery({
-    queryKey: ["pending_submissions_exact_count", user?.id],
+    queryKey: ["pending_submissions_count", user?.id],
     queryFn: async () => {
       const { count, error } = await supabase
         .from("contractor_submissions")
