@@ -104,7 +104,37 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     enabled: !!user && !!propertyId,
   });
 
-  // Keep ref in sync and check for pending forecast actions
+  // Fetch registry data for this property
+  const { data: propertyRegistry } = useQuery({
+    queryKey: ["property_registry", propertyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("properties")
+        .select("home_systems, registry_completed")
+        .eq("id", propertyId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!propertyId && itemType === "home_component",
+  });
+
+  const homeSystems = (propertyRegistry as any)?.home_systems as HomeSystemsRegistry | null;
+  const registryCompleted = (propertyRegistry as any)?.registry_completed || false;
+
+  // Compute skeleton cards for systems needing details
+  const skeletonSystems = itemType === "home_component" && registryCompleted && homeSystems
+    ? SYSTEMS_CATALOG
+        .filter((sys) => {
+          const entry = homeSystems[sys.key];
+          if (!entry?.enabled) return false;
+          const matchingItems = items.filter((i: any) => (i as any).system_key === sys.key);
+          if (matchingItems.length === 0) return true;
+          return matchingItems.every((i: any) => (i as any).is_registry_skeleton && i.data_completeness === 0);
+        })
+        .sort((a, b) => b.annualCost - a.annualCost)
+    : [];
+
   useEffect(() => {
     itemsRef.current = items;
     if (itemType !== "home_component" || pendingConsumed.current) return;
