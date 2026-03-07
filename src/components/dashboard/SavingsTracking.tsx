@@ -39,7 +39,7 @@ const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => voi
       const { data, error } = await supabase
         .from("maintenance_logs")
         .select("cost, category, status, created_at, completed_date, scheduled_date")
-        .order("created_at", { ascending: true });
+        .order("scheduled_date", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data;
     },
@@ -78,8 +78,8 @@ const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => voi
   const monthlyMap = new Map<string, number>();
   filtered.forEach((l) => {
     if (!l.cost) return;
-    // Use the actual service date: completed_date > scheduled_date > created_at
-    const dateStr = l.completed_date || l.scheduled_date || l.created_at;
+    // Use the actual service date: scheduled_date > completed_date > created_at
+    const dateStr = l.scheduled_date || l.completed_date || l.created_at;
     const month = format(startOfMonth(parseISO(dateStr)), "yyyy-MM");
     monthlyMap.set(month, (monthlyMap.get(month) || 0) + Number(l.cost));
   });
