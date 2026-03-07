@@ -53,6 +53,13 @@ export type Database = {
             foreignKeyName: "contractor_access_links_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "contractor_access_links_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
@@ -68,6 +75,7 @@ export type Database = {
           contractor_phone: string | null
           cost: number | null
           created_at: string
+          expense_type: string | null
           id: string
           notes: string | null
           photos: string[] | null
@@ -89,6 +97,7 @@ export type Database = {
           contractor_phone?: string | null
           cost?: number | null
           created_at?: string
+          expense_type?: string | null
           id?: string
           notes?: string | null
           photos?: string[] | null
@@ -110,6 +119,7 @@ export type Database = {
           contractor_phone?: string | null
           cost?: number | null
           created_at?: string
+          expense_type?: string | null
           id?: string
           notes?: string | null
           photos?: string[] | null
@@ -129,6 +139,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contractor_access_links"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractor_submissions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
           },
           {
             foreignKeyName: "contractor_submissions_property_id_fkey"
@@ -242,6 +259,13 @@ export type Database = {
             foreignKeyName: "documents_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "documents_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
@@ -288,6 +312,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "home_contacts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
           {
             foreignKeyName: "home_contacts_property_id_fkey"
             columns: ["property_id"]
@@ -401,6 +432,13 @@ export type Database = {
             foreignKeyName: "home_items_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "home_items_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
@@ -442,6 +480,13 @@ export type Database = {
             foreignKeyName: "home_quick_refs_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "home_quick_refs_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
@@ -455,6 +500,7 @@ export type Database = {
           cost: number | null
           created_at: string
           description: string | null
+          expense_type: string | null
           id: string
           image_url: string | null
           is_recurring: boolean | null
@@ -464,6 +510,7 @@ export type Database = {
           scheduled_date: string | null
           scope: string
           status: string
+          tax_notes: string | null
           title: string
           updated_at: string
           user_id: string
@@ -475,6 +522,7 @@ export type Database = {
           cost?: number | null
           created_at?: string
           description?: string | null
+          expense_type?: string | null
           id?: string
           image_url?: string | null
           is_recurring?: boolean | null
@@ -484,6 +532,7 @@ export type Database = {
           scheduled_date?: string | null
           scope?: string
           status?: string
+          tax_notes?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -495,6 +544,7 @@ export type Database = {
           cost?: number | null
           created_at?: string
           description?: string | null
+          expense_type?: string | null
           id?: string
           image_url?: string | null
           is_recurring?: boolean | null
@@ -504,6 +554,7 @@ export type Database = {
           scheduled_date?: string | null
           scope?: string
           status?: string
+          tax_notes?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -515,6 +566,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "home_contacts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_logs_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
           },
           {
             foreignKeyName: "maintenance_logs_property_id_fkey"
@@ -561,6 +619,7 @@ export type Database = {
       properties: {
         Row: {
           address: string
+          agent_commissions: number | null
           bathrooms: number | null
           bedrooms: number | null
           city: string | null
@@ -572,6 +631,12 @@ export type Database = {
           name: string
           property_code: string | null
           property_type: string
+          purchase_closing_costs: number | null
+          purchase_date: string | null
+          purchase_price: number | null
+          sale_closing_costs: number | null
+          sale_date: string | null
+          sale_price: number | null
           sqft: number | null
           state: string | null
           updated_at: string
@@ -581,6 +646,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          agent_commissions?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
           city?: string | null
@@ -592,6 +658,12 @@ export type Database = {
           name: string
           property_code?: string | null
           property_type?: string
+          purchase_closing_costs?: number | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          sale_closing_costs?: number | null
+          sale_date?: string | null
+          sale_price?: number | null
           sqft?: number | null
           state?: string | null
           updated_at?: string
@@ -601,6 +673,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          agent_commissions?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
           city?: string | null
@@ -612,6 +685,12 @@ export type Database = {
           name?: string
           property_code?: string | null
           property_type?: string
+          purchase_closing_costs?: number | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          sale_closing_costs?: number | null
+          sale_date?: string | null
+          sale_price?: number | null
           sqft?: number | null
           state?: string | null
           updated_at?: string
@@ -660,6 +739,13 @@ export type Database = {
             foreignKeyName: "property_shares_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "property_shares_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
@@ -697,6 +783,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "property_transfers_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
           {
             foreignKeyName: "property_transfers_property_id_fkey"
             columns: ["property_id"]
@@ -756,6 +849,13 @@ export type Database = {
           vendor_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "property_utilities_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
           {
             foreignKeyName: "property_utilities_property_id_fkey"
             columns: ["property_id"]
@@ -826,6 +926,13 @@ export type Database = {
             foreignKeyName: "recurring_templates_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "recurring_templates_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
@@ -854,7 +961,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      cost_basis_summary: {
+        Row: {
+          adjusted_basis: number | null
+          agent_commissions: number | null
+          estimated_gain: number | null
+          improvement_count: number | null
+          property_id: string | null
+          purchase_closing_costs: number | null
+          purchase_date: string | null
+          purchase_price: number | null
+          repair_count: number | null
+          sale_closing_costs: number | null
+          sale_date: string | null
+          sale_price: number | null
+          total_improvements: number | null
+          total_repairs: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_property_transfer: {
