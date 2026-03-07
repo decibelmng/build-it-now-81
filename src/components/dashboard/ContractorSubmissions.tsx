@@ -79,6 +79,9 @@ const ContractorSubmissions = () => {
         "General Maintenance": "general", "Painting": "general", "Pest Control": "general", "Other": "general",
       };
 
+      // Use override if set, otherwise use submission value
+      const finalExpenseType = overrideExpenseType ?? submission.expense_type ?? "repair";
+
       const { error: logError } = await supabase.from("maintenance_logs").insert({
         property_id: submission.property_id,
         user_id: user!.id,
@@ -89,7 +92,7 @@ const ContractorSubmissions = () => {
           `\n\n[Submitted by contractor: ${submission.contractor_contact_name}, ${submission.contractor_company_name}]`,
         category: categoryMap[submission.service_category] || "general",
         cost: submission.cost,
-        expense_type: submission.expense_type || "repair",
+        expense_type: finalExpenseType,
         scheduled_date: submission.service_date,
         completed_date: submission.service_date,
         status: "completed",
