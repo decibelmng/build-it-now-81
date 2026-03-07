@@ -383,7 +383,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
         ref={fileInputRef}
         type="file"
         className="hidden"
-        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+        accept="image/jpeg,image/png,image/heic,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         onChange={onFileSelected}
       />
 
@@ -504,7 +504,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
                       ref={dialogFileInputRef}
                       type="file"
                       className="hidden"
-                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                      accept="image/jpeg,image/png,image/heic,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       multiple
                       onChange={(e) => {
                         const files = Array.from(e.target.files || []);

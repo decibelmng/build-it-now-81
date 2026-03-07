@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Home, CheckCircle2, AlertCircle, Loader2, Upload, X } from "lucide-react";
+import { Home, CheckCircle2, AlertCircle, Loader2, Upload, X, FileText, Image as ImageIcon } from "lucide-react";
+import { UNIVERSAL_FILE_ACCEPT, isImageFile, fileTypeLabel } from "@/lib/fileUploadConstants";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -254,12 +255,12 @@ const ContractorServiceLog = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Photos (max 10 images, 10MB each)</Label>
+                <Label>Photos (max 10 files, 10MB each)</Label>
                 <div className="mt-1">
                   <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border px-4 py-3 text-sm text-muted-foreground hover:bg-secondary/50 transition-colors">
                     <Upload className="h-4 w-4" />
                     <span>Choose photos...</span>
-                    <input type="file" accept="image/*" multiple className="hidden"
+                    <input type="file" accept={UNIVERSAL_FILE_ACCEPT} multiple className="hidden"
                       onChange={(e) => {
                         const files = Array.from(e.target.files || []).slice(0, 10 - photos.length);
                         setPhotos((prev) => [...prev, ...files].slice(0, 10));
@@ -268,12 +269,18 @@ const ContractorServiceLog = () => {
                   </label>
                 </div>
                 {photos.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="mt-2 space-y-1">
                     {photos.map((f, i) => (
-                      <Badge key={i} variant="secondary" className="gap-1">
-                        {f.name.length > 20 ? f.name.slice(0, 17) + "..." : f.name}
+                      <div key={i} className="flex items-center gap-2 text-xs bg-muted/50 rounded-md px-2 py-1.5">
+                        {isImageFile(f) ? (
+                          <ImageIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        ) : (
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        )}
+                        <span className="truncate flex-1">{f.name}</span>
+                        <span className="text-muted-foreground shrink-0">{fileTypeLabel(f)} · {(f.size / 1024).toFixed(0)} KB</span>
                         <button type="button" onClick={() => removePhoto(i)}><X className="h-3 w-3" /></button>
-                      </Badge>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -284,7 +291,7 @@ const ContractorServiceLog = () => {
                   <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border px-4 py-3 text-sm text-muted-foreground hover:bg-secondary/50 transition-colors">
                     <Upload className="h-4 w-4" />
                     <span>Choose files...</span>
-                    <input type="file" accept="image/*,application/pdf" multiple className="hidden"
+                    <input type="file" accept={UNIVERSAL_FILE_ACCEPT} multiple className="hidden"
                       onChange={(e) => {
                         const files = Array.from(e.target.files || []).slice(0, 5 - receipts.length);
                         setReceipts((prev) => [...prev, ...files].slice(0, 5));
@@ -293,12 +300,18 @@ const ContractorServiceLog = () => {
                   </label>
                 </div>
                 {receipts.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="mt-2 space-y-1">
                     {receipts.map((f, i) => (
-                      <Badge key={i} variant="secondary" className="gap-1">
-                        {f.name.length > 20 ? f.name.slice(0, 17) + "..." : f.name}
+                      <div key={i} className="flex items-center gap-2 text-xs bg-muted/50 rounded-md px-2 py-1.5">
+                        {isImageFile(f) ? (
+                          <ImageIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        ) : (
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        )}
+                        <span className="truncate flex-1">{f.name}</span>
+                        <span className="text-muted-foreground shrink-0">{fileTypeLabel(f)} · {(f.size / 1024).toFixed(0)} KB</span>
                         <button type="button" onClick={() => removeReceipt(i)}><X className="h-3 w-3" /></button>
-                      </Badge>
+                      </div>
                     ))}
                   </div>
                 )}
