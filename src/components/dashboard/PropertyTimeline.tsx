@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
   Home, Wrench, Droplets, Zap, Wind, Hammer, TreePine, Cog,
-  CheckCircle2, Clock, AlertTriangle, Building, DollarSign, TrendingUp, Gem, Package, PlugZap, ArrowRightLeft,
+  CheckCircle2, Clock, AlertTriangle, Building, DollarSign, TrendingUp, Gem, Package, PlugZap, ArrowRightLeft, FileText,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
