@@ -888,6 +888,66 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
             );
           })
         )}
+
+        {/* Skeleton cards for systems needing details */}
+        {skeletonSystems.length > 0 && (
+          <div className="mt-6">
+            <h4 className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+              Systems Needing Details
+            </h4>
+            {registryCompleted && items.length > 0 && items.every((i: any) => (i as any).is_registry_skeleton && i.data_completeness === 0) && (
+              <p className="font-body text-sm text-muted-foreground mb-4">
+                Your home has {Object.values(homeSystems!).filter((e) => e.enabled).length} systems tracked. Add details to personalize your savings forecast — start with the highest-impact items below.
+              </p>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {skeletonSystems.map((sys) => {
+                const IconComponent = (Icons as any)[sys.iconName] as React.ComponentType<{ className?: string }>;
+                const skeletonItem = items.find((i: any) => (i as any).system_key === sys.key);
+                const completenessRadius = 14;
+                const completenessCircumference = 2 * Math.PI * completenessRadius;
+
+                return (
+                  <Card key={sys.key} className="border-2 border-dashed border-border/50">
+                    <CardContent className="p-4 flex flex-col items-center text-center space-y-2">
+                      {IconComponent && <IconComponent className="h-6 w-6 text-muted-foreground/50" />}
+                      <h5 className="font-body text-sm font-semibold">{sys.label}</h5>
+                      <div className="relative inline-flex items-center justify-center" title="0% complete">
+                        <svg width="32" height="32" className="-rotate-90">
+                          <circle cx="16" cy="16" r={completenessRadius} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                        </svg>
+                        <span className="absolute font-body text-[8px] font-bold">0%</span>
+                      </div>
+                      <p className="font-body text-xs text-muted-foreground">
+                        Adding details personalizes ${sys.annualCost}/yr in your savings forecast
+                      </p>
+                      <Button
+                        size="sm"
+                        className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body text-xs"
+                        onClick={() => {
+                          if (skeletonItem) {
+                            openEditItem(skeletonItem);
+                          } else {
+                            setEditingItem(null);
+                            setItemForm({
+                              ...emptyItemForm,
+                              category: sys.category,
+                              name: sys.label,
+                              item_type: "home_component",
+                            });
+                            setItemOpen(true);
+                          }
+                        }}
+                      >
+                        Add Details
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </div>
