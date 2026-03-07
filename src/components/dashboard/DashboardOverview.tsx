@@ -11,6 +11,7 @@ import QuickStartChecklist from "./QuickStartChecklist";
 import QuickLogCard from "./QuickLogCard";
 import WarrantyAlerts from "./WarrantyAlerts";
 import ComponentBackfillCard from "./ComponentBackfillCard";
+import RegistryMigrationCard from "./RegistryMigrationCard";
 
 const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
