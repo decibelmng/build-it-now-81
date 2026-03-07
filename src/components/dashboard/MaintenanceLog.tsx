@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Camera, Image as ImageIcon, Users, Pencil } from "lucide-react";
+import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
+import ServiceLinkPopover from "@/components/dashboard/ServiceLinkPopover";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
@@ -52,7 +54,7 @@ const vendorRoles = [
 
 const emptyForm = { title: "", description: "", category: "general", property_id: "", cost: "", scheduled_date: "", contact_id: "", status: "pending", scope: "routine" };
 
-const MaintenanceLogSection = () => {
+const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -105,6 +107,28 @@ const MaintenanceLogSection = () => {
       const { data, error } = await supabase.from("properties").select("*").order("name");
       if (error) throw error;
       return data as Property[];
+    },
+    enabled: !!user,
+  });
+
+  const firstPropertyId = properties.length > 0 ? properties[0].id : undefined;
+  const { defaultLink, ensureDefault, linkUrl: defaultLinkUrl } = useDefaultContractorLink(firstPropertyId);
+
+  // Auto-create default link on load
+  useEffect(() => {
+    ensureDefault();
+  }, [firstPropertyId, defaultLink]);
+
+  // Query pending contractor submissions count
+  const { data: pendingSubmissionsCount = 0 } = useQuery({
+    queryKey: ["pending_submissions_count", user?.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("contractor_submissions")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (error) throw error;
+      return count ?? 0;
     },
     enabled: !!user,
   });
@@ -241,14 +265,31 @@ const MaintenanceLogSection = () => {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      {/* Pending submissions banner */}
+      {pendingSubmissionsCount > 0 && (
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-accent/30 bg-accent/10 px-4 py-3">
+          <p className="text-sm font-medium">
+            You have <span className="font-bold">{pendingSubmissionsCount}</span> pending contractor submission{pendingSubmissionsCount !== 1 ? "s" : ""} to review
+          </p>
+          <Button variant="outline" size="sm" onClick={() => onNavigate?.("contractor-submissions")}>
+            Review
+          </Button>
+        </div>
+      )}
+
+      <div className="mb-6 flex items-center justify-between gap-2 flex-wrap">
         <div>
           <h2 className="font-display text-2xl font-bold">Maintenance Log</h2>
           <p className="font-body text-sm text-muted-foreground">Track repairs, upgrades, and scheduled maintenance</p>
         </div>
-        <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0} onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" /> Add Entry
-        </Button>
+        <div className="flex items-center gap-2">
+          {defaultLinkUrl && (
+            <ServiceLinkPopover linkUrl={defaultLinkUrl} onNavigateToLinks={() => onNavigate?.("contractor-links")} />
+          )}
+          <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0} onClick={openCreate}>
+            <Plus className="mr-2 h-4 w-4" /> Add Entry
+          </Button>
+        </div>
       </div>
 
       {/* Add/Edit dialog */}

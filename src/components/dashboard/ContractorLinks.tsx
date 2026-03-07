@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,8 @@ import { Link2, Plus, Copy, Trash2, QrCode, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
+import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
+import QuickShareCard from "@/components/dashboard/QuickShareCard";
 
 const ContractorLinks = () => {
   const { user } = useAuth();
@@ -24,6 +26,7 @@ const ContractorLinks = () => {
   const [createdLink, setCreatedLink] = useState<string | null>(null);
   const [form, setForm] = useState({ property_id: "", label: "", expiry: "none" });
 
+  // Get first property for default link
   const { data: properties = [] } = useQuery({
     queryKey: ["properties", user?.id],
     queryFn: async () => {
@@ -33,6 +36,15 @@ const ContractorLinks = () => {
     },
     enabled: !!user,
   });
+
+  const firstPropertyId = properties.length > 0 ? properties[0].id : undefined;
+  const { defaultLink, ensureDefault, linkUrl: defaultLinkUrl } = useDefaultContractorLink(firstPropertyId);
+
+  // Auto-create default link on load
+  useEffect(() => {
+    ensureDefault();
+  }, [firstPropertyId, defaultLink]);
+
 
   const { data: links = [] } = useQuery({
     queryKey: ["contractor_links", user?.id],
@@ -104,6 +116,9 @@ const ContractorLinks = () => {
 
   const getPropertyName = (propertyId: string) =>
     properties.find((p) => p.id === propertyId)?.name || "Unknown";
+
+  // Filter out the default link from the custom links list
+  const customLinks = links.filter((l: any) => !l.is_default);
 
   return (
     <div className="space-y-6">
@@ -184,17 +199,26 @@ const ContractorLinks = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Links List */}
-      {links.length === 0 ? (
+      {/* Quick Share Card */}
+      {defaultLinkUrl && <QuickShareCard linkUrl={defaultLinkUrl} />}
+
+      {/* Custom Links Section */}
+      <div className="flex items-center gap-2 pt-2">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Custom Links</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
+      {customLinks.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
             <Link2 className="h-10 w-10 text-muted-foreground/40" />
-            <p className="text-muted-foreground">No contractor links yet. Generate one to get started.</p>
+            <p className="text-muted-foreground">No custom contractor links yet. Generate one for scoped or time-limited access.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {links.map((link: any) => {
+          {customLinks.map((link: any) => {
             const isExpired = link.expires_at && new Date(link.expires_at) < new Date();
             const submissionCount = link.contractor_submissions?.length || 0;
 

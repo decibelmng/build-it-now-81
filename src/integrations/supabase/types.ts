@@ -20,6 +20,7 @@ export type Database = {
           expires_at: string | null
           id: string
           is_active: boolean
+          is_default: boolean
           label: string | null
           property_id: string
           token: string
@@ -30,6 +31,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean
+          is_default?: boolean
           label?: string | null
           property_id: string
           token?: string
@@ -40,6 +42,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean
+          is_default?: boolean
           label?: string | null
           property_id?: string
           token?: string
