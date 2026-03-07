@@ -100,8 +100,41 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     enabled: !!user && !!propertyId,
   });
 
-  // Keep ref in sync for event handler
-  useEffect(() => { itemsRef.current = items; }, [items]);
+  // Keep ref in sync and check for pending forecast actions
+  useEffect(() => {
+    itemsRef.current = items;
+    if (itemType !== "home_component" || pendingConsumed.current) return;
+    
+    const pending = consumePendingInventoryAction();
+    if (!pending || Date.now() - pending.timestamp > 5000) return;
+    pendingConsumed.current = true;
+
+    if (pending.mode === "edit") {
+      const existing = items.find((i: any) => i.category === pending.category);
+      if (existing) {
+        setEditingItem(existing.id);
+        setItemForm({
+          name: existing.name || "",
+          category: existing.category || "general",
+          brand: existing.brand || "",
+          model: existing.model || "",
+          serial_number: existing.serial_number || "",
+          install_date: existing.install_date || "",
+          last_maintained: existing.last_maintained || "",
+          expected_replacement: existing.expected_replacement || "",
+          warranty_expiry: existing.warranty_expiry || "",
+          notes: existing.notes || "",
+          estimated_value: existing.estimated_value ? String(existing.estimated_value) : "",
+          item_type: "home_component",
+        });
+        setItemOpen(true);
+        return;
+      }
+    }
+    setEditingItem(null);
+    setItemForm({ ...emptyItemForm, category: pending.category || "general", item_type: "home_component" });
+    setItemOpen(true);
+  }, [items, itemType]);
 
   // Fetch all attachments for items in this property
   const itemIds = items.map((i: any) => i.id);
