@@ -289,13 +289,20 @@ const DocumentsHub = () => {
       ) : documents.length === 0 && activeFilterCount === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="rounded-2xl bg-secondary p-6 mb-4">
-            <FileText className="h-12 w-12 text-muted-foreground" />
+            <FileText className="h-12 w-12 text-muted-foreground/40" />
           </div>
-          <h3 className="font-display text-lg font-semibold mb-1">No documents yet</h3>
-          <p className="font-body text-sm text-muted-foreground max-w-md mb-4">
-            Upload property documents or they'll appear here automatically when you log
-            maintenance and inventory items.
+          <h3 className="font-display text-lg font-semibold mb-1">Your home's filing cabinet</h3>
+          <p className="font-body text-sm text-muted-foreground max-w-md mb-5">
+            Upload receipts, warranties, manuals, and inspection reports. They'll be automatically organized and linked to the right items.
           </p>
+          <div className="flex flex-wrap gap-2 mb-5 justify-center max-w-sm">
+            {["Receipts", "Warranties", "Manuals", "Inspection Reports", "Closing Documents"].map((doc) => (
+              <span key={doc} className="flex items-center gap-1.5 rounded-full border border-border/50 bg-secondary/50 px-3 py-1 font-body text-xs text-muted-foreground">
+                <FileText className="h-3 w-3" />
+                {doc}
+              </span>
+            ))}
+          </div>
           <Button
             className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body"
             onClick={() => setUploadOpen(true)}
