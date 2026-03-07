@@ -381,11 +381,18 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
             ))}
           </div>
 
-          {/* Purchase Info for selected property */}
+          {/* Property details for selected property */}
           {selectedPropertyId && (
-            <div className="mt-6">
+            <div className="mt-6 space-y-6">
               <PurchaseInfoSection
                 property={properties.find((p) => p.id === selectedPropertyId)!}
+              />
+              <HomeSystemsSettings
+                propertyId={selectedPropertyId}
+                propertyType={properties.find((p) => p.id === selectedPropertyId)?.property_type || "single_family"}
+                homeSystems={(properties.find((p) => p.id === selectedPropertyId) as any)?.home_systems || null}
+                registryCompleted={(properties.find((p) => p.id === selectedPropertyId) as any)?.registry_completed || false}
+                onNavigate={onNavigate}
               />
               <CostBasisSummarySection propertyId={selectedPropertyId} />
             </div>
