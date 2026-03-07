@@ -20,9 +20,12 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   properties: { id: string; name: string }[];
   onComplete: () => void;
+  defaultLinkKey?: "maintenance_log_id" | "home_item_id";
+  defaultLinkValue?: string;
+  defaultCategory?: string;
 }
 
-const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete }: Props) => {
+const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defaultLinkKey, defaultLinkValue, defaultCategory }: Props) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [files, setFiles] = useState<File[]>([]);
