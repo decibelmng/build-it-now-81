@@ -141,10 +141,10 @@ export function calculateForecast(
 
   // Track all non-skeleton items as "covered" even without install_date
   normalizedItems.forEach((item) => {
+    if (item.is_registry_skeleton) return; // Skeletons don't count as user-added
     if (item.system_key) {
       coveredCompKeys.add(item.system_key);
     } else {
-      // Try matching by category
       const profile = SYSTEM_PROFILES.find((p) => p.category === item.category);
       if (profile) coveredCompKeys.add(profile.key);
     }
