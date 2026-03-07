@@ -51,6 +51,7 @@ interface HomeInventoryProps {
   propertyId: string;
   itemType?: "home_component" | "personal_item";
   warrantyFilter?: boolean;
+  onNavigate?: (section: string) => void;
 }
 
 const emptyItemForm = {
@@ -59,7 +60,7 @@ const emptyItemForm = {
   estimated_value: "", item_type: "" as "home_component" | "personal_item" | "",
 };
 
-const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter = false }: HomeInventoryProps) => {
+const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter = false, onNavigate }: HomeInventoryProps) => {
   const itemCategories = itemType === "personal_item" ? personalItemCategories : homeComponentCategories;
   const { user } = useAuth();
   const { toast } = useToast();
