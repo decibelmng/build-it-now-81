@@ -12,6 +12,7 @@ import {
   SOURCE_FILTERS,
   FILE_TYPE_FILTERS,
 } from "./constants";
+import { SYSTEMS_CATALOG } from "@/lib/homeSystemsRegistry";
 
 interface Props {
   filters: Filters;
@@ -106,6 +107,24 @@ const FilterControls = ({ filters, onChange, onClear, contacts }: Omit<Props, "a
             {FILE_TYPE_FILTERS.map((t) => (
               <SelectItem key={t.value} value={t.value} className="font-body text-xs">
                 {t.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* System Filter */}
+        <Select
+          value={filters.systemKey}
+          onValueChange={(v) => onChange({ ...filters, systemKey: v })}
+        >
+          <SelectTrigger className="font-body text-xs h-9">
+            <SelectValue placeholder="All Systems" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" className="font-body text-xs">All Systems</SelectItem>
+            {SYSTEMS_CATALOG.map((sys) => (
+              <SelectItem key={sys.key} value={sys.key} className="font-body text-xs">
+                {sys.icon} {sys.label}
               </SelectItem>
             ))}
           </SelectContent>

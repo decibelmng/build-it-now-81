@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil, Paperclip, TrendingUp, ListFilter, Trash2, ChevronsUpDown, Check, Package } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil, Paperclip, TrendingUp, ListFilter, Trash2, ChevronsUpDown, Check, Package, X } from "lucide-react";
 import FilePicker from "@/components/ui/file-picker";
 import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
 import ServiceLinkPopover from "@/components/dashboard/ServiceLinkPopover";
@@ -27,10 +28,12 @@ import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
 import { matchLogToComponent } from "@/lib/componentMatcher";
 import ComponentUpdateSheet from "@/components/dashboard/ComponentUpdateSheet";
 import { cn } from "@/lib/utils";
+import { SYSTEMS_CATALOG, type HomeSystemsRegistry, migrateOldRegistry } from "@/lib/homeSystemsRegistry";
 
 type Property = Tables<"properties">;
 
-const categories = [
+// Fallback categories for legacy users without registry
+const legacyCategories = [
   { value: "plumbing", label: "Plumbing" },
   { value: "electrical", label: "Electrical" },
   { value: "hvac", label: "HVAC" },
@@ -102,8 +105,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
   const [form, setForm] = useState({ ...emptyForm });
   const [bulkClassifyOpen, setBulkClassifyOpen] = useState(false);
 
-  // Related Component state
-  const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
+  // Related Component state — now multi-select
+  const [selectedComponentIds, setSelectedComponentIds] = useState<string[]>([]);
   const [componentComboOpen, setComponentComboOpen] = useState(false);
   const [showNewComponent, setShowNewComponent] = useState(false);
   const [newComponentName, setNewComponentName] = useState("");
@@ -130,7 +133,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     setExistingImageUrl(null);
     setShowNewVendor(false);
     setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" });
-    setSelectedComponentId(null);
+    setSelectedComponentIds([]);
     setShowNewComponent(false);
     setNewComponentName("");
     setNewComponentType("general");
@@ -156,13 +159,25 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       tax_notes: log.tax_notes || "",
     });
     setEditingId(log.id);
-    setSelectedComponentId(log.component_id || null);
+    // Load linked components from junction table
+    setSelectedComponentIds(log.component_id ? [log.component_id] : []);
     setExistingImageUrl(log.image_url || null);
     setAttachedFiles([]);
     setShowNewVendor(false);
     setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" });
     setShowNewComponent(false);
     setOpen(true);
+    // Async load junction table components
+    if (log.id) {
+      supabase.from("maintenance_log_components")
+        .select("component_id")
+        .eq("log_id", log.id)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setSelectedComponentIds(data.map((d: any) => d.component_id));
+          }
+        });
+    }
   };
 
   const { data: properties = [] } = useQuery({
@@ -205,21 +220,50 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     enabled: !!user,
   });
 
-  // Fetch home components for the selected property
+  // Fetch home components for the selected property (with system_key for grouping)
   const { data: homeComponents = [] } = useQuery({
     queryKey: ["home_components_for_property", form.property_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_items")
-        .select("id, name, category, item_type, data_completeness, install_date, brand, model, warranty_expiry, last_maintained, notes, estimated_value")
+        .select("id, name, category, item_type, data_completeness, install_date, brand, model, warranty_expiry, last_maintained, notes, estimated_value, system_key, system_instance")
         .eq("property_id", form.property_id)
         .eq("item_type", "home_component")
+        .or("is_active.is.null,is_active.eq.true")
         .order("name");
       if (error) throw error;
       return data;
     },
     enabled: !!form.property_id,
   });
+
+  // Fetch property registry for dynamic categories (Prompt 7)
+  const selectedProperty = properties.find((p) => p.id === form.property_id);
+  const rawPropSystems = (selectedProperty as any)?.home_systems || null;
+  const propRegistry = rawPropSystems ? (migrateOldRegistry(rawPropSystems) || rawPropSystems as HomeSystemsRegistry) : null;
+  const propRegistryCompleted = (selectedProperty as any)?.registry_completed || false;
+
+  // Build categories from registry or fall back to legacy
+  const categories = (() => {
+    if (!propRegistryCompleted || !propRegistry) return legacyCategories;
+    const enabled: { value: string; label: string; icon: string }[] = [];
+    for (const sys of SYSTEMS_CATALOG) {
+      const entry = propRegistry[sys.key];
+      if (entry?.enabled) {
+        enabled.push({ value: sys.key, label: sys.label, icon: sys.icon });
+      }
+    }
+    enabled.push({ value: "general", label: "General", icon: "🔧" });
+    return enabled;
+  })();
+
+  // Filter components by selected category (Prompt 7)
+  const filteredComponents = form.category && form.category !== "general"
+    ? homeComponents.filter((c: any) => {
+        const sk = (c as any).system_key as string | null;
+        return sk ? sk.startsWith(form.category + ":") : c.category === form.category;
+      })
+    : homeComponents;
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["maintenance_logs", user?.id],
@@ -294,7 +338,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       }
 
       // Handle inline new component creation
-      let component_id: string | null = selectedComponentId;
+      let component_id: string | null = selectedComponentIds.length > 0 ? selectedComponentIds[0] : null;
       if (showNewComponent && newComponentName) {
         const { data: newComp, error: compErr } = await supabase
           .from("home_items")
@@ -325,6 +369,19 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         tax_notes: form.tax_notes || null,
         component_id: component_id || null,
       };
+
+      // Compute system_key from selected components
+      if (selectedComponentIds.length > 0 || component_id) {
+        const allIds = showNewComponent && component_id ? [component_id] : selectedComponentIds;
+        const selectedComps = homeComponents.filter((c) => allIds.includes(c.id));
+        const systemPrefixes = new Set(selectedComps.map((c: any) => (c.system_key as string)?.split(":")[0]).filter(Boolean));
+        if (systemPrefixes.size === 1) {
+          payload.system_key = Array.from(systemPrefixes)[0];
+        } else if (systemPrefixes.size > 1) {
+          const primaryComp = homeComponents.find((c) => c.id === (component_id || allIds[0]));
+          payload.system_key = (primaryComp as any)?.system_key?.split(":")[0] || null;
+        }
+      }
 
       if (image_url !== undefined) payload.image_url = image_url;
 
@@ -361,6 +418,26 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         }).select("id").single();
         if (error) throw error;
         logId = newLog.id;
+      }
+
+      // Save junction table rows for multi-component linking
+      if (logId) {
+        const allComponentIds = showNewComponent && component_id
+          ? [component_id]
+          : selectedComponentIds;
+
+        if (allComponentIds.length > 0) {
+          // Delete old junction rows if editing
+          if (editingId) {
+            await supabase.from("maintenance_log_components").delete().eq("log_id", logId);
+          }
+          // Insert new junction rows
+          const junctionRows = allComponentIds.map((cid) => ({
+            log_id: logId!,
+            component_id: cid,
+          }));
+          await supabase.from("maintenance_log_components").insert(junctionRows as any);
+        }
       }
 
       for (const uploaded of uploadedPaths) {
@@ -462,7 +539,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const selectedComponent = homeComponents.find((c) => c.id === selectedComponentId);
+  const selectedComponentNames = homeComponents.filter((c) => selectedComponentIds.includes(c.id));
 
   return (
     <div>
@@ -506,7 +583,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-4">
             <div className="space-y-2">
               <Label className="font-body">Property *</Label>
-              <Select value={form.property_id} onValueChange={(v) => { setForm({ ...form, property_id: v }); setSelectedComponentId(null); }}>
+              <Select value={form.property_id} onValueChange={(v) => { setForm({ ...form, property_id: v }); setSelectedComponentIds([]); }}>
                 <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
                 <SelectContent>
                   {properties.map((p) => (
@@ -545,16 +622,32 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
             {/* Related Component — positioned after category, before description */}
             {form.property_id && (
               <div className="space-y-1.5">
-                <Label className="font-body flex items-center gap-1"><Package className="h-3.5 w-3.5" /> Related Component</Label>
+                <Label className="font-body flex items-center gap-1"><Package className="h-3.5 w-3.5" /> Related Components</Label>
                 {!showNewComponent ? (
                   <>
                     <Popover open={componentComboOpen} onOpenChange={setComponentComboOpen}>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" aria-expanded={componentComboOpen} className="w-full justify-between font-body font-normal h-9 text-sm">
-                          {selectedComponent ? (
-                            <span>{selectedComponent.name} <span className="text-muted-foreground">· {selectedComponent.category}</span></span>
+                        <Button variant="outline" role="combobox" aria-expanded={componentComboOpen} className="w-full justify-between font-body font-normal h-auto min-h-9 text-sm py-1.5">
+                          {selectedComponentNames.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {selectedComponentNames.map((c) => (
+                                <Badge key={c.id} variant="secondary" className="text-[10px] px-1.5 py-0.5 font-normal">
+                                  {c.name}
+                                  <button
+                                    type="button"
+                                    className="ml-1 hover:text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedComponentIds((prev) => prev.filter((id) => id !== c.id));
+                                    }}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
                           ) : (
-                            <span className="text-muted-foreground">Link to a home component (optional)</span>
+                            <span className="text-muted-foreground">Link to components (optional)</span>
                           )}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -564,33 +657,67 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                           <CommandInput placeholder="Search components..." className="font-body" />
                           <CommandList>
                             <CommandEmpty className="font-body text-sm py-3 text-center">No components found.</CommandEmpty>
-                            <CommandGroup>
-                              {selectedComponentId && (
+                            {selectedComponentIds.length > 0 && (
+                              <CommandGroup>
                                 <CommandItem
                                   value="__clear__"
-                                  onSelect={() => { setSelectedComponentId(null); setComponentComboOpen(false); }}
+                                  onSelect={() => { setSelectedComponentIds([]); }}
                                   className="font-body text-sm text-muted-foreground"
                                 >
-                                  Clear selection
+                                  Clear all
                                 </CommandItem>
-                              )}
-                              {homeComponents.map((comp) => (
-                                <CommandItem
-                                  key={comp.id}
-                                  value={comp.name}
-                                  onSelect={() => { setSelectedComponentId(comp.id); setComponentComboOpen(false); }}
-                                  className="font-body text-sm"
-                                >
-                                  <Check className={cn("mr-2 h-4 w-4", selectedComponentId === comp.id ? "opacity-100" : "opacity-0")} />
-                                  {comp.name}
-                                  <span className="ml-auto text-xs text-muted-foreground">{comp.category}</span>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
+                              </CommandGroup>
+                            )}
+                            {(() => {
+                              // Group by system_key prefix
+                              const grouped: Record<string, typeof filteredComponents> = {};
+                              for (const comp of filteredComponents) {
+                                const sk = (comp as any).system_key as string | null;
+                                const sysPrefix = sk?.split(":")[0] || "other";
+                                if (!grouped[sysPrefix]) grouped[sysPrefix] = [];
+                                grouped[sysPrefix].push(comp);
+                              }
+                              return Object.entries(grouped).map(([sysKey, comps]) => {
+                                const sys = SYSTEMS_CATALOG.find((s) => s.key === sysKey);
+                                const label = sys ? `${sys.icon} ${sys.label}` : "Other";
+                                return (
+                                  <CommandGroup key={sysKey} heading={label}>
+                                    {comps.map((comp) => {
+                                      const isSelected = selectedComponentIds.includes(comp.id);
+                                      return (
+                                        <CommandItem
+                                          key={comp.id}
+                                          value={comp.name}
+                                          onSelect={() => {
+                                            setSelectedComponentIds((prev) =>
+                                              isSelected
+                                                ? prev.filter((id) => id !== comp.id)
+                                                : [...prev, comp.id]
+                                            );
+                                            // Auto-set category if selecting first component (Prompt 7)
+                                            if (!isSelected && selectedComponentIds.length === 0 && (comp as any).system_key) {
+                                              const compSysKey = ((comp as any).system_key as string).split(":")[0];
+                                              if (compSysKey && categories.some((c) => c.value === compSysKey)) {
+                                                setForm((f) => ({ ...f, category: compSysKey }));
+                                              }
+                                            }
+                                          }}
+                                          className="font-body text-sm"
+                                        >
+                                          <Checkbox checked={isSelected} className="mr-2 h-4 w-4" />
+                                          {comp.name}
+                                          <span className="ml-auto text-xs text-muted-foreground">{comp.category}</span>
+                                        </CommandItem>
+                                      );
+                                    })}
+                                  </CommandGroup>
+                                );
+                              });
+                            })()}
                             <CommandGroup>
                               <CommandItem
                                 value="__new__"
-                                onSelect={() => { setShowNewComponent(true); setSelectedComponentId(null); setComponentComboOpen(false); }}
+                                onSelect={() => { setShowNewComponent(true); setSelectedComponentIds([]); setComponentComboOpen(false); }}
                                 className="font-body text-sm text-accent"
                               >
                                 <Plus className="mr-2 h-4 w-4" />
@@ -601,7 +728,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                         </Command>
                       </PopoverContent>
                     </Popover>
-                    <p className="font-body text-xs text-muted-foreground">Linking helps keep your home records in sync automatically</p>
+                    <p className="font-body text-xs text-muted-foreground">Link to the components this work serviced</p>
                   </>
                 ) : (
                   <div className="rounded-lg border border-border/50 p-3 space-y-2 bg-muted/30">
@@ -621,7 +748,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                         <Select value={newComponentType} onValueChange={setNewComponentType}>
                           <SelectTrigger className="font-body h-8 text-sm"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            {categories.map((c) => (
+                            {legacyCategories.map((c) => (
                               <SelectItem key={c.value} value={c.value} className="font-body text-sm">{c.label}</SelectItem>
                             ))}
                           </SelectContent>
@@ -862,7 +989,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                           )}
                         </div>
                         <p className="font-body text-xs text-muted-foreground">
-                          {log.properties?.name} · {categories.find((c) => c.value === log.category)?.label ?? log.category}
+                          {log.properties?.name} · {legacyCategories.find((c) => c.value === log.category)?.label ?? log.category}
                           {log.cost ? ` · $${Number(log.cost).toFixed(2)}` : ""}
                         </p>
                         {log.home_contacts && (

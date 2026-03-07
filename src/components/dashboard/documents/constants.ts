@@ -120,6 +120,7 @@ export type DocumentFilters = {
   dateFrom: string;
   dateTo: string;
   dateField: "uploaded_at" | "document_date";
+  systemKey: string;
 };
 
 export const DEFAULT_FILTERS: DocumentFilters = {
@@ -132,6 +133,7 @@ export const DEFAULT_FILTERS: DocumentFilters = {
   dateFrom: "",
   dateTo: "",
   dateField: "uploaded_at",
+  systemKey: "all",
 };
 
 export function getSourceFromDoc(doc: any): "direct" | "maintenance" | "contractor" | "inventory" {
@@ -158,6 +160,7 @@ export function getActiveFilterCount(filters: DocumentFilters): number {
   if (filters.source !== "all") count++;
   if (filters.fileType !== "all") count++;
   if (filters.contactId !== "all") count++;
+  if (filters.systemKey !== "all") count++;
   if (filters.dateFrom || filters.dateTo) count++;
   return count;
 }
