@@ -232,20 +232,12 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
                         (p) => item.label.toLowerCase().includes(p.label.toLowerCase())
                       );
                       const isUpdate = item.label.startsWith("Update");
+                      setPendingInventoryAction({
+                        category: matchedProfile?.category || "general",
+                        mode: isUpdate ? "edit" : "add",
+                        timestamp: Date.now(),
+                      });
                       onNavigate?.("home-inventory");
-                      // Dispatch with retries to handle component mount timing
-                      const dispatchEvent = (attempt = 0) => {
-                        window.dispatchEvent(
-                          new CustomEvent("add-home-component", {
-                            detail: {
-                              category: matchedProfile?.category || "general",
-                              mode: isUpdate ? "edit" : "add",
-                            },
-                          })
-                        );
-                      };
-                      setTimeout(() => dispatchEvent(), 300);
-                      setTimeout(() => dispatchEvent(), 800);
                     }
                   }}
                 >
