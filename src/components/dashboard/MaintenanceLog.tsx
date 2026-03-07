@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Camera, Image as ImageIcon, Users, Pencil } from "lucide-react";
+import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, ImageIcon, Users, Pencil } from "lucide-react";
+import FilePicker from "@/components/ui/file-picker";
 import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
 import ServiceLinkPopover from "@/components/dashboard/ServiceLinkPopover";
 import { useToast } from "@/hooks/use-toast";
@@ -61,9 +62,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
   const [showNewVendor, setShowNewVendor] = useState(false);
   const [newVendor, setNewVendor] = useState({ name: "", role: "other", company: "", phone: "", email: "" });
   const [form, setForm] = useState({ ...emptyForm });
@@ -71,8 +71,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
   const resetForm = () => {
     setForm({ ...emptyForm });
     setEditingId(null);
-    setPhotoFile(null);
-    setPhotoPreview(null);
+    setAttachedFiles([]);
+    setExistingImageUrl(null);
     setShowNewVendor(false);
     setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" });
   };
@@ -95,8 +95,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       scope: log.scope || "routine",
     });
     setEditingId(log.id);
-    setPhotoPreview(log.image_url || null);
-    setPhotoFile(null);
+    setExistingImageUrl(log.image_url || null);
+    setAttachedFiles([]);
     setShowNewVendor(false);
     setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" });
     setOpen(true);
@@ -157,30 +157,28 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     enabled: !!user,
   });
 
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
+  // No longer needed — replaced by FilePicker
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       let image_url: string | null | undefined = undefined; // undefined = don't change
       let contact_id: string | null = form.contact_id || null;
 
-      // Upload new photo if selected
-      let uploadedFilePath: string | null = null;
-      if (photoFile && user) {
-        const filePath = `${user.id}/${Date.now()}_${photoFile.name}`;
-        uploadedFilePath = filePath;
-        const { error: uploadError } = await supabase.storage.from("maintenance-photos").upload(filePath, photoFile);
-        if (uploadError) throw uploadError;
-        const { data: urlData } = await supabase.storage.from("maintenance-photos").createSignedUrl(filePath, 31536000);
-        image_url = urlData?.signedUrl || null;
+      // Upload new files if selected
+      const uploadedPaths: { path: string; file: File }[] = [];
+      if (attachedFiles.length > 0 && user) {
+        for (const file of attachedFiles) {
+          const filePath = `${user.id}/${Date.now()}_${file.name}`;
+          const { error: uploadError } = await supabase.storage.from("maintenance-photos").upload(filePath, file);
+          if (uploadError) continue;
+          uploadedPaths.push({ path: filePath, file });
+        }
+        // Use first image as image_url for thumbnail
+        const firstImage = uploadedPaths.find((u) => u.file.type.startsWith("image/"));
+        if (firstImage) {
+          const { data: urlData } = await supabase.storage.from("maintenance-photos").createSignedUrl(firstImage.path, 31536000);
+          image_url = urlData?.signedUrl || null;
+        }
       }
 
       // If creating a new vendor inline
@@ -225,7 +223,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       let logId = editingId;
       if (editingId) {
         // If replacing photo, remove old document index
-        if (uploadedFilePath && photoFile) {
+        if (uploadedPaths.length > 0) {
           // Try to find old file path from image_url and remove its index
           const { data: oldLog } = await supabase.from("maintenance_logs").select("image_url").eq("id", editingId).single();
           if (oldLog?.image_url) {
@@ -253,19 +251,21 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         logId = newLog.id;
       }
 
-      // Auto-index the uploaded photo into documents table
-      if (uploadedFilePath && photoFile && logId) {
-        await indexMaintenancePhoto({
-          file_path: uploadedFilePath,
-          file_name: photoFile.name,
-          file_type: photoFile.type,
-          file_size: photoFile.size,
-          property_id: form.property_id,
-          user_id: user!.id,
-          maintenance_log_id: logId,
-          log_title: form.title,
-          log_date: form.scheduled_date || undefined,
-        });
+      // Auto-index all uploaded files into documents table
+      for (const uploaded of uploadedPaths) {
+        if (logId) {
+          await indexMaintenancePhoto({
+            file_path: uploaded.path,
+            file_name: uploaded.file.name,
+            file_type: uploaded.file.type,
+            file_size: uploaded.file.size,
+            property_id: form.property_id,
+            user_id: user!.id,
+            maintenance_log_id: logId,
+            log_title: form.title,
+            log_date: form.scheduled_date || undefined,
+          });
+        }
       }
     },
     onSuccess: () => {
