@@ -24,10 +24,11 @@ import FeatureGate from "@/components/dashboard/FeatureGate";
 import UpgradeModal from "@/components/dashboard/UpgradeModal";
 import ContractorLinks from "@/components/dashboard/ContractorLinks";
 import ContractorSubmissions from "@/components/dashboard/ContractorSubmissions";
+import HomeInventoryPage from "@/components/dashboard/HomeInventoryPage";
 import { useToast } from "@/hooks/use-toast";
 
 
-type Section = "overview" | "properties" | "maintenance" | "documents" | "savings" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
+type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -108,6 +109,7 @@ const Dashboard = () => {
         <div className="mx-auto max-w-5xl px-3 py-4 sm:px-8 sm:py-8">
           {activeSection === "overview" && <DashboardOverview />}
           {activeSection === "properties" && <PropertyCards />}
+          {activeSection === "home-inventory" && <HomeInventoryPage />}
           {activeSection === "maintenance" && <MaintenanceLogSection onNavigate={(s: string) => setActiveSection(s as Section)} />}
           {activeSection === "documents" && <DocumentVault />}
           {activeSection === "savings" && <SavingsTracking />}
