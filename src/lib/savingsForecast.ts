@@ -332,11 +332,20 @@ export function calculateForecast(
   }
 
   // Suggest details for enabled components without data
+  // Use coveredCompKeys (any item exists) to suppress "Add" suggestions,
+  // but use personalizedCompKeys (has install_date) for "Update" suggestions
   if (hasRegistry) {
     const enabledComps = getEnabledComponents(homeSystems);
     for (const comp of enabledComps) {
       const compKey = `${comp.systemKey}:${comp.key}`;
-      if (personalizedCompKeys.has(compKey)) continue;
+      if (coveredCompKeys.has(compKey) && personalizedCompKeys.has(compKey)) continue;
+      if (coveredCompKeys.has(compKey) && !personalizedCompKeys.has(compKey)) {
+        suggestedItems.push({
+          label: `Update your ${comp.label.toLowerCase()} with install date`,
+          impact: `Personalizes $${comp.annualCost}/yr in predictions`,
+        });
+        continue;
+      }
       suggestedItems.push({
         label: `Add your ${comp.label.toLowerCase()} details`,
         impact: `Personalizes $${comp.annualCost}/yr in predictions`,
@@ -348,7 +357,14 @@ export function calculateForecast(
       const comp = sys?.components.find((c) => `${sys.key}:${c.key}` === p.key);
       return comp?.autoCreate;
     }).forEach((profile) => {
-      if (personalizedCompKeys.has(profile.key)) return;
+      if (coveredCompKeys.has(profile.key) && personalizedCompKeys.has(profile.key)) return;
+      if (coveredCompKeys.has(profile.key) && !personalizedCompKeys.has(profile.key)) {
+        suggestedItems.push({
+          label: `Update your ${profile.label.toLowerCase()} with install date`,
+          impact: `Personalizes $${profile.annualCost}/yr in predictions`,
+        });
+        return;
+      }
       suggestedItems.push({
         label: `Add your ${profile.label.toLowerCase()} details`,
         impact: `Personalizes $${profile.annualCost}/yr in predictions`,
