@@ -397,6 +397,7 @@ export async function syncRegistryToInventory(
     is_active: boolean | null;
     data_completeness: number;
     category: string;
+    system_instance?: number | null;
   }>,
   bathroomCount?: number
 ) {
@@ -453,9 +454,10 @@ export async function syncRegistryToInventory(
           const gap = targetQty - activeItems.length - toReactivate.length;
           for (let i = 0; i < gap; i++) {
             const existingCount = activeItems.length + toReactivate.length + i;
+            const instanceNumber = existingCount + 1;
             const name = targetQty === 1 && existingCount === 0
               ? comp.label
-              : `${comp.label} ${existingCount + 1}`;
+              : `${comp.label} ${instanceNumber}`;
 
             const category = mapSystemToCategory(sys.key);
 
@@ -469,6 +471,8 @@ export async function syncRegistryToInventory(
               category,
               name,
               data_completeness: 0,
+              // Assign system_instance for multi-quantity items
+              system_instance: targetQty > 1 ? instanceNumber : null,
             });
           }
         } else if (activeItems.length > targetQty) {
@@ -476,6 +480,20 @@ export async function syncRegistryToInventory(
           const toDeactivate = sorted.slice(0, activeItems.length - targetQty);
           for (const item of toDeactivate) {
             updates.push({ id: item.id, changes: { is_active: false } });
+          }
+        }
+
+        // Ensure system_instance is set on existing items for multi-quantity
+        if (targetQty > 1) {
+          const allActiveAfter = [
+            ...activeItems,
+            ...inactiveItems.filter((i) => updates.some((u) => u.id === i.id && u.changes.is_active === true)),
+          ];
+          for (let idx = 0; idx < allActiveAfter.length; idx++) {
+            const item = allActiveAfter[idx];
+            if (item.system_instance == null || item.system_instance === 0) {
+              updates.push({ id: item.id, changes: { system_instance: idx + 1 } });
+            }
           }
         }
       } else {
