@@ -198,7 +198,7 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
       </div>
 
       {/* Registry Migration Card */}
-      {properties[0]?.id && <RegistryMigrationCard propertyId={properties[0].id} onNavigate={(s) => onNavigate?.(s)} />}
+      {properties[0]?.id && <RegistryMigrationCard propertyId={properties[0].id} bathroomCount={(properties[0] as any).bathrooms || undefined} onNavigate={(s) => onNavigate?.(s)} />}
 
       {/* Component Backfill Card */}
       <ComponentBackfillCard propertyId={properties[0]?.id} onNavigate={(s) => onNavigate?.(s)} />

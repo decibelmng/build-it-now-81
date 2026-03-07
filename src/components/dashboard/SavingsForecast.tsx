@@ -38,7 +38,7 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_items")
-        .select("id, name, category, install_date, expected_replacement, estimated_value")
+        .select("id, name, category, install_date, expected_replacement, estimated_value, system_key")
         .eq("item_type", "home_component");
       if (error) throw error;
       return data;
@@ -63,6 +63,7 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
     install_date: i.install_date,
     expected_replacement: i.expected_replacement,
     estimated_value: i.estimated_value ? Number(i.estimated_value) : null,
+    system_key: i.system_key || null,
   }));
 
   const forecast = calculateForecast(
