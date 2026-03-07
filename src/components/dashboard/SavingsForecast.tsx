@@ -232,7 +232,8 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
                       );
                       const isUpdate = item.label.startsWith("Update");
                       onNavigate?.("home-inventory");
-                      setTimeout(() => {
+                      // Dispatch with retries to handle component mount timing
+                      const dispatchEvent = (attempt = 0) => {
                         window.dispatchEvent(
                           new CustomEvent("add-home-component", {
                             detail: {
@@ -241,7 +242,9 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
                             },
                           })
                         );
-                      }, 150);
+                      };
+                      setTimeout(() => dispatchEvent(), 300);
+                      setTimeout(() => dispatchEvent(), 800);
                     }
                   }}
                 >
