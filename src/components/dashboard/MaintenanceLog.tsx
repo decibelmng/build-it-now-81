@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil } from "lucide-react";
+import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil, Paperclip } from "lucide-react";
 import FilePicker from "@/components/ui/file-picker";
 import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
 import ServiceLinkPopover from "@/components/dashboard/ServiceLinkPopover";
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 import { indexMaintenancePhoto, removeDocumentIndex } from "@/lib/documentIndexing";
+import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 
 type Property = Tables<"properties">;
 
@@ -156,6 +157,28 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     },
     enabled: !!user,
   });
+
+  // Batch document counts for all logs
+  const logIds = logs.map((l: any) => l.id);
+  const { data: docCounts = {} } = useQuery({
+    queryKey: ["doc_counts_maintenance", logIds],
+    queryFn: async () => {
+      if (logIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from("documents")
+        .select("maintenance_log_id")
+        .in("maintenance_log_id", logIds);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      (data || []).forEach((d: any) => {
+        counts[d.maintenance_log_id] = (counts[d.maintenance_log_id] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: logIds.length > 0,
+  });
+
+  const [expandedLog, setExpandedLog] = useState<string | null>(null);
 
   // No longer needed — replaced by FilePicker
 
