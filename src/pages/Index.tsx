@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
 import TrustBar from "@/components/landing/TrustBar";
@@ -13,6 +15,17 @@ import CTASection from "@/components/landing/CTASection";
 import Footer from "@/components/landing/Footer";
 
 const Index = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const el = document.getElementById(location.hash.slice(1));
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+      }
+    }
+  }, [location.hash]);
+
   return (
     <div className="min-h-screen">
       <Navbar />
