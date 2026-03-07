@@ -59,7 +59,18 @@ const emptyItemForm = {
   name: "", category: "general", brand: "", model: "", serial_number: "",
   install_date: "", last_maintained: "", expected_replacement: "", warranty_expiry: "", notes: "",
   estimated_value: "", item_type: "" as "home_component" | "personal_item" | "",
+  system_key: "" as string,
 };
+
+// Build flat list of system:component options for the dropdown
+const systemComponentOptions = SYSTEMS_CATALOG.flatMap((sys) =>
+  sys.components.map((comp) => ({
+    value: `${sys.key}:${comp.key}`,
+    label: `${comp.label}`,
+    group: `${sys.icon} ${sys.label}`,
+    systemKey: sys.key,
+  }))
+);
 
 const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter = false, onNavigate }: HomeInventoryProps) => {
   const itemCategories = itemType === "personal_item" ? personalItemCategories : homeComponentCategories;
@@ -160,7 +171,8 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
           warranty_expiry: existing.warranty_expiry || "",
           notes: existing.notes || "",
           estimated_value: existing.estimated_value ? String(existing.estimated_value) : "",
-          item_type: "home_component",
+           item_type: "home_component",
+          system_key: existing.system_key || "",
         });
         setItemOpen(true);
         return;
@@ -206,6 +218,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
         notes: itemForm.notes || null,
         item_type: effectiveType,
         estimated_value: effectiveType === "personal_item" && itemForm.estimated_value ? parseFloat(itemForm.estimated_value) : null,
+        system_key: effectiveType === "home_component" && itemForm.system_key ? itemForm.system_key : null,
       };
       let itemId = editingItem;
       if (editingItem) {
@@ -413,6 +426,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
       notes: item.notes || "",
       estimated_value: item.estimated_value ? String(item.estimated_value) : "",
       item_type: item.item_type || itemType,
+      system_key: item.system_key || "",
     });
     setItemOpen(true);
   };
@@ -610,6 +624,37 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                         </SelectContent>
                       </Select>
                     </div>
+                    {(itemForm.item_type || itemType) === "home_component" && (
+                      <div className="space-y-2">
+                        <Label className="font-body flex items-center gap-1">
+                          <Shield className="h-3.5 w-3.5" /> Linked System
+                        </Label>
+                        <Select value={itemForm.system_key || "none"} onValueChange={(v) => setItemForm({ ...itemForm, system_key: v === "none" ? "" : v })}>
+                          <SelectTrigger className="font-body">
+                            <SelectValue placeholder="None — not linked to a system" />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-64">
+                            <SelectItem value="none" className="font-body text-muted-foreground">None</SelectItem>
+                            {(() => {
+                              const groups = systemComponentOptions.reduce<Record<string, typeof systemComponentOptions>>((acc, opt) => {
+                                if (!acc[opt.group]) acc[opt.group] = [];
+                                acc[opt.group].push(opt);
+                                return acc;
+                              }, {});
+                              return Object.entries(groups).map(([group, opts]) => (
+                                <div key={group}>
+                                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground font-body">{group}</div>
+                                  {opts.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value} className="font-body pl-4">{opt.label}</SelectItem>
+                                  ))}
+                                </div>
+                              ));
+                            })()}
+                          </SelectContent>
+                        </Select>
+                        <p className="font-body text-xs text-muted-foreground">Links this item to your home systems registry for forecast accuracy.</p>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label className="font-body">Manufacturer</Label>
                       <Input placeholder="e.g. Rheem, Rolex" value={itemForm.brand} onChange={(e) => setItemForm({ ...itemForm, brand: e.target.value })} className="font-body" />
