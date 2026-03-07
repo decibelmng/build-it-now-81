@@ -22,7 +22,7 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 z-50 w-full border-b border-primary-foreground/10 bg-primary/80 backdrop-blur-md">
       <div className="container mx-auto flex items-center justify-between px-6 py-4">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2">
           <Home className="h-6 w-6 text-accent" />
           <span className="font-display text-xl font-bold text-primary-foreground">
             HomeLog
