@@ -88,7 +88,13 @@ export function calculateForecast(
   const events: ForecastEvent[] = [];
 
   // 1. Process tracked home items for personalized predictions
-  homeItems.forEach((item) => {
+  // Normalize item categories for matching against SYSTEM_PROFILES
+  const normalizedItems = homeItems.map((item) => ({
+    ...item,
+    category: normalizeCategory(item.category),
+  }));
+
+  normalizedItems.forEach((item) => {
     if (!item.install_date) return;
 
     const installYear = new Date(item.install_date).getFullYear();
