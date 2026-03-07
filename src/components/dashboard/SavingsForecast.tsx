@@ -10,6 +10,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from "recharts";
 import { calculateForecast } from "@/lib/savingsForecast";
 import type { HomeItem, PropertyInfo } from "@/lib/savingsForecast";
+import { SYSTEM_PROFILES } from "@/lib/savingsForecast";
 
 interface SavingsForecastProps {
   onNavigate?: (section: string) => void;
