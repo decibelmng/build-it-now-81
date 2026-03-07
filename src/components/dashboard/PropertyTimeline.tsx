@@ -167,7 +167,7 @@ const PropertyTimeline = () => {
   const filteredLogs = selectedProperty === "all" ? logs : logs.filter((l: any) => l.property_id === selectedProperty);
 
   filteredLogs.forEach((log: any) => {
-    const eventDate = log.completed_date || log.scheduled_date || log.created_at?.split("T")[0];
+    const eventDate = log.scheduled_date || log.completed_date || log.created_at?.split("T")[0];
     const scope = log.scope || "routine";
     const eventType = scope === "major_repair" ? "major_repair" : scope === "improvement" ? "improvement" : "maintenance";
     events.push({
