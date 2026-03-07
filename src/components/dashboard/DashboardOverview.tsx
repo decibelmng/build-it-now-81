@@ -158,10 +158,7 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
                 variant="outline"
                 size="sm"
                 className="rounded-full font-body"
-                onClick={() => {
-                  const event = new CustomEvent("navigate-section", { detail: "properties" });
-                  window.dispatchEvent(event);
-                }}
+                onClick={() => onNavigate?.("properties")}
               >
                 Get Started
               </Button>
