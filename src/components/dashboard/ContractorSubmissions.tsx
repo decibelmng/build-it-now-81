@@ -11,6 +11,7 @@ import { CheckCircle2, XCircle, Clock, Eye, UserPlus, Download } from "lucide-re
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { indexContractorSubmissionFiles } from "@/lib/documentIndexing";
+import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "destructive" }> = {
   pending: { label: "Pending", icon: Clock, variant: "secondary" },
@@ -282,6 +283,13 @@ const ContractorSubmissions = () => {
                     <span className="text-xs">This contractor requested to be added to your contacts.</span>
                   </div>
                 )}
+
+                {/* Linked Documents */}
+                <LinkedDocuments
+                  contractorSubmissionId={selected.id}
+                  propertyId={selected.property_id}
+                  propertyName={getPropertyName(selected.property_id)}
+                />
 
                 {selected.status === "pending" && (
                   <div className="flex gap-2 pt-2">
