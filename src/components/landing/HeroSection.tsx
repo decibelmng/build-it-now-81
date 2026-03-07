@@ -23,7 +23,7 @@ const HeroSection = () => {
             className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber/30 bg-amber/10 px-4 py-2 text-sm text-amber-light opacity-0 animate-fade-up"
           >
             <Shield className="h-4 w-4" />
-            <span className="font-body">The Digital Passport for Your Home</span>
+            <span className="font-body">Stop Losing Money on Undocumented Improvements</span>
           </div>
 
           <h1
@@ -38,9 +38,15 @@ const HeroSection = () => {
             className="mb-10 max-w-lg font-body text-lg leading-relaxed text-primary-foreground/80 opacity-0 animate-fade-up"
             style={{ animationDelay: "0.3s" }}
           >
-            HomeLog is the centralized, secure platform that captures every vital
-            detail about your property — from maintenance history to financial
-            planning. Your home's story, all in one place.
+            HomeLog tracks your capital improvements, organizes your receipts,
+            and generates IRS-ready reports — so you keep more of your home's equity.
+          </p>
+
+          <p
+            className="mb-10 max-w-lg font-body text-base font-bold text-primary-foreground/90 opacity-0 animate-fade-up"
+            style={{ animationDelay: "0.35s" }}
+          >
+            The average homeowner misses $10,000–$50,000 in trackable improvements over 10 years of ownership.
           </p>
 
           <div
