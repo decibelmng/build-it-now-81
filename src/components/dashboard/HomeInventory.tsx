@@ -24,7 +24,7 @@ import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 import ComponentMaintenanceHistory from "./ComponentMaintenanceHistory";
 import { calculateComponentCompleteness } from "@/lib/componentCompleteness";
 import { consumePendingInventoryAction } from "@/lib/pendingInventoryAction";
-import { SYSTEMS_CATALOG, type HomeSystemsRegistry } from "@/lib/homeSystemsRegistry";
+import { SYSTEMS_CATALOG, getEnabledComponents, avgReplacementCost, migrateOldRegistry, type HomeSystemsRegistry } from "@/lib/homeSystemsRegistry";
 
 const homeComponentCategories = [
   { value: "hvac", label: "HVAC", icon: Wind },
@@ -119,16 +119,16 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     enabled: !!propertyId && itemType === "home_component",
   });
 
-  const homeSystems = (propertyRegistry as any)?.home_systems as HomeSystemsRegistry | null;
+  const rawHomeSystems = (propertyRegistry as any)?.home_systems || null;
+  const homeSystems = rawHomeSystems ? (migrateOldRegistry(rawHomeSystems) || rawHomeSystems as HomeSystemsRegistry) : null;
   const registryCompleted = (propertyRegistry as any)?.registry_completed || false;
 
-  // Compute skeleton cards for systems needing details
-  const skeletonSystems = itemType === "home_component" && registryCompleted && homeSystems
-    ? SYSTEMS_CATALOG
-        .filter((sys) => {
-          const entry = homeSystems[sys.key];
-          if (!entry?.enabled) return false;
-          const matchingItems = items.filter((i: any) => (i as any).system_key === sys.key);
+  // Compute skeleton cards for components needing details
+  const skeletonComponents = itemType === "home_component" && registryCompleted && homeSystems
+    ? getEnabledComponents(homeSystems)
+        .filter((comp) => {
+          const compKey = `${comp.systemKey}:${comp.key}`;
+          const matchingItems = items.filter((i: any) => (i as any).system_key === compKey);
           if (matchingItems.length === 0) return true;
           return matchingItems.every((i: any) => (i as any).is_registry_skeleton && i.data_completeness === 0);
         })
