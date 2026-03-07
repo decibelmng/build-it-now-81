@@ -83,6 +83,16 @@ const Dashboard = () => {
     }
   }, [propertiesLoaded, properties]);
 
+  // Listen for navigate-section events from child components
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const section = (e as CustomEvent).detail as Section;
+      setActiveSection(section);
+    };
+    window.addEventListener("navigate-section", handler);
+    return () => window.removeEventListener("navigate-section", handler);
+  }, []);
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
