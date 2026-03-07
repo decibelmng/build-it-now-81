@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { indexContractorSubmissionFiles } from "@/lib/documentIndexing";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
+import ExpenseTypeField from "@/components/dashboard/ExpenseTypeField";
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "destructive" }> = {
   pending: { label: "Pending", icon: Clock, variant: "secondary" },
@@ -25,6 +26,7 @@ const ContractorSubmissions = () => {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<any>(null);
   const [tab, setTab] = useState("pending");
+  const [overrideExpenseType, setOverrideExpenseType] = useState<string | null>(null);
 
   const { data: submissions = [] } = useQuery({
     queryKey: ["contractor_submissions", user?.id],
