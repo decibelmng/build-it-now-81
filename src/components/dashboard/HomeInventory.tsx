@@ -13,13 +13,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Package, Zap, Droplets, Wind, Refrigerator, Trash2, Edit2,
-  AlertTriangle, Gem, Upload, FileText, Image, Download, Loader2, Paperclip, X, Lock
+  AlertTriangle, Gem, Upload, FileText, Image, Download, Loader2, Paperclip, X, Lock, Circle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import UpgradeModal from "./UpgradeModal";
-import { format, differenceInDays, isPast } from "date-fns";
+import { format, differenceInDays, differenceInMonths, isPast } from "date-fns";
 import { indexInventoryAttachment, removeDocumentIndex } from "@/lib/documentIndexing";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
+import ComponentMaintenanceHistory from "./ComponentMaintenanceHistory";
+import { calculateComponentCompleteness } from "@/lib/componentCompleteness";
 
 const homeComponentCategories = [
   { value: "hvac", label: "HVAC", icon: Wind },
@@ -132,9 +134,31 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
       };
       let itemId = editingItem;
       if (editingItem) {
+        // Manual edit: clear log link and update timestamp
+        payload.last_updated_from_log_id = null;
+        payload.last_updated_at = new Date().toISOString();
+        // Recalculate completeness
+        payload.data_completeness = calculateComponentCompleteness({
+          install_date: payload.install_date,
+          brand: payload.brand,
+          model: payload.model,
+          warranty_expiry: payload.warranty_expiry,
+          last_maintained: payload.last_maintained,
+          estimated_value: payload.estimated_value,
+          notes: payload.notes,
+        });
         const { error } = await supabase.from("home_items").update(payload).eq("id", editingItem);
         if (error) throw error;
       } else {
+        payload.data_completeness = calculateComponentCompleteness({
+          install_date: payload.install_date,
+          brand: payload.brand,
+          model: payload.model,
+          warranty_expiry: payload.warranty_expiry,
+          last_maintained: payload.last_maintained,
+          estimated_value: payload.estimated_value,
+          notes: payload.notes,
+        });
         const { data, error } = await supabase.from("home_items").insert(payload).select("id").single();
         if (error) throw error;
         itemId = data.id;
@@ -317,6 +341,21 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     if (isPast(d)) return { label: "Overdue", variant: "destructive" as const };
     if (days <= 90) return { label: "Soon", variant: "default" as const };
     return null;
+  };
+
+  const getFreshnessIndicator = (lastUpdatedAt: string | null) => {
+    if (!lastUpdatedAt) return { color: "text-destructive", fill: "fill-destructive", label: "Needs attention — never updated" };
+    const months = differenceInMonths(new Date(), new Date(lastUpdatedAt));
+    if (months <= 6) {
+      const ago = format(new Date(lastUpdatedAt), "MMM d, yyyy");
+      return { color: "text-accent", fill: "fill-accent", label: `Updated ${ago}` };
+    }
+    if (months <= 12) {
+      const ago = format(new Date(lastUpdatedAt), "MMM d, yyyy");
+      return { color: "text-yellow-500", fill: "fill-yellow-500", label: `Last updated ${ago}` };
+    }
+    const ago = format(new Date(lastUpdatedAt), "MMM d, yyyy");
+    return { color: "text-destructive", fill: "fill-destructive", label: `Needs attention — last updated ${ago}` };
   };
 
   // ── Export functions ──
@@ -615,6 +654,11 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                     const status = getReplacementStatus(item.expected_replacement);
                     const itemAttachments = allAttachments.filter((a: any) => a.home_item_id === item.id);
                     const isExpanded = expandedAttachments === item.id;
+                    const freshness = itemType === "home_component" ? getFreshnessIndicator(item.last_updated_at) : null;
+                    const completeness = item.data_completeness ?? 0;
+                    const completenessRadius = 14;
+                    const completenessCircumference = 2 * Math.PI * completenessRadius;
+                    const completenessOffset = completenessCircumference - (completeness / 100) * completenessCircumference;
                     return (
                       <Card key={item.id} className="border-border/50">
                         <CardContent className="p-4">
@@ -622,6 +666,23 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h5 className="font-body text-sm font-semibold">{item.name}</h5>
+                                {/* Completeness Badge */}
+                                {itemType === "home_component" && (
+                                  <div className="relative inline-flex items-center justify-center" title={`${completeness}% complete`}>
+                                    <svg width="32" height="32" className="-rotate-90">
+                                      <circle cx="16" cy="16" r={completenessRadius} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                                      <circle
+                                        cx="16" cy="16" r={completenessRadius} fill="none"
+                                        stroke="hsl(var(--accent))"
+                                        strokeWidth="3"
+                                        strokeDasharray={completenessCircumference}
+                                        strokeDashoffset={completenessOffset}
+                                        strokeLinecap="round"
+                                      />
+                                    </svg>
+                                    <span className="absolute font-body text-[8px] font-bold">{completeness}%</span>
+                                  </div>
+                                )}
                                 {status && (
                                   <Badge variant={status.variant} className="text-[10px] px-1.5 py-0">
                                     <AlertTriangle className="mr-1 h-3 w-3" />{status.label}
@@ -638,6 +699,13 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                                   </Badge>
                                 )}
                               </div>
+                              {/* Freshness Indicator */}
+                              {freshness && (
+                                <div className="mt-1 flex items-center gap-1.5">
+                                  <Circle className={`h-2 w-2 ${freshness.fill} ${freshness.color} shrink-0`} />
+                                  <span className={`font-body text-[10px] ${freshness.color}`}>{freshness.label}</span>
+                                </div>
+                              )}
                               <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-body text-xs text-muted-foreground">
                                 {item.brand && <span><strong>Manufacturer:</strong> {item.brand}</span>}
                                 {item.model && <span><strong>Model:</strong> {item.model}</span>}
@@ -705,6 +773,15 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                                 </div>
                               )}
                             </div>
+                          )}
+
+                          {/* Maintenance History (home components only) */}
+                          {itemType === "home_component" && (
+                            <ComponentMaintenanceHistory
+                              componentId={item.id}
+                              propertyId={propertyId}
+                              component={item}
+                            />
                           )}
                         </CardContent>
                       </Card>
