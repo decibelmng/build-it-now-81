@@ -139,12 +139,26 @@ export function calculateForecast(
     category: normalizeCategory(item.category),
   }));
 
-  // Track all non-skeleton items as "covered" even without install_date
+  // Track items with any meaningful user data as "covered"
+  // A skeleton with no data doesn't count, but once the user adds details it does
   normalizedItems.forEach((item) => {
-    if (item.is_registry_skeleton) return; // Skeletons don't count as user-added
+    const hasMeaningfulData = !!(item.install_date || item.estimated_value || item.expected_replacement);
+    const isEmptySkeleton = item.is_registry_skeleton && !hasMeaningfulData;
+    if (isEmptySkeleton) return;
     if (item.system_key) {
       coveredCompKeys.add(item.system_key);
-    } else {
+    }
+    // Also try matching by name to catch manually-added items without system_key
+    const nameLC = item.name.toLowerCase();
+    for (const profile of SYSTEM_PROFILES) {
+      if (profile.label.toLowerCase() === nameLC || 
+          nameLC.includes(profile.label.toLowerCase()) ||
+          profile.label.toLowerCase().includes(nameLC)) {
+        coveredCompKeys.add(profile.key);
+      }
+    }
+    // Fallback: match by category
+    if (!item.system_key) {
       const profile = SYSTEM_PROFILES.find((p) => p.category === item.category);
       if (profile) coveredCompKeys.add(profile.key);
     }
