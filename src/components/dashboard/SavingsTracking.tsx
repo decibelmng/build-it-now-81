@@ -36,7 +36,7 @@ const SavingsTracking = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("maintenance_logs")
-        .select("cost, category, status, created_at, completed_date")
+        .select("cost, category, status, created_at, completed_date, scheduled_date")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data;
@@ -76,7 +76,9 @@ const SavingsTracking = () => {
   const monthlyMap = new Map<string, number>();
   filtered.forEach((l) => {
     if (!l.cost) return;
-    const month = format(startOfMonth(parseISO(l.created_at)), "yyyy-MM");
+    // Use the actual service date: completed_date > scheduled_date > created_at
+    const dateStr = l.completed_date || l.scheduled_date || l.created_at;
+    const month = format(startOfMonth(parseISO(dateStr)), "yyyy-MM");
     monthlyMap.set(month, (monthlyMap.get(month) || 0) + Number(l.cost));
   });
   const monthlyData = Array.from(monthlyMap.entries())
