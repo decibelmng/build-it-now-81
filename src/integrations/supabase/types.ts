@@ -86,6 +86,7 @@ export type Database = {
           service_date: string
           service_description: string
           status: string
+          system_key: string | null
           warranty_info: string | null
         }
         Insert: {
@@ -108,6 +109,7 @@ export type Database = {
           service_date: string
           service_description: string
           status?: string
+          system_key?: string | null
           warranty_info?: string | null
         }
         Update: {
@@ -130,6 +132,7 @@ export type Database = {
           service_date?: string
           service_description?: string
           status?: string
+          system_key?: string | null
           warranty_info?: string | null
         }
         Relationships: [
@@ -175,6 +178,7 @@ export type Database = {
           maintenance_log_id: string | null
           name: string
           property_id: string
+          system_key: string | null
           tags: string[] | null
           title: string | null
           uploaded_at: string | null
@@ -198,6 +202,7 @@ export type Database = {
           maintenance_log_id?: string | null
           name: string
           property_id: string
+          system_key?: string | null
           tags?: string[] | null
           title?: string | null
           uploaded_at?: string | null
@@ -221,6 +226,7 @@ export type Database = {
           maintenance_log_id?: string | null
           name?: string
           property_id?: string
+          system_key?: string | null
           tags?: string[] | null
           title?: string | null
           uploaded_at?: string | null
@@ -390,6 +396,7 @@ export type Database = {
           notes: string | null
           property_id: string | null
           serial_number: string | null
+          system_instance: number | null
           system_key: string | null
           updated_at: string
           user_id: string
@@ -415,6 +422,7 @@ export type Database = {
           notes?: string | null
           property_id?: string | null
           serial_number?: string | null
+          system_instance?: number | null
           system_key?: string | null
           updated_at?: string
           user_id: string
@@ -440,6 +448,7 @@ export type Database = {
           notes?: string | null
           property_id?: string | null
           serial_number?: string | null
+          system_instance?: number | null
           system_key?: string | null
           updated_at?: string
           user_id?: string
@@ -517,6 +526,42 @@ export type Database = {
           },
         ]
       }
+      maintenance_log_components: {
+        Row: {
+          component_id: string
+          created_at: string | null
+          id: string
+          log_id: string
+        }
+        Insert: {
+          component_id: string
+          created_at?: string | null
+          id?: string
+          log_id: string
+        }
+        Update: {
+          component_id?: string
+          created_at?: string | null
+          id?: string
+          log_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_log_components_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "home_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_log_components_log_id_fkey"
+            columns: ["log_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_logs: {
         Row: {
           category: string
@@ -538,6 +583,7 @@ export type Database = {
           scheduled_date: string | null
           scope: string
           status: string
+          system_key: string | null
           tax_notes: string | null
           title: string
           updated_at: string
@@ -563,6 +609,7 @@ export type Database = {
           scheduled_date?: string | null
           scope?: string
           status?: string
+          system_key?: string | null
           tax_notes?: string | null
           title: string
           updated_at?: string
@@ -588,6 +635,7 @@ export type Database = {
           scheduled_date?: string | null
           scope?: string
           status?: string
+          system_key?: string | null
           tax_notes?: string | null
           title?: string
           updated_at?: string
