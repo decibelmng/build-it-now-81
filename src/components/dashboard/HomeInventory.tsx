@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import {
   Plus, Package, Zap, Droplets, Wind, Refrigerator, Trash2, Edit2,
-  AlertTriangle, Gem, Upload, FileText, Image, Download, Loader2, Paperclip, X, Lock, ArrowRightLeft
+  AlertTriangle, Gem, Upload, FileText, Image, Download, Loader2, Paperclip, X, Lock
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import UpgradeModal from "./UpgradeModal";
@@ -172,19 +172,6 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
     },
   });
 
-  const moveItem = useMutation({
-    mutationFn: async ({ id, newType }: { id: string; newType: "home_component" | "personal_item" }) => {
-      const updates: any = { item_type: newType };
-      if (newType === "home_component") updates.estimated_value = null;
-      const { error } = await supabase.from("home_items").update(updates).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: (_, { newType }) => {
-      queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
-      toast({ title: `Item moved to ${newType === "personal_item" ? "Personal Items" : "Home Components"}` });
-    },
-    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
-  });
 
   const uploadAttachment = useMutation({
     mutationFn: async ({ itemId, file }: { itemId: string; file: File }) => {
@@ -616,14 +603,6 @@ const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventor
                                 {uploadAttachment.isPending && uploadingFor === item.id
                                   ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                   : <Upload className="h-3.5 w-3.5" />}
-                              </Button>
-                              <Button
-                                variant="ghost" size="icon" className="h-8 w-8"
-                                title={itemType === "home_component" ? "Move to Personal Items" : "Move to Home Components"}
-                                onClick={() => moveItem.mutate({ id: item.id, newType: itemType === "home_component" ? "personal_item" : "home_component" })}
-                                disabled={moveItem.isPending}
-                              >
-                                <ArrowRightLeft className="h-3.5 w-3.5" />
                               </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditItem(item)}>
                                 <Edit2 className="h-3.5 w-3.5" />
