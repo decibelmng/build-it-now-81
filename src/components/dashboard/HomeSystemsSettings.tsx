@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import SystemsToggleGrid from "./SystemsToggleGrid";
+import SystemToggleGrid from "./SystemToggleGrid";
 import {
   getDefaultRegistry,
   syncRegistryToInventory,
@@ -32,14 +32,13 @@ const HomeSystemsSettings = ({
   homeSystems: rawHomeSystems,
   registryCompleted,
   onNavigate,
-  bathroomCount,
+  bathroomCount = 2,
 }: HomeSystemsSettingsProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [setupOpen, setSetupOpen] = useState(false);
 
-  // Migrate old format if needed
   const homeSystems = rawHomeSystems
     ? (migrateOldRegistry(rawHomeSystems, bathroomCount) || rawHomeSystems as HomeSystemsRegistry)
     : null;
@@ -52,36 +51,8 @@ const HomeSystemsSettings = ({
     key: string;
     label: string;
     itemCount: number;
+    pendingRegistry: HomeSystemsRegistry;
   } | null>(null);
-
-  // Fetch enrichment data for enabled systems (using system:component keys)
-  const { data: enrichmentData = {} } = useQuery({
-    queryKey: ["system_enrichment", propertyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("home_items")
-        .select("system_key, data_completeness, is_active")
-        .eq("property_id", propertyId)
-        .or("is_active.is.null,is_active.eq.true");
-      if (error) throw error;
-
-      const result: Record<string, { count: number; avgCompleteness: number }> = {};
-      for (const item of data || []) {
-        const key = (item as any).system_key;
-        if (!key) continue;
-        if (!result[key]) result[key] = { count: 0, avgCompleteness: 0 };
-        result[key].count++;
-        result[key].avgCompleteness += item.data_completeness || 0;
-      }
-      for (const key of Object.keys(result)) {
-        if (result[key].count > 0) {
-          result[key].avgCompleteness = Math.round(result[key].avgCompleteness / result[key].count);
-        }
-      }
-      return result;
-    },
-    enabled: !!propertyId && registryCompleted,
-  });
 
   const saveRegistry = async (newRegistry: HomeSystemsRegistry) => {
     if (!user) return;
@@ -109,7 +80,7 @@ const HomeSystemsSettings = ({
 
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       queryClient.invalidateQueries({ queryKey: ["home_items"] });
-      queryClient.invalidateQueries({ queryKey: ["system_enrichment"] });
+      queryClient.invalidateQueries({ queryKey: ["system_enrichment_grid"] });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -118,20 +89,29 @@ const HomeSystemsSettings = ({
   };
 
   const handleRegistryChange = async (newRegistry: HomeSystemsRegistry) => {
-    // Check if a system is being disabled that has enriched items
+    // Check if a system with data is being disabled
     for (const key of Object.keys(newRegistry)) {
       const wasEnabled = localRegistry[key]?.enabled;
       const nowEnabled = newRegistry[key]?.enabled;
 
-      if (wasEnabled && !nowEnabled) {
-        // Count enriched items across all components
-        const sysItems = Object.entries(enrichmentData)
-          .filter(([k]) => k.startsWith(`${key}:`))
-          .reduce((acc, [, v]) => ({ count: acc.count + v.count, avg: acc.avg + v.avgCompleteness }), { count: 0, avg: 0 });
+      if (wasEnabled && !nowEnabled && registryCompleted) {
+        // Quick check for items - we'll let the grid's enrichment query handle the count
+        const { data: items } = await supabase
+          .from("home_items")
+          .select("id, data_completeness")
+          .like("system_key", `${key}:%`)
+          .eq("property_id", propertyId)
+          .or("is_active.is.null,is_active.eq.true");
 
-        if (sysItems.count > 0 && sysItems.avg > 0) {
+        const enrichedItems = (items || []).filter((i: any) => i.data_completeness > 0);
+        if (enrichedItems.length > 0) {
           const sys = SYSTEMS_CATALOG.find((s) => s.key === key);
-          setConfirmDisable({ key, label: sys?.label || key, itemCount: sysItems.count });
+          setConfirmDisable({
+            key,
+            label: sys?.label || key,
+            itemCount: items?.length || 0,
+            pendingRegistry: newRegistry,
+          });
           return;
         }
       }
@@ -139,7 +119,7 @@ const HomeSystemsSettings = ({
 
     setLocalRegistry(newRegistry);
 
-    // Show toast for newly enabled systems
+    // Toast for newly enabled systems
     for (const key of Object.keys(newRegistry)) {
       const wasEnabled = localRegistry[key]?.enabled;
       const nowEnabled = newRegistry[key]?.enabled;
@@ -149,18 +129,24 @@ const HomeSystemsSettings = ({
       }
     }
 
+    // Toast for quantity changes
+    for (const key of Object.keys(newRegistry)) {
+      const wasQty = localRegistry[key]?.quantity;
+      const nowQty = newRegistry[key]?.quantity;
+      if (wasQty !== nowQty && newRegistry[key]?.enabled) {
+        const sys = SYSTEMS_CATALOG.find((s) => s.key === key);
+        if (sys) toast({ title: `Updated to ${nowQty} ${sys.label} unit(s)` });
+      }
+    }
+
     await saveRegistry(newRegistry);
   };
 
   const confirmDisableSystem = async () => {
     if (!confirmDisable) return;
-    const newRegistry = {
-      ...localRegistry,
-      [confirmDisable.key]: { ...localRegistry[confirmDisable.key], enabled: false },
-    };
-    setLocalRegistry(newRegistry);
+    setLocalRegistry(confirmDisable.pendingRegistry);
     setConfirmDisable(null);
-    await saveRegistry(newRegistry);
+    await saveRegistry(confirmDisable.pendingRegistry);
   };
 
   // Setup banner for new users
@@ -193,7 +179,13 @@ const HomeSystemsSettings = ({
             <DialogHeader>
               <DialogTitle className="font-display">What does your home have?</DialogTitle>
             </DialogHeader>
-            <SystemsToggleGrid registry={localRegistry} onChange={setLocalRegistry} showAccuracy />
+            <SystemToggleGrid
+              registry={localRegistry}
+              onChange={setLocalRegistry}
+              bathroomCount={bathroomCount}
+              showAccuracy
+              compact
+            />
             <div className="flex gap-3 pt-4">
               <Button variant="outline" onClick={() => setSetupOpen(false)} className="rounded-full font-body">Cancel</Button>
               <Button
@@ -218,10 +210,12 @@ const HomeSystemsSettings = ({
     <>
       <div className="mt-6">
         <h3 className="font-display text-lg font-semibold mb-4">Home Systems</h3>
-        <SystemsToggleGrid
+        <SystemToggleGrid
           registry={localRegistry}
           onChange={handleRegistryChange}
-          enrichmentData={enrichmentData}
+          bathroomCount={bathroomCount}
+          showEnrichmentInfo
+          propertyId={propertyId}
           onViewInventory={() => onNavigate?.("home-inventory")}
         />
       </div>
@@ -231,12 +225,7 @@ const HomeSystemsSettings = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Disable {confirmDisable?.label}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will:
-              <ul className="list-disc ml-4 mt-2 space-y-1">
-                <li>Remove {confirmDisable?.label} from your savings forecast</li>
-                <li>Hide {confirmDisable?.itemCount} inventory item{confirmDisable?.itemCount !== 1 ? "s" : ""} — they won't be deleted</li>
-              </ul>
-              <p className="mt-2">You can re-enable anytime to bring everything back.</p>
+              This will remove {confirmDisable?.label} from your savings forecast and hide {confirmDisable?.itemCount} inventory item{confirmDisable?.itemCount !== 1 ? "s" : ""}. They won't be deleted — you can re-enable anytime.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

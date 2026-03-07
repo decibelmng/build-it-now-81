@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Home, ArrowRight, CheckCircle2, MapPin, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
-import SystemsToggleGrid from "./SystemsToggleGrid";
+import SystemToggleGrid from "./SystemToggleGrid";
 import { getDefaultRegistry, syncRegistryToInventory, type HomeSystemsRegistry } from "@/lib/homeSystemsRegistry";
 
 const propertyTypes = [
@@ -43,6 +43,8 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
   const [showPredictions, setShowPredictions] = useState(false);
   const addressWrapperRef = useRef<HTMLDivElement>(null);
 
+  const bathroomCount = form.bathrooms ? parseFloat(form.bathrooms) : 2;
+
   const addProperty = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.from("properties").insert({
@@ -66,8 +68,7 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     onSuccess: (propertyId: string) => {
       setCreatedPropertyId(propertyId);
       queryClient.invalidateQueries({ queryKey: ["properties"] });
-      const baths = form.bathrooms ? parseFloat(form.bathrooms) : undefined;
-      setSystemsRegistry(getDefaultRegistry(form.property_type, baths));
+      setSystemsRegistry(getDefaultRegistry(form.property_type, bathroomCount));
       setStep(2);
     },
     onError: (err: Error) => {
@@ -85,8 +86,7 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
         .eq("id", createdPropertyId);
       if (error) throw error;
 
-      const baths = form.bathrooms ? parseFloat(form.bathrooms) : undefined;
-      await syncRegistryToInventory(createdPropertyId, user.id, systemsRegistry, [], baths);
+      await syncRegistryToInventory(createdPropertyId, user.id, systemsRegistry, [], bathroomCount);
 
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       queryClient.invalidateQueries({ queryKey: ["home_items"] });
@@ -135,17 +135,29 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
       <div className="flex min-h-[60vh] items-center justify-center">
         <Card className="max-w-2xl w-full border-border/50 shadow-premium">
           <CardContent className="p-6">
-            <h2 className="mb-1 font-display text-xl font-bold">What does your home have?</h2>
-            <p className="mb-5 font-body text-sm text-muted-foreground">
-              Toggle the systems in your home. This powers your personalized savings forecast.
-            </p>
-            <SystemsToggleGrid registry={systemsRegistry} onChange={setSystemsRegistry} showAccuracy />
+            <div className="flex flex-col items-center text-center mb-5">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10">
+                <span className="text-2xl">🏠</span>
+              </div>
+              <h2 className="font-display text-xl font-bold">What does your home have?</h2>
+              <p className="font-body text-sm text-muted-foreground mt-1">
+                Toggle the systems in your home. This powers your personalized savings forecast.
+              </p>
+            </div>
+
+            <SystemToggleGrid
+              registry={systemsRegistry}
+              onChange={setSystemsRegistry}
+              bathroomCount={bathroomCount}
+              showAccuracy
+            />
+
             <div className="flex gap-3 pt-6">
               <button
                 onClick={() => setStep(3)}
                 className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                Skip for now
+                Skip
               </button>
               <Button
                 onClick={handleSaveSystems}

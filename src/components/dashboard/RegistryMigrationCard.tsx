@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import SystemsToggleGrid from "./SystemsToggleGrid";
+import SystemToggleGrid from "./SystemToggleGrid";
 import {
   inferRegistryFromExistingItems,
   syncRegistryToInventory,
@@ -19,7 +19,7 @@ interface RegistryMigrationCardProps {
   onNavigate?: (section: string) => void;
 }
 
-const RegistryMigrationCard = ({ propertyId, bathroomCount, onNavigate }: RegistryMigrationCardProps) => {
+const RegistryMigrationCard = ({ propertyId, bathroomCount = 2, onNavigate }: RegistryMigrationCardProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -144,7 +144,13 @@ const RegistryMigrationCard = ({ propertyId, bathroomCount, onNavigate }: Regist
           <DialogHeader>
             <DialogTitle className="font-display">Confirm Your Home Systems</DialogTitle>
           </DialogHeader>
-          <SystemsToggleGrid registry={localRegistry} onChange={setLocalRegistry} showAccuracy />
+          <SystemToggleGrid
+            registry={localRegistry}
+            onChange={setLocalRegistry}
+            bathroomCount={bathroomCount}
+            showAccuracy
+            compact
+          />
           <div className="flex gap-3 pt-4">
             <Button variant="outline" onClick={() => setReviewOpen(false)} className="rounded-full font-body">Cancel</Button>
             <Button
