@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil, Paperclip, TrendingUp, ListFilter, Trash2, ChevronsUpDown, Check, Package } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil, Paperclip, TrendingUp, ListFilter, Trash2, ChevronsUpDown, Check, Package, X } from "lucide-react";
 import FilePicker from "@/components/ui/file-picker";
 import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
 import ServiceLinkPopover from "@/components/dashboard/ServiceLinkPopover";
@@ -27,10 +28,12 @@ import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
 import { matchLogToComponent } from "@/lib/componentMatcher";
 import ComponentUpdateSheet from "@/components/dashboard/ComponentUpdateSheet";
 import { cn } from "@/lib/utils";
+import { SYSTEMS_CATALOG, type HomeSystemsRegistry, migrateOldRegistry } from "@/lib/homeSystemsRegistry";
 
 type Property = Tables<"properties">;
 
-const categories = [
+// Fallback categories for legacy users without registry
+const legacyCategories = [
   { value: "plumbing", label: "Plumbing" },
   { value: "electrical", label: "Electrical" },
   { value: "hvac", label: "HVAC" },
@@ -102,8 +105,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
   const [form, setForm] = useState({ ...emptyForm });
   const [bulkClassifyOpen, setBulkClassifyOpen] = useState(false);
 
-  // Related Component state
-  const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
+  // Related Component state — now multi-select
+  const [selectedComponentIds, setSelectedComponentIds] = useState<string[]>([]);
   const [componentComboOpen, setComponentComboOpen] = useState(false);
   const [showNewComponent, setShowNewComponent] = useState(false);
   const [newComponentName, setNewComponentName] = useState("");
@@ -130,7 +133,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     setExistingImageUrl(null);
     setShowNewVendor(false);
     setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" });
-    setSelectedComponentId(null);
+    setSelectedComponentIds([]);
     setShowNewComponent(false);
     setNewComponentName("");
     setNewComponentType("general");
@@ -156,13 +159,25 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       tax_notes: log.tax_notes || "",
     });
     setEditingId(log.id);
-    setSelectedComponentId(log.component_id || null);
+    // Load linked components from junction table
+    setSelectedComponentIds(log.component_id ? [log.component_id] : []);
     setExistingImageUrl(log.image_url || null);
     setAttachedFiles([]);
     setShowNewVendor(false);
     setNewVendor({ name: "", role: "other", company: "", phone: "", email: "" });
     setShowNewComponent(false);
     setOpen(true);
+    // Async load junction table components
+    if (log.id) {
+      supabase.from("maintenance_log_components")
+        .select("component_id")
+        .eq("log_id", log.id)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setSelectedComponentIds(data.map((d: any) => d.component_id));
+          }
+        });
+    }
   };
 
   const { data: properties = [] } = useQuery({
