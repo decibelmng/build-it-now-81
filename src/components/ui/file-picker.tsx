@@ -22,6 +22,7 @@ const FilePicker = ({
 }: FilePickerProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<Record<number, string>>({});
+  const [dragOver, setDragOver] = useState(false);
 
   // Generate previews for image files
   useEffect(() => {
@@ -75,11 +76,24 @@ const FilePicker = ({
         onChange={handleSelect}
       />
       <div
-        className="border-2 border-dashed border-border/50 rounded-lg p-4 text-center cursor-pointer hover:border-accent/50 hover:bg-accent/5 transition-colors"
+        className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+          dragOver ? "border-accent bg-accent/10" : "border-border/50 hover:border-accent/50 hover:bg-accent/5"
+        }`}
         onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(true); }}
+        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragOver(false); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDragOver(false);
+          const dropped = Array.from(e.dataTransfer.files);
+          const remaining = maxFiles - files.length;
+          if (remaining > 0) onChange([...files, ...dropped.slice(0, remaining)]);
+        }}
       >
         <Upload className="mx-auto h-6 w-6 text-muted-foreground mb-1" />
-        <p className="font-body text-xs text-muted-foreground">{label}</p>
+        <p className="font-body text-xs text-muted-foreground">{dragOver ? "Drop files here" : label}</p>
         {files.length > 0 && (
           <p className="font-body text-[10px] text-muted-foreground mt-1">
             {files.length}/{maxFiles} files selected
