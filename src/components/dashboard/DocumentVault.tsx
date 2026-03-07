@@ -73,6 +73,7 @@ const DocumentVault = () => {
         user_id: user.id,
         property_id: form.property_id,
         name: form.name || file.name,
+        file_name: file.name,
         file_path: filePath,
         file_type: file.type,
         file_size: file.size,
