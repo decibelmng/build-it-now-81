@@ -1,8 +1,8 @@
-import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, Clock, Settings, Search, LayoutDashboard, RefreshCw, Share2, Download, BarChart3, Zap, Lock, Link2, ClipboardCheck, ClipboardList, Receipt } from "lucide-react";
+import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, Clock, Settings, Search, LayoutDashboard, RefreshCw, BarChart3, Zap, Lock, Link2, ClipboardList, Receipt, Plus, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSubscription, isProFeature } from "@/hooks/useSubscription";
 
 type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "tax-investment" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
@@ -12,6 +12,8 @@ interface DashboardSidebarProps {
   onSectionChange: (section: Section) => void;
   onSignOut: () => void;
   displayName: string | null;
+  onOpenSearch?: () => void;
+  onQuickAdd?: () => void;
 }
 
 const navGroups = [
@@ -19,7 +21,6 @@ const navGroups = [
     label: "Dashboard",
     items: [
       { id: "overview" as Section, label: "Overview", icon: LayoutDashboard },
-      { id: "search" as Section, label: "Search", icon: Search },
     ],
   },
   {
@@ -35,35 +36,54 @@ const navGroups = [
   {
     label: "Financial",
     items: [
-      { id: "savings" as Section, label: "Savings", icon: TrendingUp },
+      { id: "savings" as Section, label: "Savings Forecast", icon: Shield },
       { id: "tax-investment" as Section, label: "Tax & Investment", icon: Receipt },
       { id: "utilities" as Section, label: "Utilities", icon: Zap },
     ],
   },
   {
-    label: "People & Sharing",
+    label: "People",
     items: [
       { id: "contacts" as Section, label: "Contacts", icon: Users },
-      { id: "contractor-links" as Section, label: "Contractor Links", icon: Link2 },
-      { id: "contractor-submissions" as Section, label: "Reviews", icon: ClipboardCheck },
-      { id: "sharing" as Section, label: "Sharing", icon: Share2 },
+      { id: "contractor-links" as Section, label: "Contractors", icon: Link2 },
     ],
   },
   {
     label: "Tools",
     items: [
       { id: "recurring" as Section, label: "Recurring", icon: RefreshCw },
-      { id: "export" as Section, label: "Export", icon: Download },
       { id: "analytics" as Section, label: "Analytics", icon: BarChart3 },
     ],
   },
 ];
+
+const sectionLabels: Record<string, string> = {
+  overview: "Overview",
+  properties: "My Home",
+  "home-inventory": "Home Inventory",
+  maintenance: "Maintenance",
+  documents: "Documents",
+  savings: "Savings Forecast",
+  "tax-investment": "Tax & Investment",
+  contacts: "Contacts",
+  utilities: "Utilities",
+  timeline: "Timeline",
+  recurring: "Recurring",
+  sharing: "Sharing",
+  export: "Export",
+  analytics: "Analytics",
+  settings: "Settings",
+  search: "Search",
+  "contractor-links": "Contractors",
+  "contractor-submissions": "Contractor Reviews",
+};
 
 const SidebarNav = ({
   activeSection,
   onSectionChange,
   onSignOut,
   displayName,
+  onOpenSearch,
 }: DashboardSidebarProps) => {
   const { tier } = useSubscription();
 
@@ -104,6 +124,18 @@ const SidebarNav = ({
       </nav>
 
       <div className="border-t border-border px-3 py-3">
+        {/* Search shortcut */}
+        <button
+          onClick={onOpenSearch}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 font-body text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground mb-1"
+        >
+          <Search className="h-4 w-4" />
+          <span>Search</span>
+          <kbd className="ml-auto hidden sm:inline-flex h-5 items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
+            ⌘K
+          </kbd>
+        </button>
+
         <button
           onClick={() => onSectionChange("settings")}
           className={cn(
@@ -140,6 +172,11 @@ const DashboardSidebar = (props: DashboardSidebarProps) => {
     setOpen(false);
   };
 
+  const sectionTitle = sectionLabels[props.activeSection] || "Dashboard";
+
+  // Show FAB on overview, maintenance, timeline
+  const showFab = ["overview", "maintenance", "timeline"].includes(props.activeSection);
+
   return (
     <>
       {/* Desktop sidebar */}
@@ -149,13 +186,15 @@ const DashboardSidebar = (props: DashboardSidebarProps) => {
 
       {/* Mobile header bar */}
       <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-border bg-card px-4 py-3 md:hidden">
-        <div className="flex items-center gap-2">
-          <Home className="h-5 w-5 text-accent" />
-          <span className="font-display text-lg font-bold">HomeLog</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <Home className="h-5 w-5 text-accent shrink-0" />
+          <span className="font-display text-lg font-bold shrink-0">HomeLog</span>
+          <span className="text-muted-foreground mx-1 shrink-0">›</span>
+          <span className="font-body text-sm text-muted-foreground truncate">{sectionTitle}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={props.onSignOut}>
-            <LogOut className="h-4 w-4" />
+        <div className="flex items-center gap-1 shrink-0">
+          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={props.onOpenSearch}>
+            <Search className="h-4 w-4" />
           </Button>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
@@ -169,8 +208,20 @@ const DashboardSidebar = (props: DashboardSidebarProps) => {
           </Sheet>
         </div>
       </div>
+
+      {/* Mobile FAB - Quick Add Maintenance */}
+      {showFab && (
+        <button
+          onClick={props.onQuickAdd}
+          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-lg hover:bg-accent/90 transition-colors md:hidden"
+          aria-label="Add maintenance log"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+      )}
     </>
   );
 };
 
+export { sectionLabels };
 export default DashboardSidebar;
