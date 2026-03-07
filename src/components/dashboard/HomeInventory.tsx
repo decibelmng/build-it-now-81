@@ -509,6 +509,28 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
         onChange={onFileSelected}
       />
 
+      {/* Registry not set up banner */}
+      {itemType === "home_component" && (!registryCompleted || !homeSystems) && (
+        <Card className="border-l-4 border-l-accent bg-accent/5 border-border/50">
+          <CardContent className="p-4 flex items-start gap-3">
+            <Shield className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-display text-sm font-semibold">🏠 Set up your home systems first</h4>
+              <p className="font-body text-xs text-muted-foreground mt-1">
+                Tell us what's in your home to see personalized tracking and savings predictions.
+              </p>
+              <Button
+                size="sm"
+                className="mt-2 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body text-xs"
+                onClick={() => onNavigate?.("properties")}
+              >
+                Set Up Systems
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
