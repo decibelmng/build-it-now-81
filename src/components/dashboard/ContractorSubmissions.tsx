@@ -87,6 +87,7 @@ const ContractorSubmissions = () => {
           `\n\n[Submitted by contractor: ${submission.contractor_contact_name}, ${submission.contractor_company_name}]`,
         category: categoryMap[submission.service_category] || "general",
         cost: submission.cost,
+        expense_type: submission.expense_type || "repair",
         scheduled_date: submission.service_date,
         completed_date: submission.service_date,
         status: "completed",
