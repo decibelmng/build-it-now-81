@@ -22,6 +22,7 @@ const FilePicker = ({
 }: FilePickerProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<Record<number, string>>({});
+  const [dragOver, setDragOver] = useState(false);
 
   // Generate previews for image files
   useEffect(() => {
