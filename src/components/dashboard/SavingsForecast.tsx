@@ -65,7 +65,13 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
     estimated_value: i.estimated_value ? Number(i.estimated_value) : null,
   }));
 
-  const forecast = calculateForecast(propertyInfo, items);
+  const forecast = calculateForecast(
+    propertyInfo,
+    items,
+    10,
+    (primary as any).home_systems || null,
+    (primary as any).registry_completed || false
+  );
 
   // Chart data
   const chartData = forecast.yearlyTotals.map((yt) => ({
