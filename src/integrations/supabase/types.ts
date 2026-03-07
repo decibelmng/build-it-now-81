@@ -496,6 +496,9 @@ export type Database = {
         Row: {
           category: string
           completed_date: string | null
+          component_id: string | null
+          component_update_skipped: boolean
+          component_updated: boolean
           contact_id: string | null
           cost: number | null
           created_at: string
@@ -518,6 +521,9 @@ export type Database = {
         Insert: {
           category?: string
           completed_date?: string | null
+          component_id?: string | null
+          component_update_skipped?: boolean
+          component_updated?: boolean
           contact_id?: string | null
           cost?: number | null
           created_at?: string
@@ -540,6 +546,9 @@ export type Database = {
         Update: {
           category?: string
           completed_date?: string | null
+          component_id?: string | null
+          component_update_skipped?: boolean
+          component_updated?: boolean
           contact_id?: string | null
           cost?: number | null
           created_at?: string
@@ -560,6 +569,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "maintenance_logs_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "home_items"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "maintenance_logs_contact_id_fkey"
             columns: ["contact_id"]
