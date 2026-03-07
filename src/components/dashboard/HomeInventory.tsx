@@ -48,9 +48,11 @@ interface HomeInventoryProps {
 const emptyItemForm = {
   name: "", category: "general", brand: "", model: "", serial_number: "",
   install_date: "", last_maintained: "", expected_replacement: "", warranty_expiry: "", notes: "",
+  estimated_value: "",
 };
 
-const HomeInventory = ({ propertyId }: HomeInventoryProps) => {
+const HomeInventory = ({ propertyId, itemType = "home_component" }: HomeInventoryProps) => {
+  const itemCategories = itemType === "personal_item" ? personalItemCategories : homeComponentCategories;
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
