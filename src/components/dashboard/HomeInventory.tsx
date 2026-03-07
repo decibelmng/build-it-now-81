@@ -898,69 +898,90 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
           })
         )}
 
-        {/* Skeleton cards for systems needing details */}
-        {skeletonComponents.length > 0 && (
-          <div className="mt-6">
-            <h4 className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-              Systems Needing Details
-            </h4>
-            {registryCompleted && items.length > 0 && items.every((i: any) => (i as any).is_registry_skeleton && i.data_completeness === 0) && (
-              <p className="font-body text-sm text-muted-foreground mb-4">
-                Your home has systems tracked. Add details to personalize your savings forecast — start with the highest-impact items below.
-              </p>
-            )}
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {skeletonComponents.map((comp) => {
-                const compKey = `${comp.systemKey}:${comp.key}`;
-                const sys = SYSTEMS_CATALOG.find((s) => s.key === comp.systemKey);
-                const IconComponent = sys ? (Icons as any)[sys.iconName] as React.ComponentType<{ className?: string }> : null;
-                const skeletonItem = items.find((i: any) => (i as any).system_key === compKey);
-                const completenessRadius = 14;
-                const completenessCircumference = 2 * Math.PI * completenessRadius;
+        {/* Skeleton cards for systems needing details — grouped by parent system */}
+        {skeletonComponents.length > 0 && (() => {
+          // Group by parent system
+          const grouped: Record<string, typeof skeletonComponents> = {};
+          for (const comp of skeletonComponents) {
+            if (!grouped[comp.systemKey]) grouped[comp.systemKey] = [];
+            grouped[comp.systemKey].push(comp);
+          }
+          const systemOrder = SYSTEMS_CATALOG.map((s) => s.key);
 
-                return (
-                  <Card key={compKey} className="border-2 border-dashed border-border/50">
-                    <CardContent className="p-4 flex flex-col items-center text-center space-y-2">
-                      {IconComponent && <IconComponent className="h-6 w-6 text-muted-foreground/50" />}
-                      <h5 className="font-body text-sm font-semibold">{comp.label}</h5>
-                      <p className="font-body text-[10px] text-muted-foreground">{comp.systemLabel}</p>
-                      <div className="relative inline-flex items-center justify-center" title="0% complete">
-                        <svg width="32" height="32" className="-rotate-90">
-                          <circle cx="16" cy="16" r={completenessRadius} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
-                        </svg>
-                        <span className="absolute font-body text-[8px] font-bold">0%</span>
+          return (
+            <div className="mt-6">
+              <h4 className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                Systems Needing Details
+              </h4>
+              {registryCompleted && items.length > 0 && items.every((i: any) => (i as any).is_registry_skeleton && i.data_completeness === 0) && (
+                <p className="font-body text-sm text-muted-foreground mb-4">
+                  Your home has systems tracked. Add details to personalize your savings forecast — start with the highest-impact items below.
+                </p>
+              )}
+              <div className="space-y-5">
+                {systemOrder.filter((sk) => grouped[sk]).map((sysKey) => {
+                  const sys = SYSTEMS_CATALOG.find((s) => s.key === sysKey)!;
+                  const SysIcon = (Icons as any)[sys.iconName] as React.ComponentType<{ className?: string }>;
+                  const comps = grouped[sysKey];
+
+                  return (
+                    <div key={sysKey}>
+                      <div className="flex items-center gap-2 mb-2">
+                        {SysIcon && <SysIcon className="h-3.5 w-3.5 text-muted-foreground" />}
+                        <span className="font-body text-xs font-medium text-muted-foreground">{sys.label}</span>
                       </div>
-                      <p className="font-body text-xs text-muted-foreground">
-                        Adding details personalizes ${comp.annualCost}/yr in your savings forecast
-                      </p>
-                      <Button
-                        size="sm"
-                        className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body text-xs"
-                        onClick={() => {
-                          if (skeletonItem) {
-                            openEditItem(skeletonItem);
-                          } else {
-                            const category = sys ? ({"roofing":"roofing","hvac":"hvac","plumbing":"plumbing","electrical":"electrical","exterior":"exterior","interior":"structural","appliances":"appliance","bathrooms":"plumbing","foundation":"structural","outdoor":"exterior","specialty":"general"} as Record<string,string>)[sys.key] || "general" : "general";
-                            setEditingItem(null);
-                            setItemForm({
-                              ...emptyItemForm,
-                              category,
-                              name: comp.label,
-                              item_type: "home_component",
-                            });
-                            setItemOpen(true);
-                          }
-                        }}
-                      >
-                        Add Details
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {comps.map((comp) => {
+                          const compKey = `${comp.systemKey}:${comp.key}`;
+                          const skeletonItem = items.find((i: any) => (i as any).system_key === compKey);
+                          const completenessRadius = 14;
+
+                          return (
+                            <Card key={compKey} className="border-2 border-dashed border-border/50">
+                              <CardContent className="p-4 flex flex-col items-center text-center space-y-2">
+                                <h5 className="font-body text-sm font-semibold">{comp.label}</h5>
+                                <div className="relative inline-flex items-center justify-center" title="0% complete">
+                                  <svg width="32" height="32" className="-rotate-90">
+                                    <circle cx="16" cy="16" r={completenessRadius} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
+                                  </svg>
+                                  <span className="absolute font-body text-[8px] font-bold">0%</span>
+                                </div>
+                                <p className="font-body text-xs text-muted-foreground">
+                                  Personalizes ${comp.annualCost}/yr in predictions
+                                </p>
+                                <Button
+                                  size="sm"
+                                  className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body text-xs"
+                                  onClick={() => {
+                                    if (skeletonItem) {
+                                      openEditItem(skeletonItem);
+                                    } else {
+                                      const category = ({"roofing":"roofing","hvac":"hvac","plumbing":"plumbing","electrical":"electrical","exterior":"exterior","interior":"structural","appliances":"appliance","bathrooms":"plumbing","foundation":"structural","outdoor":"exterior","specialty":"general"} as Record<string,string>)[sysKey] || "general";
+                                      setEditingItem(null);
+                                      setItemForm({
+                                        ...emptyItemForm,
+                                        category,
+                                        name: comp.label,
+                                        item_type: "home_component",
+                                      });
+                                      setItemOpen(true);
+                                    }
+                                  }}
+                                >
+                                  Add Details
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </div>
