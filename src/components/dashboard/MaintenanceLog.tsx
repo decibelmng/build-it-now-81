@@ -538,77 +538,99 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           {logs.map((log: any) => {
             const cfg = statusConfig[log.status] || statusConfig.pending;
             const StatusIcon = cfg.icon;
+            const logDocCount = (docCounts as Record<string, number>)[log.id] || 0;
+            const isExpanded = expandedLog === log.id;
             return (
               <Card key={log.id} className="border-border/50 transition-shadow hover:shadow-card-hover">
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-start gap-4">
-                    {log.image_url ? (
-                      <img
-                        src={log.image_url}
-                        alt={log.title}
-                        className="h-10 w-10 shrink-0 rounded-xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => setPreviewImage(log.image_url)}
-                      />
-                    ) : (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
-                        <Wrench className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-display text-sm font-semibold">{log.title}</h4>
-                        {log.scope && log.scope !== "routine" && (
-                          <Badge variant={log.scope === "major_repair" ? "destructive" : "outline"} className="font-body text-[10px] px-1.5 py-0">
-                            {scopes.find((s) => s.value === log.scope)?.label ?? log.scope}
-                          </Badge>
-                        )}
-                        {log.reference_code && (
-                          <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{log.reference_code}</span>
-                        )}
-                      </div>
-                      <p className="font-body text-xs text-muted-foreground">
-                        {log.properties?.name} · {categories.find((c) => c.value === log.category)?.label ?? log.category}
-                        {log.cost ? ` · $${Number(log.cost).toFixed(2)}` : ""}
-                      </p>
-                      {log.home_contacts && (
-                        <p className="font-body text-xs text-accent">
-                          <Users className="mr-1 inline h-3 w-3" />
-                          {log.home_contacts.name}{log.home_contacts.company ? ` · ${log.home_contacts.company}` : ""}
-                        </p>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-start gap-4">
+                      {log.image_url ? (
+                        <img
+                          src={log.image_url}
+                          alt={log.title}
+                          className="h-10 w-10 shrink-0 rounded-xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setPreviewImage(log.image_url)}
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                          <Wrench className="h-5 w-5 text-muted-foreground" />
+                        </div>
                       )}
-                      {log.scheduled_date && (
-                        <p className="mt-0.5 font-body text-xs text-muted-foreground">
-                          Scheduled: {format(new Date(log.scheduled_date), "MMM d, yyyy")}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-display text-sm font-semibold">{log.title}</h4>
+                          {log.scope && log.scope !== "routine" && (
+                            <Badge variant={log.scope === "major_repair" ? "destructive" : "outline"} className="font-body text-[10px] px-1.5 py-0">
+                              {scopes.find((s) => s.value === log.scope)?.label ?? log.scope}
+                            </Badge>
+                          )}
+                          {log.reference_code && (
+                            <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{log.reference_code}</span>
+                          )}
+                          {logDocCount > 0 && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground cursor-pointer" onClick={() => setExpandedLog(isExpanded ? null : log.id)}>
+                              <Paperclip className="mr-0.5 h-3 w-3" />{logDocCount}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="font-body text-xs text-muted-foreground">
+                          {log.properties?.name} · {categories.find((c) => c.value === log.category)?.label ?? log.category}
+                          {log.cost ? ` · $${Number(log.cost).toFixed(2)}` : ""}
                         </p>
+                        {log.home_contacts && (
+                          <p className="font-body text-xs text-accent">
+                            <Users className="mr-1 inline h-3 w-3" />
+                            {log.home_contacts.name}{log.home_contacts.company ? ` · ${log.home_contacts.company}` : ""}
+                          </p>
+                        )}
+                        {log.scheduled_date && (
+                          <p className="mt-0.5 font-body text-xs text-muted-foreground">
+                            Scheduled: {format(new Date(log.scheduled_date), "MMM d, yyyy")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {log.image_url && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewImage(log.image_url)}>
+                          <ImageIcon className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(log)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Badge variant={cfg.variant} className="font-body text-xs">
+                        <StatusIcon className="mr-1 h-3 w-3" />{cfg.label}
+                      </Badge>
+                      {log.status !== "completed" && (
+                        <Select value={log.status} onValueChange={(v) => updateStatus.mutate({ id: log.id, status: v })}>
+                          <SelectTrigger className="h-8 w-8 border-0 p-0 [&>svg]:hidden">
+                            <span className="sr-only">Change status</span>
+                            <span className="text-xs">⋮</span>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending" className="font-body text-xs">Pending</SelectItem>
+                            <SelectItem value="in_progress" className="font-body text-xs">In Progress</SelectItem>
+                            <SelectItem value="completed" className="font-body text-xs">Completed</SelectItem>
+                          </SelectContent>
+                        </Select>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {log.image_url && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewImage(log.image_url)}>
-                        <ImageIcon className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(log)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Badge variant={cfg.variant} className="font-body text-xs">
-                      <StatusIcon className="mr-1 h-3 w-3" />{cfg.label}
-                    </Badge>
-                    {log.status !== "completed" && (
-                      <Select value={log.status} onValueChange={(v) => updateStatus.mutate({ id: log.id, status: v })}>
-                        <SelectTrigger className="h-8 w-8 border-0 p-0 [&>svg]:hidden">
-                          <span className="sr-only">Change status</span>
-                          <span className="text-xs">⋮</span>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending" className="font-body text-xs">Pending</SelectItem>
-                          <SelectItem value="in_progress" className="font-body text-xs">In Progress</SelectItem>
-                          <SelectItem value="completed" className="font-body text-xs">Completed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
+
+                  {/* Expandable Documents Section */}
+                  {isExpanded && (
+                    <div className="mt-3 border-t border-border/50 pt-3">
+                      <LinkedDocuments
+                        maintenanceLogId={log.id}
+                        propertyId={log.property_id}
+                        propertyName={log.properties?.name}
+                        defaultCategory="maintenance_photo"
+                        onViewAll={() => onNavigate?.("documents")}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
