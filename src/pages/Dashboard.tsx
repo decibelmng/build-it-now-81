@@ -25,10 +25,11 @@ import UpgradeModal from "@/components/dashboard/UpgradeModal";
 import ContractorLinks from "@/components/dashboard/ContractorLinks";
 import ContractorSubmissions from "@/components/dashboard/ContractorSubmissions";
 import HomeInventoryPage from "@/components/dashboard/HomeInventoryPage";
+import TaxInvestmentPage from "@/components/dashboard/TaxInvestmentPage";
 import { useToast } from "@/hooks/use-toast";
 
 
-type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
+type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "tax-investment" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -123,6 +124,7 @@ const Dashboard = () => {
           {activeSection === "maintenance" && <MaintenanceLogSection onNavigate={(s: string) => setActiveSection(s as Section)} />}
           {activeSection === "documents" && <DocumentsHub />}
           {activeSection === "savings" && <SavingsTracking />}
+          {activeSection === "tax-investment" && <TaxInvestmentPage />}
           {activeSection === "contacts" && <HomeContacts />}
           {activeSection === "utilities" && <PropertyUtilities />}
           {activeSection === "timeline" && <PropertyTimeline />}
