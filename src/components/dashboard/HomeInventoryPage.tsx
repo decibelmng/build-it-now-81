@@ -35,7 +35,6 @@ const HomeInventoryPage = () => {
     },
     enabled: !!user,
   });
-  const [showPersonalBanner, setShowPersonalBanner] = useState(true);
 
   const { data: properties = [] } = useQuery({
     queryKey: ["properties", user?.id],
