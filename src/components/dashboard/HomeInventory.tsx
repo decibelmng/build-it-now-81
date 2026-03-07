@@ -77,16 +77,40 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
   // Listen for "add-home-component" events from Savings Forecast suggestions
   useEffect(() => {
     const handler = (e: Event) => {
-      const { category } = (e as CustomEvent).detail || {};
-      if (itemType === "home_component") {
-        setEditingItem(null);
-        setItemForm({ ...emptyItemForm, category: category || "general", item_type: "home_component" });
-        setItemOpen(true);
+      const { category, mode } = (e as CustomEvent).detail || {};
+      if (itemType !== "home_component") return;
+
+      if (mode === "edit") {
+        // Find existing component in this category and open it for editing
+        const existing = items.find((i: any) => i.category === category);
+        if (existing) {
+          setEditingItem(existing.id);
+          setItemForm({
+            name: existing.name || "",
+            category: existing.category || "general",
+            brand: existing.brand || "",
+            model: existing.model || "",
+            serial_number: existing.serial_number || "",
+            install_date: existing.install_date || "",
+            last_maintained: existing.last_maintained || "",
+            expected_replacement: existing.expected_replacement || "",
+            warranty_expiry: existing.warranty_expiry || "",
+            notes: existing.notes || "",
+            estimated_value: existing.estimated_value ? String(existing.estimated_value) : "",
+            item_type: "home_component",
+          });
+          setItemOpen(true);
+          return;
+        }
       }
+      // Default: open add dialog with category pre-selected
+      setEditingItem(null);
+      setItemForm({ ...emptyItemForm, category: category || "general", item_type: "home_component" });
+      setItemOpen(true);
     };
     window.addEventListener("add-home-component", handler);
     return () => window.removeEventListener("add-home-component", handler);
-  }, [itemType]);
+  }, [itemType, items]);
 
   const { data: items = [], isLoading: itemsLoading } = useQuery({
     queryKey: ["home_items", propertyId, itemType, warrantyFilter],
