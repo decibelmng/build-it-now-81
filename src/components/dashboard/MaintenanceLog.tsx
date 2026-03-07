@@ -345,6 +345,9 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           <p className="font-body text-sm text-muted-foreground">Track repairs, upgrades, and scheduled maintenance</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="rounded-full font-body text-xs" onClick={() => setBulkClassifyOpen(true)}>
+            <ListFilter className="mr-1 h-3.5 w-3.5" /> Classify Expenses
+          </Button>
           {defaultLinkUrl && (
             <ServiceLinkPopover linkUrl={defaultLinkUrl} onNavigateToLinks={() => onNavigate?.("contractor-links")} />
           )}
@@ -482,6 +485,14 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
               </div>
             </div>
 
+            {/* Expense Type */}
+            <ExpenseTypeField
+              value={form.expense_type}
+              onChange={(v) => setForm({ ...form, expense_type: v })}
+              taxNotes={form.tax_notes}
+              onTaxNotesChange={(v) => setForm({ ...form, tax_notes: v })}
+            />
+
             <div className="space-y-2">
               <Label className="font-body">Scope</Label>
               <Select value={form.scope} onValueChange={(v) => setForm({ ...form, scope: v })}>
@@ -572,6 +583,11 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                           {log.scope && log.scope !== "routine" && (
                             <Badge variant={log.scope === "major_repair" ? "destructive" : "outline"} className="font-body text-[10px] px-1.5 py-0">
                               {scopes.find((s) => s.value === log.scope)?.label ?? log.scope}
+                            </Badge>
+                          )}
+                          {log.expense_type === "capital_improvement" && (
+                            <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30 font-body text-[10px] px-1.5 py-0">
+                              <TrendingUp className="mr-0.5 h-3 w-3" />Improvement
                             </Badge>
                           )}
                           {log.reference_code && (
