@@ -12,6 +12,7 @@ import {
 import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format, parseISO, startOfMonth } from "date-fns";
+import SavingsForecast from "./SavingsForecast";
 
 const categoryConfig: Record<string, { label: string; icon: React.ElementType }> = {
   plumbing: { label: "Plumbing", icon: Droplets },
@@ -27,7 +28,7 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType }>
   general: { label: "General", icon: Wrench },
 };
 
-const SavingsTracking = () => {
+const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
   const { data: costBasis } = useCostBasisAggregated();
 
@@ -119,8 +120,11 @@ const SavingsTracking = () => {
     <div>
       <div className="mb-6">
         <h2 className="font-display text-2xl font-bold">Savings & Spending</h2>
-        <p className="font-body text-sm text-muted-foreground">Track your maintenance costs over time</p>
+        <p className="font-body text-sm text-muted-foreground">Forecast future costs and track your maintenance spending</p>
       </div>
+
+      {/* Predictive Forecast Section */}
+      <SavingsForecast onNavigate={onNavigate} />
 
       {/* Cost basis callout */}
       {costBasis && costBasis.totalImprovements > 0 && (
