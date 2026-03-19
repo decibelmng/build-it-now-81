@@ -13,7 +13,6 @@ import MFASecurityCard from "@/components/dashboard/MFASecurityCard";
 import YourDataSection from "@/components/dashboard/YourDataSection";
 import { profileUpdateSchema, validateForm } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
-import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties">;
