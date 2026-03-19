@@ -28,7 +28,7 @@ const fmtCurrency = (n: number) =>
 const MARKET_TYPES = [
   "bank_appraisal", "refinance_appraisal", "tax_assessment",
   "owner_estimate", "cma", "estimate",
-  "professional_appraisal", "purchase_appraisal",
+  "professional_appraisal",
   "comparative_market_analysis",
 ];
 
@@ -86,7 +86,7 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
   const mortgageBalance = property.mortgage_balance ? Number(property.mortgage_balance) : null;
 
   // Build unified timeline with market value + cost basis
-  const { chartData, dotData } = useMemo(() => {
+  const { chartData, dotData, yDomain } = useMemo(() => {
     // Collect all dates we need data points for
     const dateMap = new Map<string, { marketValue?: number; costBasis?: number; type?: string; source?: string | null }>();
 
@@ -127,11 +127,13 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
         }
       });
 
-      // Extend cost basis to today if market value goes further
+      // Extend cost basis to the latest date on the chart (market or today)
+      const today = new Date().toISOString().slice(0, 10);
       const lastMarketDate = marketPoints.length > 0 ? marketPoints[marketPoints.length - 1].date : null;
+      const extendTo = lastMarketDate && lastMarketDate > today ? lastMarketDate : today;
       const lastCostDate = costBasisPoints[costBasisPoints.length - 1]?.date;
-      if (lastMarketDate && lastCostDate && lastMarketDate > lastCostDate) {
-        costBasisPoints.push({ date: lastMarketDate, value: runningTotal });
+      if (lastCostDate && extendTo > lastCostDate) {
+        costBasisPoints.push({ date: extendTo, value: runningTotal });
       }
     }
 
@@ -179,8 +181,17 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
       });
     });
 
-    return { chartData: chart, dotData: dots };
-  }, [valuations, purchasePrice, purchaseDate, closingCosts, currentValue, valueLastUpdated, improvements]);
+    // Calculate Y-axis domain
+    const allValues = [
+      ...chart.map((c) => c.marketValue).filter(Boolean) as number[],
+      ...chart.map((c) => c.costBasis).filter(Boolean) as number[],
+      ...(mortgageBalance ? [mortgageBalance] : []),
+    ];
+    const yMin = allValues.length > 0 ? Math.floor(Math.min(...allValues) * 0.85 / 10000) * 10000 : 0;
+    const yMax = allValues.length > 0 ? Math.ceil(Math.max(...allValues) * 1.05 / 10000) * 10000 : 0;
+
+    return { chartData: chart, dotData: dots, yDomain: [yMin, yMax] as [number, number] };
+  }, [valuations, purchasePrice, purchaseDate, closingCosts, currentValue, valueLastUpdated, improvements, mortgageBalance]);
 
   // Calculate appreciation
   const appreciation = equitySummary?.appreciation ? Number(equitySummary.appreciation) : null;
@@ -294,6 +305,7 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
               tick={{ fontSize: 11, fontFamily: "DM Sans" }}
               stroke="hsl(var(--muted-foreground))"
               tickFormatter={fmtK}
+              domain={yDomain}
             />
             <Tooltip content={<CustomTooltip />} />
             <defs>
