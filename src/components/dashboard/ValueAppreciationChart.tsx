@@ -315,9 +315,13 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
           <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis
-              dataKey="label"
+              dataKey="date"
               tick={{ fontSize: 11, fontFamily: "DM Sans" }}
               stroke="hsl(var(--muted-foreground))"
+              ticks={xTicks}
+              tickFormatter={(d: string) => {
+                try { return format(parseISO(d), "MMM yyyy"); } catch { return d; }
+              }}
             />
             <YAxis
               tick={{ fontSize: 11, fontFamily: "DM Sans" }}
