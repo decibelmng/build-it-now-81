@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Receipt, TrendingUp, ChevronDown, Paperclip, ArrowUpRight, Info, FileText } from "lucide-react";
 import ValueAppreciationChart from "@/components/dashboard/ValueAppreciationChart";
+import ImprovementROISection from "@/components/dashboard/ImprovementROISection";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import TaxReportDialog from "@/components/dashboard/TaxReportDialog";
@@ -295,6 +296,15 @@ const TaxInvestmentPage = () => {
       {allProperties.length > 0 && (
         <div className="mb-6">
           <ValueAppreciationChart
+            property={allProperties.find((p) => p.id === (selectedPropertyId || allProperties[0]?.id)) || allProperties[0]}
+          />
+        </div>
+      )}
+
+      {/* Improvement ROI Correlation */}
+      {allProperties.length > 0 && (
+        <div className="mb-6">
+          <ImprovementROISection
             property={allProperties.find((p) => p.id === (selectedPropertyId || allProperties[0]?.id)) || allProperties[0]}
           />
         </div>
