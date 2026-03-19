@@ -87,8 +87,8 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
   useEffect(() => {
     if (!user || !property || !property.purchase_price || !property.purchase_date) return;
     if (seededPropertyId.current === property.id) return;
-    // Wait for valuations to actually load (empty array means loaded with no results)
-    if (valuations === undefined) return;
+    // Wait for valuations query to actually finish loading
+    if (!valuationsFetched) return;
     const hasPurchaseAppraisal = valuations.some((v) => v.valuation_type === "purchase_appraisal");
     seededPropertyId.current = property.id;
     if (!hasPurchaseAppraisal && valuations.length === 0) {
