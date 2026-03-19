@@ -44,6 +44,7 @@ const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { tier, refreshSubscription } = useSubscription();
+  const { showWarning, resetTimer } = useSessionTimeout();
   const [profile, setProfile] = useState<{ display_name: string | null; persona: string | null } | null>(null);
 
   // Derive activeSection from URL search params so browser back/forward works
