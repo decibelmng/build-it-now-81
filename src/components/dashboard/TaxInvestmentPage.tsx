@@ -291,6 +291,15 @@ const TaxInvestmentPage = () => {
         </div>
       )}
 
+      {/* Appreciation Chart */}
+      {allProperties.length > 0 && (
+        <div className="mb-6">
+          <ValueAppreciationChart
+            property={allProperties.find((p) => p.id === (selectedPropertyId || allProperties[0]?.id)) || allProperties[0]}
+          />
+        </div>
+      )}
+
       {/* Summary Breakdown */}
       <Card className="mb-6 border-border/50">
         <CardContent className="p-5 font-mono text-sm">
