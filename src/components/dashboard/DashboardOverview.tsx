@@ -155,11 +155,6 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
 
   const [dismissedBanner, setDismissedBanner] = useState(false);
 
-  const hasCosts = totalSpent > 0;
-  const hasPurchasePrice = costBasis?.hasPurchasePrice ?? false;
-
-  const hasCosts = totalSpent > 0;
-  const hasPurchasePrice = costBasis?.hasPurchasePrice ?? false;
   const showOnboardingBanner = hasCosts && !hasPurchasePrice && !dismissedBanner;
 
   const fmtCurrency = (n: number) =>
