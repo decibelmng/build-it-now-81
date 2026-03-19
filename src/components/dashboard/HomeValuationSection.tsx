@@ -100,7 +100,7 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
         source: "Purchase price",
       });
     }
-  }, [user, property?.id, property?.purchase_price, property?.purchase_date, valuations]);
+  }, [user, property?.id, property?.purchase_price, property?.purchase_date, valuations, valuationsFetched]);
 
   // Fetch mortgage-related docs for linking
   const { data: mortgageDocs = [] } = useQuery({
