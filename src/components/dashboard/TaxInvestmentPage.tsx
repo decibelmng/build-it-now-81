@@ -30,6 +30,18 @@ const TaxInvestmentPage = () => {
   const [sortBy, setSortBy] = useState<"date" | "cost">("date");
   const [reportOpen, setReportOpen] = useState(false);
 
+  // Fetch properties for valuation section
+  const { data: allProperties = [] } = useQuery({
+    queryKey: ["properties_for_tax", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("properties").select("*").order("name");
+      if (error) throw error;
+      return data as Tables<"properties">[];
+    },
+    enabled: !!user,
+  });
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
+
   // Aggregate across all properties
   const agg = useMemo(() => {
     if (!summaries.length) return null;
