@@ -9,6 +9,7 @@ import ComparisonSection from "@/components/landing/ComparisonSection";
 import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import SocialProofSection from "@/components/landing/SocialProofSection";
 import ValuePropSection from "@/components/landing/ValuePropSection";
+import SecuritySection from "@/components/landing/SecuritySection";
 import PricingSection from "@/components/landing/PricingSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import CTASection from "@/components/landing/CTASection";
@@ -37,6 +38,7 @@ const Index = () => {
       <HowItWorksSection />
       <SocialProofSection />
       <ValuePropSection />
+      <SecuritySection />
       <PricingSection />
       <TestimonialsSection />
       <CTASection />
