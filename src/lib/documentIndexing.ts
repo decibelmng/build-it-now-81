@@ -57,6 +57,13 @@ export async function indexDocument(params: {
 
   const { category, display_type } = classifyFile(params.file_type, params.context);
 
+  // Defensive validation for document indexing
+  const title = (params.title || params.file_name || "Untitled").slice(0, 300);
+  if (!params.property_id || !params.user_id) {
+    console.warn("Document indexing skipped: missing property_id or user_id");
+    return;
+  }
+
   await supabase.from("documents").insert({
     file_path: params.file_path,
     file_name: params.file_name,
