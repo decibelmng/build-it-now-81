@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 import { indexMaintenancePhoto, removeDocumentIndex } from "@/lib/documentIndexing";
+import { maintenanceLogSchema, validateForm, validateFiles } from "@/lib/schemas";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 import ExpenseTypeField from "@/components/dashboard/ExpenseTypeField";
 import BulkClassifyDialog from "@/components/dashboard/BulkClassifyDialog";
