@@ -11,6 +11,9 @@ import UpgradeModal from "@/components/dashboard/UpgradeModal";
 import SearchCommandPalette from "@/components/dashboard/SearchCommandPalette";
 import SecurityFooter from "@/components/layout/SecurityFooter";
 import { useToast } from "@/hooks/use-toast";
+import { useSessionTimeout } from "@/hooks/useSessionTimeout";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const DashboardOverview = lazy(() => import("@/components/dashboard/DashboardOverview"));
 const PropertyCards = lazy(() => import("@/components/dashboard/PropertyCards"));
