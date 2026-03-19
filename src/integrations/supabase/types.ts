@@ -63,6 +63,13 @@ export type Database = {
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contractor_access_links_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
+          },
         ]
       }
       contractor_submissions: {
@@ -156,6 +163,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractor_submissions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
           },
         ]
       }
@@ -275,6 +289,13 @@ export type Database = {
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "documents_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
+          },
         ]
       }
       home_contacts: {
@@ -331,6 +352,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "home_contacts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
           },
         ]
       }
@@ -476,6 +504,13 @@ export type Database = {
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "home_items_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
+          },
         ]
       }
       home_quick_refs: {
@@ -523,6 +558,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "home_quick_refs_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
           },
         ]
       }
@@ -670,6 +712,13 @@ export type Database = {
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "maintenance_logs_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
+          },
         ]
       }
       profiles: {
@@ -713,12 +762,20 @@ export type Database = {
           bedrooms: number | null
           city: string | null
           created_at: string
+          current_estimated_value: number | null
           home_systems: Json | null
           id: string
           image_url: string | null
           latitude: number | null
+          loan_term_months: number | null
           longitude: number | null
+          mortgage_balance: number | null
+          mortgage_document_id: string | null
+          mortgage_last_updated: string | null
+          mortgage_payment: number | null
+          mortgage_rate: number | null
           name: string
+          original_loan_amount: number | null
           property_code: string | null
           property_type: string
           purchase_closing_costs: number | null
@@ -732,6 +789,7 @@ export type Database = {
           state: string | null
           updated_at: string
           user_id: string
+          value_last_updated: string | null
           year_built: number | null
           zip: string | null
         }
@@ -742,12 +800,20 @@ export type Database = {
           bedrooms?: number | null
           city?: string | null
           created_at?: string
+          current_estimated_value?: number | null
           home_systems?: Json | null
           id?: string
           image_url?: string | null
           latitude?: number | null
+          loan_term_months?: number | null
           longitude?: number | null
+          mortgage_balance?: number | null
+          mortgage_document_id?: string | null
+          mortgage_last_updated?: string | null
+          mortgage_payment?: number | null
+          mortgage_rate?: number | null
           name: string
+          original_loan_amount?: number | null
           property_code?: string | null
           property_type?: string
           purchase_closing_costs?: number | null
@@ -761,6 +827,7 @@ export type Database = {
           state?: string | null
           updated_at?: string
           user_id: string
+          value_last_updated?: string | null
           year_built?: number | null
           zip?: string | null
         }
@@ -771,12 +838,20 @@ export type Database = {
           bedrooms?: number | null
           city?: string | null
           created_at?: string
+          current_estimated_value?: number | null
           home_systems?: Json | null
           id?: string
           image_url?: string | null
           latitude?: number | null
+          loan_term_months?: number | null
           longitude?: number | null
+          mortgage_balance?: number | null
+          mortgage_document_id?: string | null
+          mortgage_last_updated?: string | null
+          mortgage_payment?: number | null
+          mortgage_rate?: number | null
           name?: string
+          original_loan_amount?: number | null
           property_code?: string | null
           property_type?: string
           purchase_closing_costs?: number | null
@@ -790,10 +865,19 @@ export type Database = {
           state?: string | null
           updated_at?: string
           user_id?: string
+          value_last_updated?: string | null
           year_built?: number | null
           zip?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "properties_mortgage_document_id_fkey"
+            columns: ["mortgage_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       property_shares: {
         Row: {
@@ -844,6 +928,13 @@ export type Database = {
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "property_shares_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
+          },
         ]
       }
       property_transfers: {
@@ -891,6 +982,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_transfers_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
           },
         ]
       }
@@ -957,6 +1055,84 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_utilities_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
+          },
+        ]
+      }
+      property_valuations: {
+        Row: {
+          created_at: string | null
+          document_id: string | null
+          id: string
+          notes: string | null
+          property_id: string
+          source: string | null
+          updated_at: string | null
+          user_id: string
+          valuation_date: string
+          valuation_type: string
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          notes?: string | null
+          property_id: string
+          source?: string | null
+          updated_at?: string | null
+          user_id: string
+          valuation_date: string
+          valuation_type?: string
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          notes?: string | null
+          property_id?: string
+          source?: string | null
+          updated_at?: string | null
+          user_id?: string
+          valuation_date?: string
+          valuation_type?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_valuations_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_valuations_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "property_valuations_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_valuations_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
           },
         ]
       }
@@ -1031,6 +1207,13 @@ export type Database = {
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "recurring_templates_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
+          },
         ]
       }
       user_roles: {
@@ -1073,6 +1256,78 @@ export type Database = {
           total_improvements: number | null
           total_repairs: number | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      property_equity_summary: {
+        Row: {
+          address: string | null
+          appreciation: number | null
+          appreciation_pct: number | null
+          current_estimated_value: number | null
+          equity_pct: number | null
+          estimated_equity: number | null
+          latest_appraisal_date: string | null
+          latest_appraisal_value: number | null
+          loan_term_months: number | null
+          mortgage_balance: number | null
+          mortgage_last_updated: string | null
+          mortgage_payment: number | null
+          mortgage_rate: number | null
+          name: string | null
+          original_loan_amount: number | null
+          property_id: string | null
+          purchase_date: string | null
+          purchase_price: number | null
+          user_id: string | null
+          valuation_count: number | null
+          value_last_updated: string | null
+        }
+        Insert: {
+          address?: string | null
+          appreciation?: never
+          appreciation_pct?: never
+          current_estimated_value?: number | null
+          equity_pct?: never
+          estimated_equity?: never
+          latest_appraisal_date?: never
+          latest_appraisal_value?: never
+          loan_term_months?: number | null
+          mortgage_balance?: number | null
+          mortgage_last_updated?: string | null
+          mortgage_payment?: number | null
+          mortgage_rate?: number | null
+          name?: string | null
+          original_loan_amount?: number | null
+          property_id?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          user_id?: string | null
+          valuation_count?: never
+          value_last_updated?: string | null
+        }
+        Update: {
+          address?: string | null
+          appreciation?: never
+          appreciation_pct?: never
+          current_estimated_value?: number | null
+          equity_pct?: never
+          estimated_equity?: never
+          latest_appraisal_date?: never
+          latest_appraisal_value?: never
+          loan_term_months?: number | null
+          mortgage_balance?: number | null
+          mortgage_last_updated?: string | null
+          mortgage_payment?: number | null
+          mortgage_rate?: number | null
+          name?: string | null
+          original_loan_amount?: number | null
+          property_id?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          user_id?: string | null
+          valuation_count?: never
+          value_last_updated?: string | null
         }
         Relationships: []
       }
