@@ -14,6 +14,7 @@ import { Plus, Users, Phone, Mail, Trash2, Building2, Wrench, DollarSign, Chevro
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
+import { contactSchema, validateForm } from "@/lib/schemas";
 
 const roles = [
   { value: "plumber", label: "Plumber" },
@@ -112,6 +113,9 @@ const HomeContacts = () => {
 
   const addContact = useMutation({
     mutationFn: async () => {
+      const validation = validateForm(contactSchema, form);
+      if (!validation.success) throw new Error(validation.error);
+
       const { error } = await supabase.from("home_contacts").insert({
         user_id: user!.id,
         property_id: form.property_id,

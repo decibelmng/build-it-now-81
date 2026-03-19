@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 import { indexMaintenancePhoto, removeDocumentIndex } from "@/lib/documentIndexing";
+import { maintenanceLogSchema, validateForm, validateFiles } from "@/lib/schemas";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 import ExpenseTypeField from "@/components/dashboard/ExpenseTypeField";
 import BulkClassifyDialog from "@/components/dashboard/BulkClassifyDialog";
@@ -301,6 +302,16 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      // Validate form
+      const validation = validateForm(maintenanceLogSchema, form);
+      if (!validation.success) throw new Error(validation.error);
+
+      // Validate attached files
+      if (attachedFiles.length > 0) {
+        const fileError = validateFiles(attachedFiles);
+        if (fileError) throw new Error(fileError);
+      }
+
       let image_url: string | null | undefined = undefined;
       let contact_id: string | null = form.contact_id || null;
 

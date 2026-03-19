@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, MapPin, BedDouble, Bath, Ruler, Calendar, Loader2, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { propertySchema, validateForm } from "@/lib/schemas";
 import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
 import type { Tables } from "@/integrations/supabase/types";
 import PurchaseInfoSection from "@/components/dashboard/PurchaseInfoSection";
@@ -77,6 +78,9 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
 
   const addProperty = useMutation({
     mutationFn: async () => {
+      const validation = validateForm(propertySchema, form);
+      if (!validation.success) throw new Error(validation.error);
+
       const { error } = await supabase.from("properties").insert({
         user_id: user!.id,
         name: form.name,

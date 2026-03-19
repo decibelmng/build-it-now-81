@@ -15,6 +15,7 @@ import { CATEGORY_GROUPS, CATEGORY_LABELS } from "./constants";
 import { UNIVERSAL_FILE_ACCEPT, isImageFile, fileTypeLabel } from "@/lib/fileUploadConstants";
 import FilePicker from "@/components/ui/file-picker";
 import { SYSTEMS_CATALOG } from "@/lib/homeSystemsRegistry";
+import { documentSchema, validateForm, validateFiles } from "@/lib/schemas";
 
 interface Props {
   open: boolean;
@@ -110,6 +111,21 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
 
   const handleUpload = async () => {
     if (!user || files.length === 0 || !form.property_id) return;
+
+    // Validate form metadata
+    const validation = validateForm(documentSchema, form);
+    if (!validation.success) {
+      toast({ title: validation.error, variant: "destructive" });
+      return;
+    }
+
+    // Validate files
+    const fileError = validateFiles(files);
+    if (fileError) {
+      toast({ title: fileError, variant: "destructive" });
+      return;
+    }
+
     setUploading(true);
     setProgress(0);
 

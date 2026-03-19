@@ -25,6 +25,7 @@ import ComponentMaintenanceHistory from "./ComponentMaintenanceHistory";
 import { calculateComponentCompleteness } from "@/lib/componentCompleteness";
 import { consumePendingInventoryAction } from "@/lib/pendingInventoryAction";
 import { SYSTEMS_CATALOG, getEnabledComponents, avgReplacementCost, migrateOldRegistry, type HomeSystemsRegistry } from "@/lib/homeSystemsRegistry";
+import { homeItemSchema, validateForm, validateFiles } from "@/lib/schemas";
 
 const homeComponentCategories = [
   { value: "roofing", label: "Roofing", icon: Package },
@@ -202,6 +203,14 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
 
   const upsertItem = useMutation({
     mutationFn: async () => {
+      const validation = validateForm(homeItemSchema, itemForm);
+      if (!validation.success) throw new Error(validation.error);
+
+      if (pendingFiles.length > 0) {
+        const fileError = validateFiles(pendingFiles);
+        if (fileError) throw new Error(fileError);
+      }
+
       const effectiveType = itemForm.item_type || itemType;
       const payload: any = {
         property_id: propertyId,

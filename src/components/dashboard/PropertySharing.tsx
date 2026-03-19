@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Share2, UserPlus, Trash2, Check, X, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { propertyShareSchema, validateForm } from "@/lib/schemas";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -65,6 +66,9 @@ const PropertySharing = () => {
 
   const inviteUser = useMutation({
     mutationFn: async () => {
+      const validation = validateForm(propertyShareSchema, form);
+      if (!validation.success) throw new Error(validation.error);
+
       // Look up if this email has an account
       const { data: profile } = await supabase
         .from("profiles")

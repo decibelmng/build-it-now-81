@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { User, Phone, Lock, Save, ArrowRightLeft } from "lucide-react";
 import MFASecurityCard from "@/components/dashboard/MFASecurityCard";
 import YourDataSection from "@/components/dashboard/YourDataSection";
+import { profileUpdateSchema, validateForm } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -80,6 +81,9 @@ const ProfileSettings = () => {
 
   const updateProfile = useMutation({
     mutationFn: async () => {
+      const validation = validateForm(profileUpdateSchema, { display_name: displayName, phone });
+      if (!validation.success) throw new Error(validation.error);
+
       const { error } = await supabase
         .from("profiles")
         .update({ display_name: displayName, phone: phone || null })
