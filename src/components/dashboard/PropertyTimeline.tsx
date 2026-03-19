@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +31,7 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType; c
   exterior: { label: "Exterior", icon: Package, color: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400" },
   utility: { label: "Utility", icon: PlugZap, color: "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400" },
   general: { label: "General", icon: Wrench, color: "bg-secondary text-muted-foreground" },
+  financial: { label: "Financial", icon: DollarSign, color: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400" },
 };
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -39,9 +40,18 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; var
   completed: { label: "Completed", icon: CheckCircle2, variant: "default" },
 };
 
+const VALUATION_TYPE_LABELS: Record<string, string> = {
+  purchase_appraisal: "Purchase Appraisal",
+  refinance_appraisal: "Refinance",
+  tax_assessment: "Tax Assessment",
+  professional_appraisal: "Appraisal",
+  estimate: "Value Estimate",
+  comparative_market_analysis: "CMA",
+};
+
 interface TimelineEvent {
   id: string;
-  type: "construction" | "maintenance" | "major_repair" | "improvement" | "inventory" | "utility" | "transfer" | "document";
+  type: "construction" | "maintenance" | "major_repair" | "improvement" | "inventory" | "utility" | "transfer" | "document" | "financial";
   date: string;
   title: string;
   description?: string | null;
@@ -50,13 +60,22 @@ interface TimelineEvent {
   status?: string;
   propertyName?: string;
   image_url?: string | null;
+  // Financial-specific fields
+  valuationType?: string;
+  valuationSource?: string | null;
+  valuationNotes?: string | null;
+  valuationDocumentId?: string | null;
+  valuationValue?: number | null;
 }
+
+const fmtCurrency = (n: number) =>
+  `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
 const PropertyTimeline = () => {
   const { user } = useAuth();
   const [selectedProperty, setSelectedProperty] = useState<string>("all");
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
-  const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(["construction", "maintenance", "major_repair", "improvement", "inventory", "utility", "transfer", "document"]));
+  const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(["construction", "maintenance", "major_repair", "improvement", "inventory", "utility", "transfer", "document", "financial"]));
 
   const toggleType = (type: string) => {
     setVisibleTypes((prev) => {
@@ -137,8 +156,21 @@ const PropertyTimeline = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("documents")
-        .select("*, properties(name)")
+        .select("*, properties!documents_property_id_fkey(name)")
         .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Fetch valuations for financial events
+  const { data: valuations = [] } = useQuery({
+    queryKey: ["timeline_valuations", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("property_valuations")
+        .select("*, properties(name)");
       if (error) throw error;
       return data;
     },
@@ -160,6 +192,22 @@ const PropertyTimeline = () => {
         category: "construction",
         cost: null,
         propertyName: prop.name,
+      });
+    }
+
+    // Add purchase event as a financial milestone
+    if (prop.purchase_date && prop.purchase_price) {
+      events.push({
+        id: `purchase-${prop.id}`,
+        type: "financial",
+        date: prop.purchase_date,
+        title: `${prop.name} — Purchased`,
+        description: `Purchase price: ${fmtCurrency(Number(prop.purchase_price))}`,
+        category: "financial",
+        cost: null,
+        propertyName: prop.name,
+        valuationType: "purchase",
+        valuationValue: Number(prop.purchase_price),
       });
     }
   });
@@ -184,7 +232,7 @@ const PropertyTimeline = () => {
     });
   });
 
-  // Add home inventory items (install dates, replacements, maintenance)
+  // Add home inventory items
   const filteredItems = selectedProperty === "all" ? homeItems : homeItems.filter((i: any) => i.property_id === selectedProperty);
 
   filteredItems.forEach((item: any) => {
@@ -269,6 +317,36 @@ const PropertyTimeline = () => {
     });
   });
 
+  // Add valuation events (financial milestones) — skip purchase_appraisal since we already add purchase event above
+  const filteredValuations = selectedProperty === "all" ? valuations : valuations.filter((v: any) => v.property_id === selectedProperty);
+
+  filteredValuations.forEach((val: any) => {
+    // Skip purchase_appraisal to avoid duplicating the purchase event
+    if (val.valuation_type === "purchase_appraisal") return;
+
+    const typeLabel = VALUATION_TYPE_LABELS[val.valuation_type] || val.valuation_type;
+    const value = Number(val.value);
+
+    events.push({
+      id: `valuation-${val.id}`,
+      type: "financial",
+      date: val.valuation_date,
+      title: `${typeLabel} — ${fmtCurrency(value)}`,
+      description: [
+        val.source,
+        val.properties?.name,
+      ].filter(Boolean).join(" · ") || null,
+      category: "financial",
+      cost: null,
+      propertyName: val.properties?.name,
+      valuationType: val.valuation_type,
+      valuationSource: val.source,
+      valuationNotes: val.notes,
+      valuationDocumentId: val.document_id,
+      valuationValue: value,
+    });
+  });
+
   events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   // Apply type filter — construction is always visible
@@ -330,6 +408,7 @@ const PropertyTimeline = () => {
           { type: "maintenance", label: "Routine", icon: Wrench },
           { type: "major_repair", label: "Major Repair", icon: Hammer },
           { type: "improvement", label: "Improvement", icon: TrendingUp },
+          { type: "financial", label: "Financial", icon: DollarSign },
           { type: "inventory", label: "Inventory", icon: Cog },
           { type: "utility", label: "Utilities", icon: PlugZap },
           { type: "transfer", label: "Transfer", icon: ArrowRightLeft },
@@ -432,9 +511,56 @@ const PropertyTimeline = () => {
                     <span className="font-display text-sm font-bold">${selectedEvent.cost.toLocaleString()}</span>
                   </div>
                 )}
-                {selectedEvent.description && (
+
+                {/* Financial-specific detail fields */}
+                {selectedEvent.type === "financial" && (
+                  <>
+                    {selectedEvent.valuationValue != null && (
+                      <div className="flex items-center gap-2">
+                        <span className="font-body text-xs text-muted-foreground">Value:</span>
+                        <span className="font-display text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                          {fmtCurrency(selectedEvent.valuationValue)}
+                        </span>
+                      </div>
+                    )}
+                    {selectedEvent.valuationType && (
+                      <div className="flex items-center gap-2">
+                        <span className="font-body text-xs text-muted-foreground">Type:</span>
+                        <Badge className="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 font-body text-xs">
+                          {VALUATION_TYPE_LABELS[selectedEvent.valuationType] || selectedEvent.valuationType}
+                        </Badge>
+                      </div>
+                    )}
+                    {selectedEvent.valuationSource && (
+                      <div className="flex items-center gap-2">
+                        <span className="font-body text-xs text-muted-foreground">Source:</span>
+                        <span className="font-body text-sm">{selectedEvent.valuationSource}</span>
+                      </div>
+                    )}
+                    {selectedEvent.valuationNotes && (
+                      <div>
+                        <span className="font-body text-xs text-muted-foreground">Notes:</span>
+                        <p className="font-body text-sm mt-1">{selectedEvent.valuationNotes}</p>
+                      </div>
+                    )}
+                    {selectedEvent.valuationDocumentId && (
+                      <div className="flex items-center gap-1.5 text-accent">
+                        <FileText className="h-3.5 w-3.5" />
+                        <span className="font-body text-xs">Linked document attached</span>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {selectedEvent.description && selectedEvent.type !== "financial" && (
                   <div>
                     <span className="font-body text-xs text-muted-foreground">Description:</span>
+                    <p className="font-body text-sm mt-1">{selectedEvent.description}</p>
+                  </div>
+                )}
+                {selectedEvent.description && selectedEvent.type === "financial" && !selectedEvent.valuationNotes && (
+                  <div>
+                    <span className="font-body text-xs text-muted-foreground">Details:</span>
                     <p className="font-body text-sm mt-1">{selectedEvent.description}</p>
                   </div>
                 )}
@@ -476,12 +602,15 @@ const PropertyTimeline = () => {
             const isConstruction = event.type === "construction";
             const isTransfer = event.type === "transfer";
             const isDocument = event.type === "document";
+            const isFinancial = event.type === "financial";
             const cat = isConstruction
               ? { label: "Construction", icon: Building, color: "bg-accent/20 text-accent" }
               : isTransfer
               ? { label: "Transfer", icon: ArrowRightLeft, color: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400" }
               : isDocument
               ? { label: "Document", icon: FileText, color: "bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-400" }
+              : isFinancial
+              ? { label: "Financial", icon: DollarSign, color: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400" }
               : categoryConfig[event.category] ?? categoryConfig.general;
             const CatIcon = cat.icon;
             const statusCfg = event.status ? statusConfig[event.status] ?? statusConfig.pending : null;
@@ -517,6 +646,13 @@ const PropertyTimeline = () => {
                       <img src={event.image_url} alt="" className="h-8 w-8 rounded object-cover shrink-0" />
                     )}
                   </div>
+
+                  {/* Financial value badge */}
+                  {isFinancial && event.valuationValue != null && (
+                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-display text-xs font-bold">
+                      {fmtCurrency(event.valuationValue)}
+                    </Badge>
+                  )}
 
                   {/* Description */}
                   {event.description && (
