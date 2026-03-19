@@ -10,6 +10,7 @@ import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import SocialProofSection from "@/components/landing/SocialProofSection";
 import ValuePropSection from "@/components/landing/ValuePropSection";
 import SecuritySection from "@/components/landing/SecuritySection";
+import TransferSection from "@/components/landing/TransferSection";
 import PricingSection from "@/components/landing/PricingSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import CTASection from "@/components/landing/CTASection";
@@ -39,6 +40,7 @@ const Index = () => {
       <SocialProofSection />
       <ValuePropSection />
       <SecuritySection />
+      <TransferSection />
       <PricingSection />
       <TestimonialsSection />
       <CTASection />
