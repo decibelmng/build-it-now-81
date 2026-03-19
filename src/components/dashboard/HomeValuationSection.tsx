@@ -82,15 +82,16 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
   const [valuationDialog, setValuationDialog] = useState(false);
   const [editingValuation, setEditingValuation] = useState<PropertyValuation | null>(null);
 
-  // Auto-seed purchase appraisal
-  const seeded = useRef(false);
+  // Auto-seed purchase appraisal (only once per property, guarded properly)
+  const seededPropertyId = useRef<string | null>(null);
   useEffect(() => {
-    if (
-      seeded.current || !user || !property || !property.purchase_price || !property.purchase_date
-    ) return;
+    if (!user || !property || !property.purchase_price || !property.purchase_date) return;
+    if (seededPropertyId.current === property.id) return;
+    // Wait for valuations to actually load (empty array means loaded with no results)
+    if (valuations === undefined) return;
     const hasPurchaseAppraisal = valuations.some((v) => v.valuation_type === "purchase_appraisal");
-    if (!hasPurchaseAppraisal && valuations !== undefined) {
-      seeded.current = true;
+    seededPropertyId.current = property.id;
+    if (!hasPurchaseAppraisal && valuations.length === 0) {
       addValuation.mutate({
         property_id: property.id,
         valuation_type: "purchase_appraisal",
@@ -99,7 +100,7 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
         source: "Purchase price",
       });
     }
-  }, [user, property, valuations]);
+  }, [user, property?.id, property?.purchase_price, property?.purchase_date, valuations]);
 
   // Fetch mortgage-related docs for linking
   const { data: mortgageDocs = [] } = useQuery({
