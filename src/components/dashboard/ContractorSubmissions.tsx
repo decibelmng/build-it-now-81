@@ -84,6 +84,13 @@ const ContractorSubmissions = () => {
 
   const approveAndCreateLog = useMutation({
     mutationFn: async (submission: any) => {
+      // Validate key fields from contractor submission
+      if (!submission.service_description?.trim() && !submission.service_category?.trim()) {
+        throw new Error("Submission has no description or category");
+      }
+      if (!submission.property_id) {
+        throw new Error("Submission has no property");
+      }
       // Update submission status
       const { error: updateError } = await supabase
         .from("contractor_submissions")
