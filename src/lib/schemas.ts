@@ -106,6 +106,30 @@ export const transferEmailSchema = z.object({
   property_id: z.string().min(1, "Property is required"),
 });
 
+// ── Mortgage Update ──
+export const mortgageUpdateSchema = z.object({
+  mortgage_balance: z.number().min(0).max(99999999).optional(),
+  original_loan_amount: z.number().min(0).max(99999999).optional(),
+  mortgage_rate: z.number().min(0).max(30).optional(),
+  mortgage_payment: z.number().min(0).max(999999).optional(),
+  loan_term_months: z.number().min(12).max(600).optional(),
+});
+
+// ── Appraisal Valuation ──
+export const appraisalSchema = z.object({
+  value: z.number().min(1, "Appraised value is required").max(999999999),
+  valuation_date: z.string().min(1, "Date is required"),
+  valuation_type: z.string().min(1),
+  source: z.string().max(200).optional(),
+});
+
+// ── Tax Assessment Valuation ──
+export const taxAssessmentSchema = z.object({
+  value: z.number().min(1, "Assessed value is required").max(999999999),
+  valuation_date: z.string().min(1, "Year is required"),
+  source: z.string().max(200).optional(),
+});
+
 // ── File Upload Validation ──
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export const ALLOWED_FILE_TYPES = [
