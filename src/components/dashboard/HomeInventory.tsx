@@ -25,6 +25,7 @@ import ComponentMaintenanceHistory from "./ComponentMaintenanceHistory";
 import { calculateComponentCompleteness } from "@/lib/componentCompleteness";
 import { consumePendingInventoryAction } from "@/lib/pendingInventoryAction";
 import { SYSTEMS_CATALOG, getEnabledComponents, avgReplacementCost, migrateOldRegistry, type HomeSystemsRegistry } from "@/lib/homeSystemsRegistry";
+import { homeItemSchema, validateForm, validateFiles } from "@/lib/schemas";
 
 const homeComponentCategories = [
   { value: "roofing", label: "Roofing", icon: Package },
