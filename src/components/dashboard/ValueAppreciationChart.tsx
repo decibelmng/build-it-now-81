@@ -246,7 +246,7 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
     const dot = dotData.find((d) => d.date === data.date);
     return (
       <div className="rounded-lg border border-border/50 bg-background px-3 py-2 shadow-lg">
-        <p className="font-body text-xs text-muted-foreground">{dot?.label || data.label}</p>
+        <p className="font-body text-xs text-muted-foreground">{dot?.label || (data.date ? format(parseISO(data.date), "MMM d, yyyy") : "")}</p>
         {dot && (
           <Badge
             className="mt-1 text-[10px]"
