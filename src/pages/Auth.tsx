@@ -243,6 +243,15 @@ const Auth = () => {
                 {googleLoading ? "Connecting..." : "Continue with Google"}
               </Button>
 
+              {!isLogin && (
+                <p className="text-center font-body text-xs text-muted-foreground">
+                  By signing up, you agree to our{" "}
+                  <a href="/terms" className="font-medium text-accent underline underline-offset-2">Terms of Service</a>
+                  {" "}and{" "}
+                  <a href="/privacy" className="font-medium text-accent underline underline-offset-2">Privacy Policy</a>.
+                </p>
+              )}
+
               <p className="text-center font-body text-sm text-muted-foreground">
                 {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
                 <button
