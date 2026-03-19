@@ -4,10 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceDot, ReferenceLine,
+  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, ReferenceDot, ReferenceLine, Legend,
 } from "recharts";
 import { usePropertyValuations } from "@/hooks/usePropertyValuations";
 import { usePropertyEquityForProperty } from "@/hooks/usePropertyEquity";
@@ -18,25 +18,41 @@ interface ValueAppreciationChartProps {
   property: Tables<"properties">;
 }
 
-const fmtK = (v: number) => `$${(v / 1000).toFixed(0)}k`;
+const fmtK = (v: number) => {
+  if (v >= 1000000) return `$${(v / 1000000).toFixed(1)}M`;
+  return `$${(v / 1000).toFixed(0)}k`;
+};
 const fmtCurrency = (n: number) =>
   `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
+const MARKET_TYPES = [
+  "bank_appraisal", "refinance_appraisal", "tax_assessment",
+  "owner_estimate", "cma", "estimate",
+  "professional_appraisal", "purchase_appraisal",
+  "comparative_market_analysis",
+];
+
 const TYPE_COLORS: Record<string, string> = {
   purchase_appraisal: "hsl(210, 70%, 55%)",
+  bank_appraisal: "hsl(210, 70%, 55%)",
   refinance_appraisal: "hsl(270, 60%, 55%)",
   tax_assessment: "hsl(38, 80%, 50%)",
   professional_appraisal: "hsl(170, 50%, 45%)",
+  owner_estimate: "hsl(170, 50%, 45%)",
   estimate: "hsl(220, 10%, 55%)",
+  cma: "hsl(150, 50%, 45%)",
   comparative_market_analysis: "hsl(150, 50%, 45%)",
 };
 
 const TYPE_LABELS: Record<string, string> = {
   purchase_appraisal: "Purchase Appraisal",
+  bank_appraisal: "Bank Appraisal",
   refinance_appraisal: "Refinance Appraisal",
   tax_assessment: "Tax Assessment",
   professional_appraisal: "Professional Appraisal",
+  owner_estimate: "Your Estimate",
   estimate: "Estimate",
+  cma: "CMA",
   comparative_market_analysis: "CMA",
 };
 
@@ -45,16 +61,16 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
   const { data: valuations = [] } = usePropertyValuations(property.id);
   const { data: equitySummary } = usePropertyEquityForProperty(property.id);
 
-  // Fetch major improvements (>= $5000)
+  // Fetch capital improvements for cost basis line
   const { data: improvements = [] } = useQuery({
-    queryKey: ["major_improvements_chart", property.id],
+    queryKey: ["cost_basis_improvements_chart", property.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("maintenance_logs")
         .select("id, title, cost, completed_date, scheduled_date, created_at")
         .eq("property_id", property.id)
         .eq("expense_type", "capital_improvement")
-        .gte("cost", 5000)
+        .not("cost", "is", null)
         .order("completed_date", { ascending: true });
       if (error) throw error;
       return data;
@@ -64,81 +80,114 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
 
   const purchasePrice = property.purchase_price ? Number(property.purchase_price) : null;
   const purchaseDate = property.purchase_date;
+  const closingCosts = property.purchase_closing_costs ? Number(property.purchase_closing_costs) : 0;
   const currentValue = property.current_estimated_value ? Number(property.current_estimated_value) : null;
   const valueLastUpdated = property.value_last_updated;
   const mortgageBalance = property.mortgage_balance ? Number(property.mortgage_balance) : null;
 
-  // Build timeline data points
+  // Build unified timeline with market value + cost basis
   const { chartData, dotData } = useMemo(() => {
-    const points: { date: string; value: number; type: string; source?: string | null }[] = [];
+    // Collect all dates we need data points for
+    const dateMap = new Map<string, { marketValue?: number; costBasis?: number; type?: string; source?: string | null }>();
 
-    // Add purchase price as starting point
-    if (purchasePrice && purchaseDate) {
-      points.push({ date: purchaseDate, value: purchasePrice, type: "purchase_appraisal", source: "Purchase" });
-    }
+    // Market value points from valuations
+    const marketPoints: { date: string; value: number; type: string; source?: string | null }[] = [];
 
-    // Add all valuations
-    valuations.forEach((v) => {
-      points.push({ date: v.valuation_date, value: Number(v.value), type: v.valuation_type, source: v.source });
-    });
+    valuations
+      .filter((v) => MARKET_TYPES.includes(v.valuation_type))
+      .forEach((v) => {
+        marketPoints.push({ date: v.valuation_date, value: Number(v.value), type: v.valuation_type, source: v.source });
+      });
 
-    // Add current estimated value as end point if newer than last valuation
+    // Add current estimated value if newer
     if (currentValue && valueLastUpdated) {
-      const lastValDate = valuations.length > 0 ? valuations[0].valuation_date : null;
+      const lastValDate = marketPoints.length > 0
+        ? marketPoints.sort((a, b) => b.date.localeCompare(a.date))[0].date
+        : null;
       if (!lastValDate || valueLastUpdated > lastValDate) {
-        points.push({ date: valueLastUpdated, value: currentValue, type: "estimate", source: "Current estimate" });
+        marketPoints.push({ date: valueLastUpdated, value: currentValue, type: "estimate", source: "Current estimate" });
       }
     }
 
-    // Sort by date
-    points.sort((a, b) => a.date.localeCompare(b.date));
+    // Sort market points
+    marketPoints.sort((a, b) => a.date.localeCompare(b.date));
 
-    // Deduplicate by date (keep higher value)
-    const uniqueMap = new Map<string, typeof points[0]>();
-    points.forEach((p) => {
-      const existing = uniqueMap.get(p.date);
-      if (!existing || p.value > existing.value) {
-        uniqueMap.set(p.date, p);
+    // Build cost basis staircase: purchase_price + closing_costs + cumulative improvements
+    const costBasisPoints: { date: string; value: number }[] = [];
+    if (purchasePrice && purchaseDate) {
+      const startingBasis = purchasePrice + closingCosts;
+      costBasisPoints.push({ date: purchaseDate, value: startingBasis });
+
+      let runningTotal = startingBasis;
+      improvements.forEach((imp: any) => {
+        const d = (imp.completed_date || imp.scheduled_date || imp.created_at)?.substring(0, 10);
+        if (d && Number(imp.cost) > 0) {
+          runningTotal += Number(imp.cost);
+          costBasisPoints.push({ date: d, value: runningTotal });
+        }
+      });
+
+      // Extend cost basis to today if market value goes further
+      const lastMarketDate = marketPoints.length > 0 ? marketPoints[marketPoints.length - 1].date : null;
+      const lastCostDate = costBasisPoints[costBasisPoints.length - 1]?.date;
+      if (lastMarketDate && lastCostDate && lastMarketDate > lastCostDate) {
+        costBasisPoints.push({ date: lastMarketDate, value: runningTotal });
       }
+    }
+
+    // Merge all dates
+    const allDates = new Set<string>();
+    marketPoints.forEach((p) => allDates.add(p.date));
+    costBasisPoints.forEach((p) => allDates.add(p.date));
+
+    const sortedDates = Array.from(allDates).sort();
+
+    // Interpolate market values (carry forward)
+    let lastMarket: number | undefined;
+    const marketByDate = new Map<string, { value: number; type: string; source?: string | null }>();
+    marketPoints.forEach((p) => marketByDate.set(p.date, p));
+
+    // Interpolate cost basis (carry forward - staircase)
+    let lastCost: number | undefined;
+    const costByDate = new Map<string, number>();
+    costBasisPoints.forEach((p) => costByDate.set(p.date, p.value));
+
+    const chart: { date: string; marketValue?: number; costBasis?: number; label: string }[] = [];
+    const dots: { date: string; value: number; type: string; source?: string | null; label: string }[] = [];
+
+    sortedDates.forEach((date) => {
+      const mp = marketByDate.get(date);
+      if (mp) {
+        lastMarket = mp.value;
+        dots.push({
+          date,
+          value: mp.value,
+          type: mp.type,
+          source: mp.source,
+          label: format(parseISO(date), "MMM d, yyyy"),
+        });
+      }
+
+      const cb = costByDate.get(date);
+      if (cb !== undefined) lastCost = cb;
+
+      chart.push({
+        date,
+        marketValue: lastMarket,
+        costBasis: lastCost,
+        label: format(parseISO(date), "MMM yyyy"),
+      });
     });
-
-    const sorted = Array.from(uniqueMap.values()).sort((a, b) => a.date.localeCompare(b.date));
-
-    const chart = sorted.map((p) => ({
-      date: p.date,
-      value: p.value,
-      label: format(parseISO(p.date), "MMM yyyy"),
-    }));
-
-    const dots = sorted.map((p) => ({
-      date: p.date,
-      value: p.value,
-      type: p.type,
-      source: p.source,
-      label: format(parseISO(p.date), "MMM d, yyyy"),
-    }));
 
     return { chartData: chart, dotData: dots };
-  }, [valuations, purchasePrice, purchaseDate, currentValue, valueLastUpdated]);
-
-  // Improvement markers
-  const improvementMarkers = useMemo(() => {
-    return improvements.map((imp: any) => {
-      const d = imp.completed_date || imp.scheduled_date || imp.created_at;
-      return {
-        date: d ? d.substring(0, 10) : "",
-        cost: Number(imp.cost),
-        title: imp.title,
-      };
-    }).filter((m) => m.date);
-  }, [improvements]);
+  }, [valuations, purchasePrice, purchaseDate, closingCosts, currentValue, valueLastUpdated, improvements]);
 
   // Calculate appreciation
   const appreciation = equitySummary?.appreciation ? Number(equitySummary.appreciation) : null;
   const appreciationPct = equitySummary?.appreciation_pct ? Number(equitySummary.appreciation_pct) : null;
   const isPositive = (appreciation ?? 0) >= 0;
 
-  // Need at least 2 data points
+  // Need at least 2 data points for a meaningful chart
   if (chartData.length < 2) {
     return (
       <Card className="border-border/50">
@@ -152,8 +201,8 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
           <div className="py-8 text-center">
             <p className="font-body text-sm text-muted-foreground">
               {chartData.length === 1
-                ? "Add a current estimate to see your appreciation chart."
-                : "Add your purchase price and a current estimate to see your appreciation chart."}
+                ? "Add a current estimate or upload an appraisal to see your appreciation chart."
+                : "Add your purchase price and a current estimate to see your value chart."}
             </p>
           </div>
         </CardContent>
@@ -163,7 +212,8 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
-    const data = payload[0].payload;
+    const data = payload[0]?.payload;
+    if (!data) return null;
     const dot = dotData.find((d) => d.date === data.date);
     return (
       <div className="rounded-lg border border-border/50 bg-background px-3 py-2 shadow-lg">
@@ -176,11 +226,42 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
             {TYPE_LABELS[dot.type] || dot.type}
           </Badge>
         )}
-        <p className="font-display text-sm font-bold mt-1">{fmtCurrency(data.value)}</p>
-        {dot?.source && <p className="font-body text-[11px] text-muted-foreground">{dot.source}</p>}
+        {data.marketValue != null && (
+          <p className="font-display text-sm font-bold mt-1">Market: {fmtCurrency(data.marketValue)}</p>
+        )}
+        {data.costBasis != null && (
+          <p className="font-body text-xs text-muted-foreground">Investment: {fmtCurrency(data.costBasis)}</p>
+        )}
+        {data.marketValue != null && data.costBasis != null && (
+          <p className="font-body text-xs mt-0.5" style={{ color: data.marketValue >= data.costBasis ? "hsl(var(--sage))" : "hsl(var(--destructive))" }}>
+            {data.marketValue >= data.costBasis ? "+" : ""}{fmtCurrency(data.marketValue - data.costBasis)} unrealized
+          </p>
+        )}
+        {dot?.source && <p className="font-body text-[11px] text-muted-foreground mt-0.5">{dot.source}</p>}
       </div>
     );
   };
+
+  const CustomLegend = () => (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-3 justify-center">
+      <div className="flex items-center gap-1.5">
+        <div className="h-0.5 w-5 rounded-full" style={{ backgroundColor: "hsl(var(--accent))" }} />
+        <span className="font-body text-[11px] text-muted-foreground">Market value</span>
+      </div>
+      {purchasePrice && (
+        <div className="flex items-center gap-1.5">
+          <div className="h-0.5 w-5 rounded-full border-t-2 border-dashed border-muted-foreground" />
+          <span className="font-body text-[11px] text-muted-foreground">Your investment</span>
+        </div>
+      )}
+      {mortgageBalance && (
+        <div className="flex items-center gap-1.5">
+          <div className="h-0.5 w-5 rounded-full border-t-2 border-dashed" style={{ borderColor: "hsl(0, 60%, 55%)" }} />
+          <span className="font-body text-[11px] text-muted-foreground">Mortgage balance</span>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <Card className="border-border/50">
@@ -202,7 +283,7 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 30 }}>
+          <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis
               dataKey="label"
@@ -221,53 +302,52 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
                 <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0} />
               </linearGradient>
             </defs>
+
+            {/* LINE 1: Market Value (solid accent with gradient fill) */}
             <Area
               type="monotone"
-              dataKey="value"
+              dataKey="marketValue"
               stroke="hsl(var(--accent))"
               fill="url(#valueGradient)"
               strokeWidth={2}
+              connectNulls
+              name="Market Value"
             />
 
-            {/* Purchase price reference line */}
-            {purchasePrice && (
-              <ReferenceLine
-                y={purchasePrice}
-                stroke="hsl(var(--muted-foreground))"
-                strokeDasharray="5 3"
-                strokeWidth={1}
-                label={{
-                  value: "Purchase price",
-                  position: "right",
-                  fontSize: 10,
-                  fontFamily: "DM Sans",
-                  fill: "hsl(var(--muted-foreground))",
-                }}
-              />
-            )}
+            {/* LINE 2: Cost Basis (gray dashed staircase) */}
+            <Line
+              type="stepAfter"
+              dataKey="costBasis"
+              stroke="hsl(var(--muted-foreground))"
+              strokeWidth={1.5}
+              strokeDasharray="6 4"
+              dot={false}
+              connectNulls
+              name="Cost Basis"
+            />
 
-            {/* Mortgage balance reference line */}
+            {/* LINE 3: Mortgage reference line (red dashed) */}
             {mortgageBalance && (
               <ReferenceLine
                 y={mortgageBalance}
-                stroke="hsl(var(--sage))"
+                stroke="hsl(0, 60%, 55%)"
                 strokeDasharray="5 3"
                 strokeWidth={1}
                 label={{
-                  value: "Current mortgage",
+                  value: `Mortgage ${fmtCurrency(mortgageBalance)}`,
                   position: "right",
                   fontSize: 10,
                   fontFamily: "DM Sans",
-                  fill: "hsl(var(--sage))",
+                  fill: "hsl(0, 60%, 55%)",
                 }}
               />
             )}
 
-            {/* Valuation dots */}
+            {/* Valuation dots on market value line */}
             {dotData.map((dot, i) => (
               <ReferenceDot
                 key={i}
-                x={dot.label || ""}
+                x={dot.label ? format(parseISO(dot.date), "MMM yyyy") : ""}
                 y={dot.value}
                 r={5}
                 fill={TYPE_COLORS[dot.type] || "hsl(var(--accent))"}
@@ -275,19 +355,10 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
                 strokeWidth={2}
               />
             ))}
-          </AreaChart>
+          </ComposedChart>
         </ResponsiveContainer>
 
-        {/* Improvement markers below chart */}
-        {improvementMarkers.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {improvementMarkers.map((m, i) => (
-              <Badge key={i} variant="outline" className="font-body text-[10px] gap-1 text-sage border-sage/30">
-                {format(parseISO(m.date), "MMM yyyy")}: {m.title} — {fmtCurrency(m.cost)}
-              </Badge>
-            ))}
-          </div>
-        )}
+        <CustomLegend />
       </CardContent>
     </Card>
   );
