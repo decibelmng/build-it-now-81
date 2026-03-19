@@ -203,6 +203,14 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
 
   const upsertItem = useMutation({
     mutationFn: async () => {
+      const validation = validateForm(homeItemSchema, itemForm);
+      if (!validation.success) throw new Error(validation.error);
+
+      if (pendingFiles.length > 0) {
+        const fileError = validateFiles(pendingFiles);
+        if (fileError) throw new Error(fileError);
+      }
+
       const effectiveType = itemForm.item_type || itemType;
       const payload: any = {
         property_id: propertyId,

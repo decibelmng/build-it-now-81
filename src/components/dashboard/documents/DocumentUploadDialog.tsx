@@ -111,6 +111,21 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
 
   const handleUpload = async () => {
     if (!user || files.length === 0 || !form.property_id) return;
+
+    // Validate form metadata
+    const validation = validateForm(documentSchema, form);
+    if (!validation.success) {
+      toast({ title: validation.error, variant: "destructive" });
+      return;
+    }
+
+    // Validate files
+    const fileError = validateFiles(files);
+    if (fileError) {
+      toast({ title: fileError, variant: "destructive" });
+      return;
+    }
+
     setUploading(true);
     setProgress(0);
 
