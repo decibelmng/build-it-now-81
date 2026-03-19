@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { User, Phone, Lock, Save, ArrowRightLeft } from "lucide-react";
+import MFASecurityCard from "@/components/dashboard/MFASecurityCard";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
