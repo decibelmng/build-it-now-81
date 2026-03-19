@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Home, ArrowRight, Mail, Lock, User } from "lucide-react";
+import { Home, ArrowRight, Mail, Lock, User, ShieldCheck, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
@@ -23,6 +23,14 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // MFA challenge state
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaVerifying, setMfaVerifying] = useState(false);
+  const [mfaError, setMfaError] = useState("");
+  const mfaCodeRef = useRef<HTMLInputElement>(null);
+
   // Handle OAuth callback - detect tokens in URL hash
   const [oauthProcessing, setOauthProcessing] = useState(false);
   
@@ -33,12 +41,12 @@ const Auth = () => {
     }
   }, []);
 
-  // If already logged in, redirect to dashboard
+  // If already logged in (and no MFA pending), redirect to dashboard
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && !mfaRequired) {
       navigate("/dashboard", { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, mfaRequired]);
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
@@ -49,7 +57,6 @@ const Auth = () => {
         !window.location.hostname.includes("localhost");
 
       if (isCustomDomain) {
-        // Bypass auth-bridge on custom domains
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
@@ -60,12 +67,10 @@ const Auth = () => {
         });
         if (error) throw error;
         if (data?.url) {
-          // Use replace to avoid history stack buildup on Chrome mobile
           window.location.replace(data.url);
           return;
         }
       } else {
-        // Use Lovable managed OAuth on preview/staging domains
         const { error } = await lovable.auth.signInWithOAuth("google", {
           redirect_uri: `${window.location.origin}/auth`,
           extraParams: { prompt: "select_account" },
@@ -78,6 +83,61 @@ const Auth = () => {
     }
   };
 
+  const checkAndHandleMFA = async () => {
+    try {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const totpFactor = factors?.totp?.find((f) => f.status === "verified");
+      if (totpFactor) {
+        setMfaFactorId(totpFactor.id);
+        setMfaRequired(true);
+        setMfaCode("");
+        setMfaError("");
+        setTimeout(() => mfaCodeRef.current?.focus(), 100);
+        return true; // MFA required
+      }
+    } catch {
+      // If listing factors fails, proceed without MFA
+    }
+    return false; // No MFA
+  };
+
+  const handleMfaVerify = async (inputCode: string) => {
+    if (inputCode.length !== 6) return;
+    setMfaVerifying(true);
+    setMfaError("");
+    try {
+      const { data: challengeData, error: challengeErr } = await supabase.auth.mfa.challenge({
+        factorId: mfaFactorId,
+      });
+      if (challengeErr) throw challengeErr;
+
+      const { error: verifyErr } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challengeData.id,
+        code: inputCode,
+      });
+      if (verifyErr) throw verifyErr;
+
+      setMfaRequired(false);
+      navigate("/dashboard");
+    } catch {
+      setMfaError("Invalid code, please try again");
+      setMfaCode("");
+      mfaCodeRef.current?.focus();
+    } finally {
+      setMfaVerifying(false);
+    }
+  };
+
+  const handleMfaCodeChange = (val: string) => {
+    const cleaned = val.replace(/\D/g, "").slice(0, 6);
+    setMfaCode(cleaned);
+    setMfaError("");
+    if (cleaned.length === 6) {
+      handleMfaVerify(cleaned);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -86,7 +146,12 @@ const Auth = () => {
       const { error } = await signIn(email, password);
       if (error) {
         toast({ title: "Login failed", description: error.message, variant: "destructive" });
-      } else {
+        setLoading(false);
+        return;
+      }
+      // Check MFA after successful login
+      const needsMfa = await checkAndHandleMFA();
+      if (!needsMfa) {
         navigate("/dashboard");
       }
     } else {
@@ -107,6 +172,64 @@ const Auth = () => {
         <div className="text-center">
           <Home className="mx-auto h-8 w-8 text-accent animate-pulse" />
           <p className="mt-4 font-body text-sm text-muted-foreground">Signing you in...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // MFA Challenge Screen
+  if (mfaRequired) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-section-sage px-4">
+        <div className="w-full max-w-md">
+          <div className="mb-8 flex items-center justify-center gap-2">
+            <Home className="h-8 w-8 text-accent" />
+            <span className="font-display text-2xl font-bold text-foreground">HomeLog</span>
+          </div>
+
+          <Card className="border-border/50 shadow-premium">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+                <ShieldCheck className="h-6 w-6 text-accent" />
+              </div>
+              <CardTitle className="font-display text-2xl">Verification required</CardTitle>
+              <CardDescription className="font-body">
+                Enter the 6-digit code from your authenticator app
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center gap-4">
+              <Input
+                ref={mfaCodeRef}
+                value={mfaCode}
+                onChange={(e) => handleMfaCodeChange(e.target.value)}
+                placeholder="000000"
+                maxLength={6}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                className="text-center text-2xl tracking-[0.5em] font-mono h-14 max-w-[200px]"
+                disabled={mfaVerifying}
+                autoFocus
+              />
+              {mfaError && (
+                <p className="font-body text-sm text-destructive">{mfaError}</p>
+              )}
+              {mfaVerifying && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="font-body text-sm">Verifying...</span>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="flex flex-col gap-3">
+              <p className="text-center font-body text-xs text-muted-foreground">
+                Lost your device?{" "}
+                <a href="mailto:support@homelogapp.com" className="font-medium text-accent hover:underline">
+                  Contact support@homelogapp.com
+                </a>{" "}
+                to reset your two-factor authentication.
+              </p>
+            </CardFooter>
+          </Card>
         </div>
       </div>
     );
