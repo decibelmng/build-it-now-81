@@ -71,14 +71,75 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
   const completedCount = logs.filter((l) => l.status === "completed").length;
   const recentLogs = logs.slice(0, 5);
 
-  const statCards = [
+  const { data: equityData = [] } = usePropertyEquity();
+  const { data: costBasis } = useCostBasisAggregated();
+
+  // Aggregate equity across all properties
+  const totalValue = equityData.reduce((s, e) => s + (Number(e.current_estimated_value) || 0), 0);
+  const totalEquity = equityData.reduce((s, e) => s + (Number(e.estimated_equity) || 0), 0);
+  const totalAppreciation = equityData.reduce((s, e) => s + (Number(e.appreciation) || 0), 0);
+  const totalPurchasePrice = equityData.reduce((s, e) => s + (Number(e.purchase_price) || 0), 0);
+  const appreciationPct = totalPurchasePrice > 0 ? (totalAppreciation / totalPurchasePrice) * 100 : 0;
+  const hasFinancialData = equityData.some(
+    (e) => e.purchase_price != null || e.current_estimated_value != null
+  );
+
+  const financialCards = hasFinancialData
+    ? [
+        {
+          label: "Home Value",
+          value: totalValue > 0 ? fmtCurrency(totalValue) : "Add value",
+          icon: Home,
+          color: "text-accent",
+        },
+        {
+          label: "Equity",
+          value: totalEquity > 0 ? fmtCurrency(totalEquity) : fmtCurrency(totalValue),
+          icon: TrendingUp,
+          color: "text-sage",
+        },
+        {
+          label: "Appreciation",
+          value: totalAppreciation !== 0
+            ? `${totalAppreciation > 0 ? "+" : ""}${fmtCurrency(totalAppreciation)}`
+            : "$0",
+          subValue: totalPurchasePrice > 0
+            ? `(${appreciationPct > 0 ? "+" : ""}${appreciationPct.toFixed(1)}%)`
+            : undefined,
+          icon: ArrowUpRight,
+          color: totalAppreciation >= 0 ? "text-sage" : "text-destructive",
+        },
+        {
+          label: "Cost Basis",
+          value: costBasis?.totalAdjustedBasis ? fmtCurrency(costBasis.totalAdjustedBasis) : "$0",
+          icon: Receipt,
+          color: "text-accent",
+        },
+        {
+          label: "Pending Tasks",
+          value: (pendingCount + inProgressCount).toString(),
+          icon: Clock,
+          color: "text-destructive",
+        },
+        {
+          label: "Monthly Savings",
+          value: "—",
+          icon: Shield,
+          color: "text-accent",
+        },
+      ]
+    : null;
+
+  const defaultCards = [
     { label: "Properties", value: properties.length.toString(), icon: Home, color: "text-accent" },
-    { label: "Total Spent", value: `$${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, icon: DollarSign, color: "text-accent" },
+    { label: "Total Spent", value: fmtCurrency(totalSpent), icon: DollarSign, color: "text-accent" },
     { label: "Pending Tasks", value: (pendingCount + inProgressCount).toString(), icon: Clock, color: "text-destructive" },
     { label: "Completed", value: completedCount.toString(), icon: CheckCircle2, color: "text-sage" },
     { label: "Documents", value: documents.length.toString(), icon: FileText, color: "text-muted-foreground" },
     { label: "Contacts", value: contacts.length.toString(), icon: Users, color: "text-muted-foreground" },
   ];
+
+  const statCards = financialCards || defaultCards;
 
   const statusIcon: Record<string, React.ElementType> = {
     pending: Clock,
