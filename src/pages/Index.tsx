@@ -40,6 +40,7 @@ const Index = () => {
       <SocialProofSection />
       <ValuePropSection />
       <SecuritySection />
+      <TransferSection />
       <PricingSection />
       <TestimonialsSection />
       <CTASection />
