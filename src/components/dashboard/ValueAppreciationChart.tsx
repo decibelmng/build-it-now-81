@@ -28,7 +28,7 @@ const fmtCurrency = (n: number) =>
 const MARKET_TYPES = [
   "bank_appraisal", "refinance_appraisal", "tax_assessment",
   "owner_estimate", "cma", "estimate",
-  "professional_appraisal", "purchase_appraisal",
+  "professional_appraisal",
   "comparative_market_analysis",
 ];
 
