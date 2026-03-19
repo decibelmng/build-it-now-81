@@ -72,7 +72,7 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
   const queryClient = useQueryClient();
   const property = properties.find((p) => p.id === selectedPropertyId);
   const { data: equity } = usePropertyEquityForProperty(selectedPropertyId);
-  const { data: valuations = [] } = usePropertyValuations(selectedPropertyId);
+  const { data: valuations = [], isFetched: valuationsFetched } = usePropertyValuations(selectedPropertyId);
   const addValuation = useAddValuation();
   const updateValuation = useUpdateValuation();
   const deleteValuation = useDeleteValuation();
