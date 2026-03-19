@@ -11,6 +11,9 @@ import UpgradeModal from "@/components/dashboard/UpgradeModal";
 import SearchCommandPalette from "@/components/dashboard/SearchCommandPalette";
 import SecurityFooter from "@/components/layout/SecurityFooter";
 import { useToast } from "@/hooks/use-toast";
+import { useSessionTimeout } from "@/hooks/useSessionTimeout";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const DashboardOverview = lazy(() => import("@/components/dashboard/DashboardOverview"));
 const PropertyCards = lazy(() => import("@/components/dashboard/PropertyCards"));
@@ -41,6 +44,7 @@ const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { tier, refreshSubscription } = useSubscription();
+  const { showWarning, resetTimer } = useSessionTimeout();
   const [profile, setProfile] = useState<{ display_name: string | null; persona: string | null } | null>(null);
 
   // Derive activeSection from URL search params so browser back/forward works
@@ -194,6 +198,18 @@ const Dashboard = () => {
 
       <SearchCommandPalette open={searchOpen} onOpenChange={setSearchOpen} onNavigate={handleSearchNavigate} />
       <UpgradeModal open={showUpgrade} onOpenChange={setShowUpgrade} />
+
+      <Dialog open={showWarning} onOpenChange={(open) => { if (!open) resetTimer(); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Session expiring soon</DialogTitle>
+            <DialogDescription>
+              You've been inactive for 25 minutes. Your session will expire in 5 minutes for security. Click Continue to stay signed in.
+            </DialogDescription>
+          </DialogHeader>
+          <Button className="w-full" onClick={resetTimer}>Continue session</Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
