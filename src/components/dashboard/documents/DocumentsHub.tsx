@@ -142,6 +142,7 @@ const DocumentsHub = () => {
       const q = buildQuery(false)
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
       const { data, error, count } = await q;
+      console.log("[DocumentsHub] query result:", { dataLen: data?.length, count, error, filters });
       if (error) throw error;
       return { data: data || [], count: count || 0 };
     },
