@@ -305,6 +305,7 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
               tick={{ fontSize: 11, fontFamily: "DM Sans" }}
               stroke="hsl(var(--muted-foreground))"
               tickFormatter={fmtK}
+              domain={yDomain}
             />
             <Tooltip content={<CustomTooltip />} />
             <defs>
