@@ -84,6 +84,13 @@ const ContractorSubmissions = () => {
 
   const approveAndCreateLog = useMutation({
     mutationFn: async (submission: any) => {
+      // Validate key fields from contractor submission
+      if (!submission.service_description?.trim() && !submission.service_category?.trim()) {
+        throw new Error("Submission has no description or category");
+      }
+      if (!submission.property_id) {
+        throw new Error("Submission has no property");
+      }
       // Update submission status
       const { error: updateError } = await supabase
         .from("contractor_submissions")
@@ -144,19 +151,23 @@ const ContractorSubmissions = () => {
           .eq("id", submission.id);
       }
 
-      // If add_to_contacts, add the contractor as a contact
+      // If add_to_contacts, add the contractor as a contact (with validation)
       let contactId: string | null = null;
       if (submission.add_to_contacts) {
-        const { data: newContact } = await supabase.from("home_contacts").insert({
-          property_id: submission.property_id,
-          user_id: user!.id,
-          name: submission.contractor_contact_name,
-          company: submission.contractor_company_name,
-          email: submission.contractor_email || null,
-          phone: submission.contractor_phone || null,
-          role: "contractor",
-        }).select("id").single();
-        contactId = newContact?.id || null;
+        if (!submission.contractor_contact_name?.trim()) {
+          console.warn("Contractor contact name missing, skipping contact creation");
+        } else {
+          const { data: newContact } = await supabase.from("home_contacts").insert({
+            property_id: submission.property_id,
+            user_id: user!.id,
+            name: submission.contractor_contact_name.trim(),
+            company: submission.contractor_company_name?.trim() || null,
+            email: submission.contractor_email || null,
+            phone: submission.contractor_phone || null,
+            role: "contractor",
+          }).select("id").single();
+          contactId = newContact?.id || null;
+        }
       }
 
       // Auto-index contractor submission files into documents table

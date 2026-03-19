@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { User, Phone, Lock, Save, ArrowRightLeft } from "lucide-react";
 import MFASecurityCard from "@/components/dashboard/MFASecurityCard";
 import YourDataSection from "@/components/dashboard/YourDataSection";
-import { profileUpdateSchema, validateForm } from "@/lib/schemas";
+import { profileUpdateSchema, validateForm, transferEmailSchema } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -101,6 +101,13 @@ const ProfileSettings = () => {
 
   const initiateTransfer = useMutation({
     mutationFn: async () => {
+      // Validate transfer email
+      const emailValidation = validateForm(transferEmailSchema, {
+        email: transferEmail,
+        property_id: transferPropertyId,
+      });
+      if (!emailValidation.success) throw new Error(emailValidation.error);
+
       if (!transferPropertyId || !transferEmail) return;
       const { data: recipientProfile } = await supabase
         .from("profiles")
@@ -130,8 +137,8 @@ const ProfileSettings = () => {
   });
 
   const changePassword = async () => {
-    if (newPassword.length < 6) {
-      toast({ title: "Password must be at least 6 characters", variant: "destructive" });
+    if (newPassword.length < 8) {
+      toast({ title: "Password must be at least 8 characters", variant: "destructive" });
       return;
     }
     if (newPassword !== confirmPassword) {

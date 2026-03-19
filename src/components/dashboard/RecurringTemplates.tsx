@@ -15,6 +15,7 @@ import { Plus, RefreshCw, Trash2, Calendar, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, addMonths } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
+import { recurringTemplateSchema, contactSchema, validateForm } from "@/lib/schemas";
 
 type Property = Tables<"properties">;
 
@@ -116,9 +117,31 @@ const RecurringTemplates = () => {
 
   const addTemplate = useMutation({
     mutationFn: async () => {
+      // Validate template form
+      const validation = validateForm(recurringTemplateSchema, {
+        title: form.title,
+        description: form.description || undefined,
+        interval_months: parseInt(form.interval_months),
+        category: form.category,
+        estimated_cost: form.estimated_cost ? parseFloat(form.estimated_cost) : undefined,
+        property_id: form.property_id,
+        next_due_date: form.next_due_date,
+      });
+      if (!validation.success) throw new Error(validation.error);
+
       let targetContactId = form.contact_id === "none" ? null : form.contact_id || null;
 
       if (showNewContact && newContact.name.trim()) {
+        const contactValidation = validateForm(contactSchema, {
+          name: newContact.name,
+          email: newContact.email || undefined,
+          phone: newContact.phone || undefined,
+          company: newContact.company || undefined,
+          role: newContact.role,
+          property_id: form.property_id,
+        });
+        if (!contactValidation.success) throw new Error(contactValidation.error);
+
         const { data: contact, error: contactError } = await supabase
           .from("home_contacts")
           .insert({
@@ -185,6 +208,8 @@ const RecurringTemplates = () => {
 
   const createLogFromTemplate = useMutation({
     mutationFn: async (template: any) => {
+      if (!template.title?.trim()) throw new Error("Template has no title");
+
       const { error: logError } = await supabase.from("maintenance_logs").insert({
         user_id: user!.id,
         property_id: template.property_id,

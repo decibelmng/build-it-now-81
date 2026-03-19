@@ -504,8 +504,13 @@ export async function syncRegistryToInventory(
     }
   }
 
-  if (inserts.length > 0) {
-    const { error } = await supabase.from("home_items").insert(inserts as any);
+  // Filter out invalid inserts defensively
+  const validInserts = inserts.filter(item =>
+    item.name && (item.name as string).length <= 200 && item.property_id
+  );
+
+  if (validInserts.length > 0) {
+    const { error } = await supabase.from("home_items").insert(validInserts as any);
     if (error) throw error;
   }
   for (const upd of updates) {
@@ -716,7 +721,7 @@ export async function backfillSystemKeys(
         const { data: log } = await supabase.from("maintenance_logs").select("system_key").eq("id", doc.maintenance_log_id).maybeSingle();
         sysKey = (log as any)?.system_key || null;
       }
-      if (sysKey) {
+      if (sysKey && doc.id) {
         await supabase.from("documents").update({ system_key: sysKey } as any).eq("id", doc.id);
         docsUpdated++;
       }

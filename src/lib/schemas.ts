@@ -88,6 +88,24 @@ export const profileUpdateSchema = z.object({
   phone: z.string().max(20).optional().or(z.literal("")),
 });
 
+// ── Recurring Template ──
+export const recurringTemplateSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200),
+  description: z.string().max(5000).optional(),
+  interval_months: z.number().min(1).max(60),
+  category: z.string().optional(),
+  system_key: z.string().optional(),
+  estimated_cost: z.number().min(0).max(999999).optional(),
+  property_id: z.string().min(1, "Property is required"),
+  next_due_date: z.string().min(1, "Due date is required"),
+});
+
+// ── Transfer Email ──
+export const transferEmailSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+  property_id: z.string().min(1, "Property is required"),
+});
+
 // ── File Upload Validation ──
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export const ALLOWED_FILE_TYPES = [
