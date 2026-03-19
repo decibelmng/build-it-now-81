@@ -208,7 +208,7 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
     const yMin = allValues.length > 0 ? Math.floor(Math.min(...allValues) * 0.85 / 10000) * 10000 : 0;
     const yMax = allValues.length > 0 ? Math.ceil(Math.max(...allValues) * 1.05 / 10000) * 10000 : 0;
 
-    return { chartData: chart, dotData: dots, yDomain: [yMin, yMax] as [number, number] };
+    return { chartData: chart, dotData: dots, yDomain: [yMin, yMax] as [number, number], xTicks };
   }, [valuations, purchasePrice, purchaseDate, closingCosts, currentValue, valueLastUpdated, improvements, mortgageBalance]);
 
   // Calculate appreciation
