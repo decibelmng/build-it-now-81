@@ -153,7 +153,7 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
     const costByDate = new Map<string, number>();
     costBasisPoints.forEach((p) => costByDate.set(p.date, p.value));
 
-    const chart: { date: string; marketValue?: number; costBasis?: number; label: string }[] = [];
+    const chart: { date: string; marketValue?: number; costBasis?: number }[] = [];
     const dots: { date: string; value: number; type: string; source?: string | null; label: string }[] = [];
 
     sortedDates.forEach((date) => {
@@ -176,9 +176,28 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
         date,
         marketValue: lastMarket,
         costBasis: lastCost,
-        label: format(parseISO(date), "MMM yyyy"),
       });
     });
+
+    // Build deduplicated X-axis ticks
+    const uniqueMonths: string[] = [];
+    const seenMonths = new Set<string>();
+    sortedDates.forEach((d) => {
+      const key = d.substring(0, 7); // YYYY-MM
+      if (!seenMonths.has(key)) {
+        seenMonths.add(key);
+        uniqueMonths.push(d);
+      }
+    });
+    // Limit to ~6 ticks max
+    let xTicks = uniqueMonths;
+    if (uniqueMonths.length > 6) {
+      const step = Math.ceil(uniqueMonths.length / 6);
+      xTicks = uniqueMonths.filter((_, i) => i % step === 0);
+      if (xTicks[xTicks.length - 1] !== uniqueMonths[uniqueMonths.length - 1]) {
+        xTicks.push(uniqueMonths[uniqueMonths.length - 1]);
+      }
+    }
 
     // Calculate Y-axis domain
     const allValues = [
