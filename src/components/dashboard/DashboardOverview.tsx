@@ -4,9 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Home, Wrench, DollarSign, Clock, CheckCircle2, AlertTriangle, FileText, Users, TrendingUp, X, Shield, Sparkles } from "lucide-react";
+import { Home, Wrench, DollarSign, Clock, CheckCircle2, AlertTriangle, FileText, Users, TrendingUp, X, Shield, Sparkles, ArrowUpRight, Receipt } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
+import { usePropertyEquity } from "@/hooks/usePropertyEquity";
 import QuickStartChecklist from "./QuickStartChecklist";
 import QuickLogCard from "./QuickLogCard";
 import WarrantyAlerts from "./WarrantyAlerts";
@@ -70,14 +71,83 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
   const completedCount = logs.filter((l) => l.status === "completed").length;
   const recentLogs = logs.slice(0, 5);
 
-  const statCards = [
+  const fmtCurrency = (n: number) =>
+    `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
+  const { data: equityData = [] } = usePropertyEquity();
+  const { data: costBasis } = useCostBasisAggregated();
+
+  const [dismissedBanner, setDismissedBanner] = useState(false);
+  const hasCosts = totalSpent > 0;
+  const hasPurchasePrice = costBasis?.hasPurchasePrice ?? false;
+  const showOnboardingBanner = hasCosts && !hasPurchasePrice && !dismissedBanner;
+
+  // Aggregate equity across all properties
+  const totalValue = equityData.reduce((s, e) => s + (Number(e.current_estimated_value) || 0), 0);
+  const totalEquity = equityData.reduce((s, e) => s + (Number(e.estimated_equity) || 0), 0);
+  const totalAppreciation = equityData.reduce((s, e) => s + (Number(e.appreciation) || 0), 0);
+  const totalPurchasePrice = equityData.reduce((s, e) => s + (Number(e.purchase_price) || 0), 0);
+  const appreciationPct = totalPurchasePrice > 0 ? (totalAppreciation / totalPurchasePrice) * 100 : 0;
+  const hasFinancialData = equityData.some(
+    (e) => e.purchase_price != null || e.current_estimated_value != null
+  );
+
+  const financialCards = hasFinancialData
+    ? [
+        {
+          label: "Home Value",
+          value: totalValue > 0 ? fmtCurrency(totalValue) : "Add value",
+          icon: Home,
+          color: "text-accent",
+        },
+        {
+          label: "Equity",
+          value: totalEquity > 0 ? fmtCurrency(totalEquity) : fmtCurrency(totalValue),
+          icon: TrendingUp,
+          color: "text-sage",
+        },
+        {
+          label: "Appreciation",
+          value: totalAppreciation !== 0
+            ? `${totalAppreciation > 0 ? "+" : ""}${fmtCurrency(totalAppreciation)}`
+            : "$0",
+          subValue: totalPurchasePrice > 0
+            ? `(${appreciationPct > 0 ? "+" : ""}${appreciationPct.toFixed(1)}%)`
+            : undefined,
+          icon: ArrowUpRight,
+          color: totalAppreciation >= 0 ? "text-sage" : "text-destructive",
+        },
+        {
+          label: "Cost Basis",
+          value: costBasis?.totalAdjustedBasis ? fmtCurrency(costBasis.totalAdjustedBasis) : "$0",
+          icon: Receipt,
+          color: "text-accent",
+        },
+        {
+          label: "Pending Tasks",
+          value: (pendingCount + inProgressCount).toString(),
+          icon: Clock,
+          color: "text-destructive",
+        },
+        {
+          label: "Monthly Savings",
+          value: "—",
+          icon: Shield,
+          color: "text-accent",
+        },
+      ]
+    : null;
+
+  const defaultCards = [
     { label: "Properties", value: properties.length.toString(), icon: Home, color: "text-accent" },
-    { label: "Total Spent", value: `$${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, icon: DollarSign, color: "text-accent" },
+    { label: "Total Spent", value: fmtCurrency(totalSpent), icon: DollarSign, color: "text-accent" },
     { label: "Pending Tasks", value: (pendingCount + inProgressCount).toString(), icon: Clock, color: "text-destructive" },
     { label: "Completed", value: completedCount.toString(), icon: CheckCircle2, color: "text-sage" },
     { label: "Documents", value: documents.length.toString(), icon: FileText, color: "text-muted-foreground" },
     { label: "Contacts", value: contacts.length.toString(), icon: Users, color: "text-muted-foreground" },
   ];
+
+  const statCards = financialCards || defaultCards;
 
   const statusIcon: Record<string, React.ElementType> = {
     pending: Clock,
@@ -90,16 +160,6 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
     in_progress: "text-amber-500",
     completed: "text-sage",
   };
-
-  const { data: costBasis } = useCostBasisAggregated();
-  const [dismissedBanner, setDismissedBanner] = useState(false);
-
-  const hasCosts = totalSpent > 0;
-  const hasPurchasePrice = costBasis?.hasPurchasePrice ?? false;
-  const showOnboardingBanner = hasCosts && !hasPurchasePrice && !dismissedBanner;
-
-  const fmtCurrency = (n: number) =>
-    `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   return (
     <div>
@@ -190,7 +250,12 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
               </div>
               <div>
                 <p className="font-body text-xs text-muted-foreground">{stat.label}</p>
-                <p className="font-display text-lg font-bold">{stat.value}</p>
+                <p className={`font-display text-lg font-bold ${stat.color}`}>
+                  {stat.value}
+                  {"subValue" in stat && (stat as any).subValue && (
+                    <span className="text-sm font-normal ml-1">{(stat as any).subValue}</span>
+                  )}
+                </p>
               </div>
             </CardContent>
           </Card>
