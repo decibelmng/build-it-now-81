@@ -71,8 +71,16 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
   const completedCount = logs.filter((l) => l.status === "completed").length;
   const recentLogs = logs.slice(0, 5);
 
+  const fmtCurrency = (n: number) =>
+    `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
   const { data: equityData = [] } = usePropertyEquity();
   const { data: costBasis } = useCostBasisAggregated();
+
+  const [dismissedBanner, setDismissedBanner] = useState(false);
+  const hasCosts = totalSpent > 0;
+  const hasPurchasePrice = costBasis?.hasPurchasePrice ?? false;
+  const showOnboardingBanner = hasCosts && !hasPurchasePrice && !dismissedBanner;
 
   // Aggregate equity across all properties
   const totalValue = equityData.reduce((s, e) => s + (Number(e.current_estimated_value) || 0), 0);
@@ -152,13 +160,6 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
     in_progress: "text-amber-500",
     completed: "text-sage",
   };
-
-  const [dismissedBanner, setDismissedBanner] = useState(false);
-
-  const showOnboardingBanner = hasCosts && !hasPurchasePrice && !dismissedBanner;
-
-  const fmtCurrency = (n: number) =>
-    `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   return (
     <div>
