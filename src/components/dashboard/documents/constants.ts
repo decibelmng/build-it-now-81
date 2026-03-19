@@ -72,6 +72,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   appliance_manual: "Appliance Manual",
   system_manual: "System Manual",
   warranty_card: "Warranty Card",
+  mortgage_statement: "Mortgage Statement",
   property_tax_bill: "Property Tax Bill",
   utility_bill: "Utility Bill",
   contractor_invoice: "Contractor Invoice",
