@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { User, Phone, Lock, Save, ArrowRightLeft } from "lucide-react";
 import MFASecurityCard from "@/components/dashboard/MFASecurityCard";
 import YourDataSection from "@/components/dashboard/YourDataSection";
+import { profileUpdateSchema, validateForm } from "@/lib/schemas";
+import { useToast } from "@/hooks/use-toast";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
