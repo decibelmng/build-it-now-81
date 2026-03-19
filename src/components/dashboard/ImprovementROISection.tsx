@@ -115,6 +115,24 @@ const ImprovementROISection = ({ property }: Props) => {
   const apparentReturn = valueIncrease != null && totalInvested > 0 ? valueIncrease / totalInvested : null;
   const netValueCreated = valueIncrease != null ? valueIncrease - totalInvested : null;
 
+  // Not enough data — show encouragement (after all hooks)
+  if (!hasImprovements || !hasValuations) {
+    return (
+      <Card className="border-border/50 bg-muted/30">
+        <CardContent className="p-5">
+          <div className="flex items-start gap-3">
+            <TrendingUp className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+            <div>
+              <p className="font-body text-sm text-muted-foreground">
+                Add appraisal values alongside your improvements to see how your investments impact your home's value.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const returnColor =
     apparentReturn != null
       ? apparentReturn >= 1.0
