@@ -44,22 +44,39 @@ const CurrencyInput = ({ value, onChange, id, placeholder }: { value: string; on
 );
 
 const VALUATION_TYPE_LABELS: Record<string, string> = {
+  purchase_price: "Purchase Price",
   purchase_appraisal: "Purchase Appraisal",
+  bank_appraisal: "Bank Appraisal",
   refinance_appraisal: "Refinance Appraisal",
   tax_assessment: "Tax Assessment",
   professional_appraisal: "Professional Appraisal",
+  owner_estimate: "Your Estimate",
   estimate: "Estimate",
   comparative_market_analysis: "CMA",
+  cma: "CMA",
 };
 
 const VALUATION_TYPE_COLORS: Record<string, string> = {
+  purchase_price: "bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300",
   purchase_appraisal: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+  bank_appraisal: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   refinance_appraisal: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
   tax_assessment: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   professional_appraisal: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300",
+  owner_estimate: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300",
   estimate: "bg-muted text-muted-foreground",
   comparative_market_analysis: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+  cma: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
 };
+
+const ADD_VALUATION_TYPES = [
+  { value: "purchase_price", label: "Purchase Price" },
+  { value: "bank_appraisal", label: "Bank Appraisal" },
+  { value: "refinance_appraisal", label: "Refinance Appraisal" },
+  { value: "tax_assessment", label: "Tax Assessment" },
+  { value: "owner_estimate", label: "Your Estimate" },
+  { value: "cma", label: "Comparative Market Analysis (CMA)" },
+];
 
 interface Props {
   properties: Property[];
@@ -508,13 +525,37 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
   // ── VALUATION ADD/EDIT DIALOG ──
   const ValuationEditDialog = () => {
     const isEdit = !!editingValuation;
-    const [vType, setVType] = useState(editingValuation?.valuation_type || "estimate");
+
+    // Check if a purchase_price valuation already exists
+    const existingPurchaseVal = valuations.find((v) => v.valuation_type === "purchase_price");
+
+    const [vType, setVType] = useState(editingValuation?.valuation_type || "bank_appraisal");
     const [vDate, setVDate] = useState(editingValuation?.valuation_date || new Date().toISOString().split("T")[0]);
     const [vValue, setVValue] = useState(editingValuation ? String(editingValuation.value) : "");
     const [vSource, setVSource] = useState(editingValuation?.source || "");
     const [vNotes, setVNotes] = useState(editingValuation?.notes || "");
     const [vDocId, setVDocId] = useState(editingValuation?.document_id || "");
     const [saving, setSaving] = useState(false);
+
+    // When type changes to purchase_price and an existing record exists, pre-fill
+    const handleTypeChange = (newType: string) => {
+      setVType(newType);
+      if (newType === "purchase_price" && existingPurchaseVal && !isEdit) {
+        setVValue(String(existingPurchaseVal.value));
+        setVDate(existingPurchaseVal.valuation_date);
+        setVSource(existingPurchaseVal.source || "");
+        setVNotes(existingPurchaseVal.notes || "");
+        setVDocId(existingPurchaseVal.document_id || "");
+      }
+    };
+
+    const isPurchasePrice = vType === "purchase_price";
+    const isEditingExistingPurchase = isPurchasePrice && (isEdit || !!existingPurchaseVal);
+
+    const dialogTitle = isEdit
+      ? (isPurchasePrice ? "Edit purchase price" : "Edit Valuation")
+      : (isPurchasePrice && existingPurchaseVal ? "Edit purchase price" : "Add Valuation");
+    const saveLabel = isEditingExistingPurchase ? "Update" : isEdit ? "Update" : "Add to value history";
 
     const handleSave = async () => {
       const val = parseFloat(vValue);
@@ -533,7 +574,63 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
 
       setSaving(true);
       try {
-        if (isEdit) {
+        if (isPurchasePrice) {
+          // Upsert purchase_price valuation
+          const { data: existing } = await supabase
+            .from("property_valuations")
+            .select("id")
+            .eq("property_id", property.id)
+            .eq("valuation_type", "purchase_price")
+            .maybeSingle();
+
+          if (existing?.id) {
+            await supabase.from("property_valuations")
+              .update({
+                value: val,
+                valuation_date: vDate,
+                source: vSource || null,
+                notes: vNotes || null,
+                document_id: vDocId || null,
+              })
+              .eq("id", existing.id);
+          } else {
+            await supabase.from("property_valuations").insert({
+              property_id: property.id,
+              user_id: user!.id,
+              valuation_type: "purchase_price",
+              valuation_date: vDate,
+              value: val,
+              source: vSource || null,
+              notes: vNotes || null,
+              document_id: vDocId || null,
+            });
+          }
+
+          // Sync to properties table
+          await supabase.from("properties")
+            .update({ purchase_price: val, purchase_date: vDate })
+            .eq("id", property.id);
+
+          // Also sync any existing purchase_appraisal record
+          const { data: existingAppraisal } = await supabase
+            .from("property_valuations")
+            .select("id")
+            .eq("property_id", property.id)
+            .eq("valuation_type", "purchase_appraisal")
+            .maybeSingle();
+
+          if (existingAppraisal?.id) {
+            await supabase.from("property_valuations")
+              .update({ value: val, valuation_date: vDate })
+              .eq("id", existingAppraisal.id);
+          }
+
+          queryClient.invalidateQueries({ queryKey: ["property_valuations"] });
+          queryClient.invalidateQueries({ queryKey: ["properties"] });
+          queryClient.invalidateQueries({ queryKey: ["cost_basis_summary"] });
+          queryClient.invalidateQueries({ queryKey: ["property_equity_summary"] });
+          toast({ title: `Purchase price ${existing?.id ? "updated" : "recorded"} — ${fmt(val)}` });
+        } else if (isEdit) {
           await updateValuation.mutateAsync({
             id: editingValuation!.id,
             propertyId: property.id,
@@ -544,6 +641,15 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
             notes: vNotes || null,
             document_id: vDocId || null,
           });
+
+          // If editing a purchase_appraisal, also sync properties
+          if (editingValuation!.valuation_type === "purchase_appraisal" || editingValuation!.valuation_type === "purchase_price") {
+            await supabase.from("properties")
+              .update({ purchase_price: val, purchase_date: vDate })
+              .eq("id", property.id);
+            queryClient.invalidateQueries({ queryKey: ["properties"] });
+            queryClient.invalidateQueries({ queryKey: ["cost_basis_summary"] });
+          }
         } else {
           await addValuation.mutateAsync({
             property_id: property.id,
@@ -566,17 +672,17 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
       <Dialog open={valuationDialog} onOpenChange={(v) => { setValuationDialog(v); if (!v) setEditingValuation(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display">{isEdit ? "Edit Valuation" : "Add Valuation"}</DialogTitle>
+            <DialogTitle className="font-display">{dialogTitle}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label className="font-body">Type *</Label>
-                <Select value={vType} onValueChange={setVType}>
+                <Select value={vType} onValueChange={handleTypeChange}>
                   <SelectTrigger className="font-body text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {Object.entries(VALUATION_TYPE_LABELS).map(([k, label]) => (
-                      <SelectItem key={k} value={k} className="font-body text-xs">{label}</SelectItem>
+                    {ADD_VALUATION_TYPES.map(({ value, label }) => (
+                      <SelectItem key={value} value={value} className="font-body text-xs">{label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -586,6 +692,16 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
                 <Input type="date" value={vDate} onChange={(e) => setVDate(e.target.value)} className="font-body" />
               </div>
             </div>
+
+            {isPurchasePrice && (
+              <div className="flex items-start gap-2 rounded-lg bg-accent/5 border border-accent/20 p-3">
+                <Info className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                <p className="font-body text-xs text-muted-foreground">
+                  This will also update the purchase price on your property profile so everything stays in sync.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label className="font-body">Value *</Label>
               <CurrencyInput value={vValue} onChange={setVValue} />
@@ -614,7 +730,7 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
             )}
             <div className="flex gap-2 pt-2">
               <Button onClick={handleSave} disabled={saving} className="flex-1 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold">
-                {saving ? "Saving..." : isEdit ? "Update" : "Add to value history"}
+                {saving ? "Saving..." : saveLabel}
               </Button>
               <Button variant="outline" onClick={() => { setValuationDialog(false); setEditingValuation(null); }} className="rounded-full font-body">Cancel</Button>
             </div>
