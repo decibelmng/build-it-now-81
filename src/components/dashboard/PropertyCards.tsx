@@ -78,6 +78,9 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
 
   const addProperty = useMutation({
     mutationFn: async () => {
+      const validation = validateForm(propertySchema, form);
+      if (!validation.success) throw new Error(validation.error);
+
       const { error } = await supabase.from("properties").insert({
         user_id: user!.id,
         name: form.name,

@@ -113,6 +113,9 @@ const HomeContacts = () => {
 
   const addContact = useMutation({
     mutationFn: async () => {
+      const validation = validateForm(contactSchema, form);
+      if (!validation.success) throw new Error(validation.error);
+
       const { error } = await supabase.from("home_contacts").insert({
         user_id: user!.id,
         property_id: form.property_id,
