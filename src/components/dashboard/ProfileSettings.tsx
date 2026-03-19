@@ -250,6 +250,9 @@ const ProfileSettings = () => {
           </CardContent>
         </Card>
 
+        {/* Security - MFA */}
+        <MFASecurityCard />
+
         {/* Transfer Property */}
         <Card className="border-border/50">
           <CardHeader className="pb-3">
