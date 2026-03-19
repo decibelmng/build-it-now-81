@@ -72,7 +72,7 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
   const queryClient = useQueryClient();
   const property = properties.find((p) => p.id === selectedPropertyId);
   const { data: equity } = usePropertyEquityForProperty(selectedPropertyId);
-  const { data: valuations = [] } = usePropertyValuations(selectedPropertyId);
+  const { data: valuations = [], isFetched: valuationsFetched } = usePropertyValuations(selectedPropertyId);
   const addValuation = useAddValuation();
   const updateValuation = useUpdateValuation();
   const deleteValuation = useDeleteValuation();
@@ -87,8 +87,8 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
   useEffect(() => {
     if (!user || !property || !property.purchase_price || !property.purchase_date) return;
     if (seededPropertyId.current === property.id) return;
-    // Wait for valuations to actually load (empty array means loaded with no results)
-    if (valuations === undefined) return;
+    // Wait for valuations query to actually finish loading
+    if (!valuationsFetched) return;
     const hasPurchaseAppraisal = valuations.some((v) => v.valuation_type === "purchase_appraisal");
     seededPropertyId.current = property.id;
     if (!hasPurchaseAppraisal && valuations.length === 0) {
@@ -100,7 +100,7 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
         source: "Purchase price",
       });
     }
-  }, [user, property?.id, property?.purchase_price, property?.purchase_date, valuations]);
+  }, [user, property?.id, property?.purchase_price, property?.purchase_date, valuations, valuationsFetched]);
 
   // Fetch mortgage-related docs for linking
   const { data: mortgageDocs = [] } = useQuery({
