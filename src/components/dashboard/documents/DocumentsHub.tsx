@@ -49,7 +49,7 @@ const DocumentsHub = () => {
       let q = supabase
         .from("documents")
         .select(
-          "*, properties(name), maintenance_logs(title, scheduled_date), contractor_submissions(contractor_company_name, service_category), home_items(name), home_contacts(name, company)",
+          "*, properties!documents_property_id_fkey(name), maintenance_logs(title, scheduled_date), contractor_submissions(contractor_company_name, service_category), home_items(name), home_contacts(name, company)",
           { count: "exact" }
         );
 
