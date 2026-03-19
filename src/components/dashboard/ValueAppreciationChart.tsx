@@ -26,10 +26,9 @@ const fmtCurrency = (n: number) =>
   `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
 const MARKET_TYPES = [
-  "bank_appraisal", "refinance_appraisal", "tax_assessment",
-  "owner_estimate", "cma", "estimate",
-  "professional_appraisal",
-  "comparative_market_analysis",
+  "bank_appraisal", "refinance_appraisal", "purchase_appraisal",
+  "tax_assessment", "owner_estimate", "cma", "estimate",
+  "professional_appraisal", "comparative_market_analysis",
 ];
 
 const TYPE_COLORS: Record<string, string> = {
