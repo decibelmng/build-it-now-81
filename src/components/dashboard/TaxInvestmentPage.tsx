@@ -13,6 +13,8 @@ import { Receipt, TrendingUp, ChevronDown, Paperclip, ArrowUpRight, Info, FileTe
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import TaxReportDialog from "@/components/dashboard/TaxReportDialog";
+import HomeValuationSection from "@/components/dashboard/HomeValuationSection";
+import type { Tables } from "@/integrations/supabase/types";
 
 const fmtCurrency = (n: number | null | undefined) =>
   n != null ? `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$—";
@@ -27,6 +29,18 @@ const TaxInvestmentPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"date" | "cost">("date");
   const [reportOpen, setReportOpen] = useState(false);
+
+  // Fetch properties for valuation section
+  const { data: allProperties = [] } = useQuery({
+    queryKey: ["properties_for_tax", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("properties").select("*").order("name");
+      if (error) throw error;
+      return data as Tables<"properties">[];
+    },
+    enabled: !!user,
+  });
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
 
   // Aggregate across all properties
   const agg = useMemo(() => {
@@ -253,6 +267,28 @@ const TaxInvestmentPage = () => {
           <FileText className="h-4 w-4 mr-2" /> Generate Tax Report
         </Button>
       </div>
+
+      {/* Home Value + Mortgage & Equity Section */}
+      {allProperties.length > 0 && (
+        <div className="mb-6">
+          {allProperties.length > 1 && (
+            <div className="mb-3">
+              <Select value={selectedPropertyId || allProperties[0]?.id || ""} onValueChange={setSelectedPropertyId}>
+                <SelectTrigger className="w-56 h-8 text-xs font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
+                <SelectContent>
+                  {allProperties.map((p) => (
+                    <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <HomeValuationSection
+            properties={allProperties}
+            selectedPropertyId={selectedPropertyId || allProperties[0]?.id || ""}
+          />
+        </div>
+      )}
 
       {/* Summary Breakdown */}
       <Card className="mb-6 border-border/50">
