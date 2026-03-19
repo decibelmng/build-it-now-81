@@ -27,7 +27,7 @@ export const CATEGORY_GROUPS: Record<string, { label: string; categories: string
   },
   financial: {
     label: "Financial",
-    categories: ["property_tax_bill", "utility_bill", "contractor_invoice", "improvement_receipt"],
+    categories: ["mortgage_statement", "property_tax_bill", "utility_bill", "contractor_invoice", "improvement_receipt"],
   },
   maintenance: {
     label: "Maintenance & Repairs",
@@ -72,6 +72,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   appliance_manual: "Appliance Manual",
   system_manual: "System Manual",
   warranty_card: "Warranty Card",
+  mortgage_statement: "Mortgage Statement",
   property_tax_bill: "Property Tax Bill",
   utility_bill: "Utility Bill",
   contractor_invoice: "Contractor Invoice",
