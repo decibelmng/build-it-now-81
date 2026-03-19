@@ -15,6 +15,7 @@ import { CATEGORY_GROUPS, CATEGORY_LABELS } from "./constants";
 import { UNIVERSAL_FILE_ACCEPT, isImageFile, fileTypeLabel } from "@/lib/fileUploadConstants";
 import FilePicker from "@/components/ui/file-picker";
 import { SYSTEMS_CATALOG } from "@/lib/homeSystemsRegistry";
+import { documentSchema, validateForm, validateFiles } from "@/lib/schemas";
 
 interface Props {
   open: boolean;
