@@ -82,6 +82,9 @@ const ProfileSettings = () => {
 
   const updateProfile = useMutation({
     mutationFn: async () => {
+      const validation = validateForm(profileUpdateSchema, { display_name: displayName, phone });
+      if (!validation.success) throw new Error(validation.error);
+
       const { error } = await supabase
         .from("profiles")
         .update({ display_name: displayName, phone: phone || null })
