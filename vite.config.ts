@@ -4,7 +4,6 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 const securityHeaders: Record<string, string> = {
-  "X-Frame-Options": "DENY",
   "X-XSS-Protection": "1; mode=block",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   "Content-Security-Policy": [
@@ -14,7 +13,6 @@ const securityHeaders: Record<string, string> = {
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://*.supabase.co",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com",
-    "frame-ancestors 'none'",
   ].join("; "),
 };
 
