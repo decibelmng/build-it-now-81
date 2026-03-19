@@ -86,7 +86,7 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
   const mortgageBalance = property.mortgage_balance ? Number(property.mortgage_balance) : null;
 
   // Build unified timeline with market value + cost basis
-  const { chartData, dotData } = useMemo(() => {
+  const { chartData, dotData, yDomain } = useMemo(() => {
     // Collect all dates we need data points for
     const dateMap = new Map<string, { marketValue?: number; costBasis?: number; type?: string; source?: string | null }>();
 
