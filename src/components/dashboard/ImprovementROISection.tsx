@@ -45,24 +45,6 @@ const ImprovementROISection = ({ property }: Props) => {
   const hasImprovements = improvements.length >= 1;
   const hasValuations = valuations.length >= 2;
 
-  // Not enough data — show encouragement
-  if (!hasImprovements || !hasValuations) {
-    return (
-      <Card className="border-border/50 bg-muted/30">
-        <CardContent className="p-5">
-          <div className="flex items-start gap-3">
-            <TrendingUp className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-            <div>
-              <p className="font-body text-sm text-muted-foreground">
-                Add appraisal values alongside your improvements to see how your investments impact your home's value.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   // Build chart data: years with improvement spending + valuation points
   const chartData = useMemo(() => {
     const yearMap = new Map<string, { year: string; improvements: number; value: number | null }>();
