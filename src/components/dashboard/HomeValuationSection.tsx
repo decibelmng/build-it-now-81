@@ -44,22 +44,39 @@ const CurrencyInput = ({ value, onChange, id, placeholder }: { value: string; on
 );
 
 const VALUATION_TYPE_LABELS: Record<string, string> = {
+  purchase_price: "Purchase Price",
   purchase_appraisal: "Purchase Appraisal",
+  bank_appraisal: "Bank Appraisal",
   refinance_appraisal: "Refinance Appraisal",
   tax_assessment: "Tax Assessment",
   professional_appraisal: "Professional Appraisal",
+  owner_estimate: "Your Estimate",
   estimate: "Estimate",
   comparative_market_analysis: "CMA",
+  cma: "CMA",
 };
 
 const VALUATION_TYPE_COLORS: Record<string, string> = {
+  purchase_price: "bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300",
   purchase_appraisal: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+  bank_appraisal: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   refinance_appraisal: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
   tax_assessment: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   professional_appraisal: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300",
+  owner_estimate: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300",
   estimate: "bg-muted text-muted-foreground",
   comparative_market_analysis: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+  cma: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
 };
+
+const ADD_VALUATION_TYPES = [
+  { value: "purchase_price", label: "Purchase Price" },
+  { value: "bank_appraisal", label: "Bank Appraisal" },
+  { value: "refinance_appraisal", label: "Refinance Appraisal" },
+  { value: "tax_assessment", label: "Tax Assessment" },
+  { value: "owner_estimate", label: "Your Estimate" },
+  { value: "cma", label: "Comparative Market Analysis (CMA)" },
+];
 
 interface Props {
   properties: Property[];
