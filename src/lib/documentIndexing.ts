@@ -67,8 +67,8 @@ export async function indexDocument(params: {
   await supabase.from("documents").insert({
     file_path: params.file_path,
     file_name: params.file_name,
-    name: params.title,
-    title: params.title,
+    name: title,
+    title,
     file_type: params.file_type,
     file_size: params.file_size,
     property_id: params.property_id,

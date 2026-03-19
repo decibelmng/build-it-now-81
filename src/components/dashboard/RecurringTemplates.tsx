@@ -208,6 +208,8 @@ const RecurringTemplates = () => {
 
   const createLogFromTemplate = useMutation({
     mutationFn: async (template: any) => {
+      if (!template.title?.trim()) throw new Error("Template has no title");
+
       const { error: logError } = await supabase.from("maintenance_logs").insert({
         user_id: user!.id,
         property_id: template.property_id,

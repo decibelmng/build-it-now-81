@@ -168,6 +168,12 @@ const BackfillReviewCarousel = ({ open, onOpenChange, items, onNavigate }: Backf
     try {
       let targetComponentId = item.componentId;
 
+      // Defensive check for empty updates
+      if (!item.propertyId) {
+        toast({ title: "Missing property ID", variant: "destructive" });
+        return;
+      }
+
       if (item.isNewComponent || !targetComponentId) {
         const { data: newComp, error } = await supabase
           .from("home_items")

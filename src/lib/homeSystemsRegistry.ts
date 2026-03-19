@@ -721,7 +721,7 @@ export async function backfillSystemKeys(
         const { data: log } = await supabase.from("maintenance_logs").select("system_key").eq("id", doc.maintenance_log_id).maybeSingle();
         sysKey = (log as any)?.system_key || null;
       }
-      if (sysKey) {
+      if (sysKey && doc.id) {
         await supabase.from("documents").update({ system_key: sysKey } as any).eq("id", doc.id);
         docsUpdated++;
       }
