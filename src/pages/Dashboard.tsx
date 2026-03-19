@@ -9,6 +9,7 @@ import OnboardingWizard from "@/components/dashboard/OnboardingWizard";
 import FeatureGate from "@/components/dashboard/FeatureGate";
 import UpgradeModal from "@/components/dashboard/UpgradeModal";
 import SearchCommandPalette from "@/components/dashboard/SearchCommandPalette";
+import SecurityFooter from "@/components/layout/SecurityFooter";
 import { useToast } from "@/hooks/use-toast";
 
 const DashboardOverview = lazy(() => import("@/components/dashboard/DashboardOverview"));
@@ -188,6 +189,7 @@ const Dashboard = () => {
             {activeSection === "contractor-submissions" && <ContractorSubmissions />}
           </Suspense>
         </div>
+        <SecurityFooter />
       </main>
 
       <SearchCommandPalette open={searchOpen} onOpenChange={setSearchOpen} onNavigate={handleSearchNavigate} />
