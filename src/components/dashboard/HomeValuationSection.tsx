@@ -91,7 +91,7 @@ const HomeValuationSection = ({ properties, selectedPropertyId }: Props) => {
     if (!valuationsFetched) return;
     const hasPurchaseAppraisal = valuations.some((v) => v.valuation_type === "purchase_appraisal");
     seededPropertyId.current = property.id;
-    if (!hasPurchaseAppraisal && valuations.length === 0) {
+    if (!hasPurchaseAppraisal) {
       addValuation.mutate({
         property_id: property.id,
         valuation_type: "purchase_appraisal",
