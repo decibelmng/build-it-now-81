@@ -10,7 +10,7 @@ const Terms = () => {
           Terms of Service
         </h1>
         <p className="mt-2 font-body text-sm text-muted-foreground">
-          Last updated: March 7, 2026
+          Last updated: March 2026
         </p>
 
         <div className="mt-10 space-y-10 font-body text-sm leading-relaxed text-foreground/80">
@@ -55,7 +55,16 @@ const Terms = () => {
               Limitation of Liability
             </h2>
             <p className="mt-3">
-              HomeLog is provided "as is" without warranty of any kind. HomeLog is not a licensed financial advisor, tax professional, or legal counsel. Tax reports and savings forecasts are informational tools and should not be considered professional advice. Always consult a qualified tax professional before making financial decisions. HomeLog shall not be liable for any indirect, incidental, or consequential damages arising from your use of the service.
+              HomeLog is provided "as is" without warranty of any kind. HomeLog shall not be liable for any indirect, incidental, or consequential damages arising from your use of the service.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-lg font-semibold text-foreground">
+              Disclaimers
+            </h2>
+            <p className="mt-3">
+              HomeLog does not provide tax, legal, or financial advice. The cost basis tracker, savings forecasts, and tax reports are informational tools provided for your convenience and should not be considered professional advice. Always consult a qualified tax professional, attorney, or financial advisor before making decisions based on information presented in HomeLog.
             </p>
           </section>
 
@@ -74,6 +83,15 @@ const Terms = () => {
             </h2>
             <p className="mt-3">
               These terms are governed by and construed in accordance with the laws of the United States. Any disputes shall be resolved in the courts of the state in which HomeLog is incorporated.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-lg font-semibold text-foreground">
+              Changes to Terms
+            </h2>
+            <p className="mt-3">
+              We may update these terms from time to time. We will notify you of material changes by posting the updated terms on this page with a new "Last updated" date. Your continued use of HomeLog after changes constitutes acceptance of the revised terms.
             </p>
           </section>
 
