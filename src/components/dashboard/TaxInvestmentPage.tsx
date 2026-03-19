@@ -268,6 +268,28 @@ const TaxInvestmentPage = () => {
         </Button>
       </div>
 
+      {/* Home Value + Mortgage & Equity Section */}
+      {allProperties.length > 0 && (
+        <div className="mb-6">
+          {allProperties.length > 1 && (
+            <div className="mb-3">
+              <Select value={selectedPropertyId || allProperties[0]?.id || ""} onValueChange={setSelectedPropertyId}>
+                <SelectTrigger className="w-56 h-8 text-xs font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
+                <SelectContent>
+                  {allProperties.map((p) => (
+                    <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <HomeValuationSection
+            properties={allProperties}
+            selectedPropertyId={selectedPropertyId || allProperties[0]?.id || ""}
+          />
+        </div>
+      )}
+
       {/* Summary Breakdown */}
       <Card className="mb-6 border-border/50">
         <CardContent className="p-5 font-mono text-sm">
