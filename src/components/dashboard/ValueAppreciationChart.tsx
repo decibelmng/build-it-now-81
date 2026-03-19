@@ -181,8 +181,17 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
       });
     });
 
-    return { chartData: chart, dotData: dots };
-  }, [valuations, purchasePrice, purchaseDate, closingCosts, currentValue, valueLastUpdated, improvements]);
+    // Calculate Y-axis domain
+    const allValues = [
+      ...chart.map((c) => c.marketValue).filter(Boolean) as number[],
+      ...chart.map((c) => c.costBasis).filter(Boolean) as number[],
+      ...(mortgageBalance ? [mortgageBalance] : []),
+    ];
+    const yMin = allValues.length > 0 ? Math.floor(Math.min(...allValues) * 0.85 / 10000) * 10000 : 0;
+    const yMax = allValues.length > 0 ? Math.ceil(Math.max(...allValues) * 1.05 / 10000) * 10000 : undefined;
+
+    return { chartData: chart, dotData: dots, yDomain: [yMin, yMax] as [number, number | undefined] };
+  }, [valuations, purchasePrice, purchaseDate, closingCosts, currentValue, valueLastUpdated, improvements, mortgageBalance]);
 
   // Calculate appreciation
   const appreciation = equitySummary?.appreciation ? Number(equitySummary.appreciation) : null;
