@@ -127,11 +127,13 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
         }
       });
 
-      // Extend cost basis to today if market value goes further
+      // Extend cost basis to the latest date on the chart (market or today)
+      const today = new Date().toISOString().slice(0, 10);
       const lastMarketDate = marketPoints.length > 0 ? marketPoints[marketPoints.length - 1].date : null;
+      const extendTo = lastMarketDate && lastMarketDate > today ? lastMarketDate : today;
       const lastCostDate = costBasisPoints[costBasisPoints.length - 1]?.date;
-      if (lastMarketDate && lastCostDate && lastMarketDate > lastCostDate) {
-        costBasisPoints.push({ date: lastMarketDate, value: runningTotal });
+      if (lastCostDate && extendTo > lastCostDate) {
+        costBasisPoints.push({ date: extendTo, value: runningTotal });
       }
     }
 
