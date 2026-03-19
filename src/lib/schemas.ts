@@ -130,6 +130,16 @@ export const taxAssessmentSchema = z.object({
   source: z.string().max(200).optional(),
 });
 
+// ── Valuation (generic) ──
+export const valuationSchema = z.object({
+  valuation_type: z.string().min(1),
+  valuation_date: z.string().min(1, "Date is required"),
+  value: z.number().min(1, "Value is required").max(99999999),
+  source: z.string().max(200).optional(),
+  notes: z.string().max(2000).optional(),
+  property_id: z.string().min(1),
+});
+
 // ── File Upload Validation ──
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export const ALLOWED_FILE_TYPES = [
