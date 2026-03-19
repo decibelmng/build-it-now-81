@@ -250,7 +250,12 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
               </div>
               <div>
                 <p className="font-body text-xs text-muted-foreground">{stat.label}</p>
-                <p className="font-display text-lg font-bold">{stat.value}</p>
+                <p className={`font-display text-lg font-bold ${stat.color}`}>
+                  {stat.value}
+                  {"subValue" in stat && (stat as any).subValue && (
+                    <span className="text-sm font-normal ml-1">{(stat as any).subValue}</span>
+                  )}
+                </p>
               </div>
             </CardContent>
           </Card>

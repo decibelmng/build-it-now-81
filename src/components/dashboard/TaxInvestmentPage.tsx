@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Receipt, TrendingUp, ChevronDown, Paperclip, ArrowUpRight, Info, FileText } from "lucide-react";
+import ValueAppreciationChart from "@/components/dashboard/ValueAppreciationChart";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import TaxReportDialog from "@/components/dashboard/TaxReportDialog";
