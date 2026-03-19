@@ -15,6 +15,7 @@ import { Plus, RefreshCw, Trash2, Calendar, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, addMonths } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
+import { recurringTemplateSchema, contactSchema, validateForm } from "@/lib/schemas";
 
 type Property = Tables<"properties">;
 
