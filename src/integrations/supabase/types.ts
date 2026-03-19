@@ -1082,6 +1082,7 @@ export type Database = {
         Args: { p_transfer_id: string }
         Returns: undefined
       }
+      delete_user_account: { Args: never; Returns: undefined }
       extract_house_number: { Args: { addr: string }; Returns: string }
       has_property_access: {
         Args: { p_property_id: string; p_user_id: string }
