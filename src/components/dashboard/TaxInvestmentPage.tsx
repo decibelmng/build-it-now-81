@@ -13,6 +13,8 @@ import { Receipt, TrendingUp, ChevronDown, Paperclip, ArrowUpRight, Info, FileTe
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import TaxReportDialog from "@/components/dashboard/TaxReportDialog";
+import HomeValuationSection from "@/components/dashboard/HomeValuationSection";
+import type { Tables } from "@/integrations/supabase/types";
 
 const fmtCurrency = (n: number | null | undefined) =>
   n != null ? `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$—";
