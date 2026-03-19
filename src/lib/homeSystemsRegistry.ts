@@ -504,8 +504,13 @@ export async function syncRegistryToInventory(
     }
   }
 
-  if (inserts.length > 0) {
-    const { error } = await supabase.from("home_items").insert(inserts as any);
+  // Filter out invalid inserts defensively
+  const validInserts = inserts.filter(item =>
+    item.name && (item.name as string).length <= 200 && item.property_id
+  );
+
+  if (validInserts.length > 0) {
+    const { error } = await supabase.from("home_items").insert(validInserts as any);
     if (error) throw error;
   }
   for (const upd of updates) {
