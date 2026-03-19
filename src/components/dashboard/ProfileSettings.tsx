@@ -276,6 +276,9 @@ const ProfileSettings = () => {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Your Data */}
+        <YourDataSection />
       </div>
 
       {/* Transfer dialog — two-step */}
