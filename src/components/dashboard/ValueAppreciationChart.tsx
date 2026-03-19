@@ -377,11 +377,38 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
               />
             )}
 
+            {/* Purchase price marker on cost basis line */}
+            {purchasePrice && purchaseDate && (
+              <>
+                <ReferenceDot
+                  x={purchaseDate}
+                  y={purchasePrice + closingCosts}
+                  r={6}
+                  fill="hsl(var(--foreground))"
+                  stroke="hsl(var(--background))"
+                  strokeWidth={2}
+                />
+                <ReferenceLine
+                  x={purchaseDate}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeDasharray="3 3"
+                  strokeWidth={0.5}
+                  label={{
+                    value: "Purchased",
+                    position: "insideBottomRight",
+                    fontSize: 10,
+                    fontFamily: "DM Sans",
+                    fill: "hsl(var(--muted-foreground))",
+                  }}
+                />
+              </>
+            )}
+
             {/* Valuation dots on market value line */}
             {dotData.map((dot, i) => (
               <ReferenceDot
                 key={i}
-                x={dot.label ? format(parseISO(dot.date), "MMM yyyy") : ""}
+                x={dot.date}
                 y={dot.value}
                 r={5}
                 fill={TYPE_COLORS[dot.type] || "hsl(var(--accent))"}
