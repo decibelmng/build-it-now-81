@@ -189,6 +189,7 @@ const Dashboard = () => {
             {activeSection === "contractor-submissions" && <ContractorSubmissions />}
           </Suspense>
         </div>
+        <SecurityFooter />
       </main>
 
       <SearchCommandPalette open={searchOpen} onOpenChange={setSearchOpen} onNavigate={handleSearchNavigate} />
