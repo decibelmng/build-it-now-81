@@ -85,7 +85,7 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
   const mortgageBalance = property.mortgage_balance ? Number(property.mortgage_balance) : null;
 
   // Build unified timeline with market value + cost basis
-  const { chartData, dotData, yDomain } = useMemo(() => {
+  const { chartData, dotData, yDomain, xTicks } = useMemo(() => {
     // Collect all dates we need data points for
     const dateMap = new Map<string, { marketValue?: number; costBasis?: number; type?: string; source?: string | null }>();
 
@@ -153,7 +153,7 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
     const costByDate = new Map<string, number>();
     costBasisPoints.forEach((p) => costByDate.set(p.date, p.value));
 
-    const chart: { date: string; marketValue?: number; costBasis?: number; label: string }[] = [];
+    const chart: { date: string; marketValue?: number; costBasis?: number }[] = [];
     const dots: { date: string; value: number; type: string; source?: string | null; label: string }[] = [];
 
     sortedDates.forEach((date) => {
@@ -176,9 +176,28 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
         date,
         marketValue: lastMarket,
         costBasis: lastCost,
-        label: format(parseISO(date), "MMM yyyy"),
       });
     });
+
+    // Build deduplicated X-axis ticks
+    const uniqueMonths: string[] = [];
+    const seenMonths = new Set<string>();
+    sortedDates.forEach((d) => {
+      const key = d.substring(0, 7); // YYYY-MM
+      if (!seenMonths.has(key)) {
+        seenMonths.add(key);
+        uniqueMonths.push(d);
+      }
+    });
+    // Limit to ~6 ticks max
+    let xTicks = uniqueMonths;
+    if (uniqueMonths.length > 6) {
+      const step = Math.ceil(uniqueMonths.length / 6);
+      xTicks = uniqueMonths.filter((_, i) => i % step === 0);
+      if (xTicks[xTicks.length - 1] !== uniqueMonths[uniqueMonths.length - 1]) {
+        xTicks.push(uniqueMonths[uniqueMonths.length - 1]);
+      }
+    }
 
     // Calculate Y-axis domain
     const allValues = [
@@ -189,7 +208,7 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
     const yMin = allValues.length > 0 ? Math.floor(Math.min(...allValues) * 0.85 / 10000) * 10000 : 0;
     const yMax = allValues.length > 0 ? Math.ceil(Math.max(...allValues) * 1.05 / 10000) * 10000 : 0;
 
-    return { chartData: chart, dotData: dots, yDomain: [yMin, yMax] as [number, number] };
+    return { chartData: chart, dotData: dots, yDomain: [yMin, yMax] as [number, number], xTicks };
   }, [valuations, purchasePrice, purchaseDate, closingCosts, currentValue, valueLastUpdated, improvements, mortgageBalance]);
 
   // Calculate appreciation
@@ -227,7 +246,7 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
     const dot = dotData.find((d) => d.date === data.date);
     return (
       <div className="rounded-lg border border-border/50 bg-background px-3 py-2 shadow-lg">
-        <p className="font-body text-xs text-muted-foreground">{dot?.label || data.label}</p>
+        <p className="font-body text-xs text-muted-foreground">{dot?.label || (data.date ? format(parseISO(data.date), "MMM d, yyyy") : "")}</p>
         {dot && (
           <Badge
             className="mt-1 text-[10px]"
@@ -296,9 +315,13 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
           <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis
-              dataKey="label"
+              dataKey="date"
               tick={{ fontSize: 11, fontFamily: "DM Sans" }}
               stroke="hsl(var(--muted-foreground))"
+              ticks={xTicks}
+              tickFormatter={(d: string) => {
+                try { return format(parseISO(d), "MMM yyyy"); } catch { return d; }
+              }}
             />
             <YAxis
               tick={{ fontSize: 11, fontFamily: "DM Sans" }}
@@ -354,11 +377,38 @@ const ValueAppreciationChart = ({ property }: ValueAppreciationChartProps) => {
               />
             )}
 
+            {/* Purchase price marker on cost basis line */}
+            {purchasePrice && purchaseDate && (
+              <>
+                <ReferenceDot
+                  x={purchaseDate}
+                  y={purchasePrice + closingCosts}
+                  r={6}
+                  fill="hsl(var(--foreground))"
+                  stroke="hsl(var(--background))"
+                  strokeWidth={2}
+                />
+                <ReferenceLine
+                  x={purchaseDate}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeDasharray="3 3"
+                  strokeWidth={0.5}
+                  label={{
+                    value: "Purchased",
+                    position: "insideBottomRight",
+                    fontSize: 10,
+                    fontFamily: "DM Sans",
+                    fill: "hsl(var(--muted-foreground))",
+                  }}
+                />
+              </>
+            )}
+
             {/* Valuation dots on market value line */}
             {dotData.map((dot, i) => (
               <ReferenceDot
                 key={i}
-                x={dot.label ? format(parseISO(dot.date), "MMM yyyy") : ""}
+                x={dot.date}
                 y={dot.value}
                 r={5}
                 fill={TYPE_COLORS[dot.type] || "hsl(var(--accent))"}
