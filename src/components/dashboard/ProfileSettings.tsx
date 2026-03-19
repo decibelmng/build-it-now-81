@@ -101,6 +101,13 @@ const ProfileSettings = () => {
 
   const initiateTransfer = useMutation({
     mutationFn: async () => {
+      // Validate transfer email
+      const emailValidation = validateForm(transferEmailSchema, {
+        email: transferEmail,
+        property_id: transferPropertyId,
+      });
+      if (!emailValidation.success) throw new Error(emailValidation.error);
+
       if (!transferPropertyId || !transferEmail) return;
       const { data: recipientProfile } = await supabase
         .from("profiles")
