@@ -66,6 +66,9 @@ const PropertySharing = () => {
 
   const inviteUser = useMutation({
     mutationFn: async () => {
+      const validation = validateForm(propertyShareSchema, form);
+      if (!validation.success) throw new Error(validation.error);
+
       // Look up if this email has an account
       const { data: profile } = await supabase
         .from("profiles")
