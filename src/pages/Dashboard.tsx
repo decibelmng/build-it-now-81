@@ -198,6 +198,18 @@ const Dashboard = () => {
 
       <SearchCommandPalette open={searchOpen} onOpenChange={setSearchOpen} onNavigate={handleSearchNavigate} />
       <UpgradeModal open={showUpgrade} onOpenChange={setShowUpgrade} />
+
+      <Dialog open={showWarning} onOpenChange={(open) => { if (!open) resetTimer(); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Session expiring soon</DialogTitle>
+            <DialogDescription>
+              You've been inactive for 25 minutes. Your session will expire in 5 minutes for security. Click Continue to stay signed in.
+            </DialogDescription>
+          </DialogHeader>
+          <Button className="w-full" onClick={resetTimer}>Continue session</Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
