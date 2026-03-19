@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const CurrencyInput = ({ value, onChange, id, placeholder }: { value: string; on
 
 const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [saleOpen, setSaleOpen] = useState(false);
 
@@ -83,9 +85,62 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
         })
         .eq("id", property.id);
       if (error) throw error;
+
+      // Auto-create/update purchase_price valuation record
+      if (purchase.purchase_price && user) {
+        const { data: existing } = await supabase
+          .from("property_valuations")
+          .select("id")
+          .eq("property_id", property.id)
+          .eq("valuation_type", "purchase_price")
+          .maybeSingle();
+
+        const valuationData = {
+          property_id: property.id,
+          user_id: user.id,
+          valuation_type: "purchase_price" as const,
+          valuation_date: purchase.purchase_date || property.created_at.split("T")[0],
+          value: parseFloat(purchase.purchase_price),
+          source: "Purchase",
+          notes: purchase.purchase_closing_costs
+            ? `Closing costs: $${parseFloat(purchase.purchase_closing_costs).toLocaleString()}`
+            : null,
+        };
+
+        if (existing?.id) {
+          await supabase
+            .from("property_valuations")
+            .update(valuationData)
+            .eq("id", existing.id);
+        } else {
+          await supabase
+            .from("property_valuations")
+            .insert(valuationData);
+        }
+
+        // Try to link a closing_documents doc
+        const { data: closingDoc } = await supabase
+          .from("documents")
+          .select("id")
+          .eq("property_id", property.id)
+          .eq("category", "closing_documents")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const valId = existing?.id;
+        if (closingDoc?.id && valId) {
+          await supabase
+            .from("property_valuations")
+            .update({ document_id: closingDoc.id })
+            .eq("id", valId);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["properties"] });
+      queryClient.invalidateQueries({ queryKey: ["property_valuations"] });
+      queryClient.invalidateQueries({ queryKey: ["property_equity_summary"] });
       toast({ title: "Purchase information saved!" });
     },
     onError: (err: Error) => {
