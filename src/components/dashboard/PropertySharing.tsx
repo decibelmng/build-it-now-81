@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Share2, UserPlus, Trash2, Check, X, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { propertyShareSchema, validateForm } from "@/lib/schemas";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 
