@@ -271,21 +271,18 @@ const TaxInvestmentPage = () => {
         </Button>
       </div>
 
+      {/* Global property filter (single-property page: no "All" option) */}
+      {allProperties.length > 1 && (
+        <PropertyFilterBar
+          allowAll={false}
+          value={selectedPropertyId || allProperties[0]?.id || ""}
+          onChange={setSelectedPropertyId}
+        />
+      )}
+
       {/* Home Value + Mortgage & Equity Section */}
       {allProperties.length > 0 && (
         <div className="mb-6">
-          {allProperties.length > 1 && (
-            <div className="mb-3">
-              <Select value={selectedPropertyId || allProperties[0]?.id || ""} onValueChange={setSelectedPropertyId}>
-                <SelectTrigger className="w-56 h-8 text-xs font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
-                <SelectContent>
-                  {allProperties.map((p) => (
-                    <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           <HomeValuationSection
             properties={allProperties}
             selectedPropertyId={selectedPropertyId || allProperties[0]?.id || ""}
