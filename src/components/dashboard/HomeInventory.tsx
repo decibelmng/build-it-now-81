@@ -1227,9 +1227,90 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
             </div>
           );
         })()}
+        {/* History (replaced/removed items) */}
+        {itemType === "home_component" && showHistory && historyItems.length > 0 && (
+          <div className="mt-6">
+            <h4 className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+              History — Replaced & Removed
+            </h4>
+            <div className="space-y-2">
+              {historyItems.map((item: any) => {
+                const successor = item.replaced_by_item_id
+                  ? (allItemsRaw as any[]).find((i: any) => i.id === item.replaced_by_item_id)
+                  : null;
+                const years = item.install_date && item.retired_at
+                  ? differenceInYears(new Date(item.retired_at), new Date(item.install_date))
+                  : null;
+                return (
+                  <Card key={item.id} className="border-border/50 opacity-60 hover:opacity-100 transition-opacity">
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h5 className="font-body text-sm font-semibold line-through decoration-muted-foreground/40">{item.name}</h5>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">{item.status}</Badge>
+                          </div>
+                          <p className="font-body text-xs text-muted-foreground mt-0.5">
+                            {item.status === "replaced" ? "Replaced" : "Removed"}
+                            {item.retired_at && ` ${format(new Date(item.retired_at), "MMM d, yyyy")}`}
+                            {successor && (
+                              <>
+                                {" → "}
+                                <button
+                                  onClick={() => openEditItem(successor)}
+                                  className="text-accent hover:underline"
+                                >
+                                  {successor.name}
+                                </button>
+                              </>
+                            )}
+                            {item.retirement_log_id && (
+                              <>
+                                {" · "}
+                                <button
+                                  onClick={() => onNavigate?.("maintenance")}
+                                  className="text-accent hover:underline"
+                                >
+                                  view log
+                                </button>
+                              </>
+                            )}
+                          </p>
+                          {item.install_date && item.retired_at && (
+                            <p className="font-body text-[11px] text-muted-foreground/80 mt-0.5">
+                              Served {format(new Date(item.install_date), "MMM yyyy")} → {format(new Date(item.retired_at), "MMM yyyy")}
+                              {years != null && ` (${years} year${years === 1 ? "" : "s"})`}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
-    </div>
+      {pendingReplace && (
+        <ReplacementConfirmDialog
+          open={!!pendingReplace}
+          onOpenChange={(o) => { if (!o) setPendingReplace(null); }}
+          existingName={pendingReplace.existing.name}
+          onYes={async () => {
+            try {
+              await retireItem(pendingReplace.existing.id, pendingReplace.newId, pendingReplace.installDate);
+              toast({ title: `${pendingReplace.existing.name} retired — its history stays on your timeline.` });
+              queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
+            } catch (e: any) {
+              toast({ title: "Could not retire", description: e.message, variant: "destructive" });
+            }
+            setPendingReplace(null);
+          }}
+          onNo={() => setPendingReplace(null)}
+        />
+      )}
   );
 };
 
