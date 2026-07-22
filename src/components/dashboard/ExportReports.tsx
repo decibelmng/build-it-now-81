@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
