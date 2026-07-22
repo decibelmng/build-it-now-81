@@ -77,7 +77,7 @@ export const PropertyFilterProvider = ({ children }: { children: ReactNode }) =>
       if (!newPropertyId) return;
       if (selectedPropertyId === "all") return;
       if (newPropertyId === selectedPropertyId) return;
-      const name = properties.find((p) => p.id === newPropertyId)?.name ?? "another property";
+      const name = getPropertyDisplayName(properties.find((p) => p.id === newPropertyId)) || "another property";
       toast(`Saved to ${name}`, {
         action: { label: "View", onClick: () => setSelectedPropertyId(newPropertyId) },
       });
