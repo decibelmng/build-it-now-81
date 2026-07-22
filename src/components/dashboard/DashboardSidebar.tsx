@@ -203,28 +203,31 @@ const DashboardSidebar = (props: DashboardSidebarProps) => {
       </aside>
 
       {/* Mobile header bar */}
-      <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-border bg-card px-4 py-3 md:hidden">
-        <div className="flex items-center gap-2 min-w-0">
-          <Home className="h-5 w-5 text-accent shrink-0" />
-          <span className="font-display text-lg font-bold shrink-0">HomeLog</span>
-          <span className="text-muted-foreground mx-1 shrink-0">›</span>
-          <span className="font-body text-sm text-muted-foreground truncate">{sectionTitle}</span>
+      <div className="fixed inset-x-0 top-0 z-40 flex flex-col gap-2 border-b border-border bg-card px-4 py-2 md:hidden">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <Home className="h-5 w-5 text-accent shrink-0" />
+            <span className="font-display text-lg font-bold shrink-0">HomeLog</span>
+            <span className="text-muted-foreground mx-1 shrink-0">›</span>
+            <span className="font-body text-sm text-muted-foreground truncate">{sectionTitle}</span>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={props.onOpenSearch}>
+              <Search className="h-4 w-4" />
+            </Button>
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 p-0">
+                <SidebarNav {...props} onSectionChange={handleSectionChange} />
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={props.onOpenSearch}>
-            <Search className="h-4 w-4" />
-          </Button>
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
-              <SidebarNav {...props} onSectionChange={handleSectionChange} />
-            </SheetContent>
-          </Sheet>
-        </div>
+        <PropertySwitcher className="w-full" />
       </div>
 
       {/* Mobile FAB - Quick Add Maintenance */}
