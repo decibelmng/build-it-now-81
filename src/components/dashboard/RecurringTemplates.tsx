@@ -109,16 +109,15 @@ const RecurringTemplates = () => {
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ["recurring_templates", user?.id, selectedPropertyId],
     queryFn: async () => {
-      let q = supabase
+      const { data, error } = await supabase
         .from("recurring_templates")
         .select("*, properties(name)")
+        .eq("property_id", selectedPropertyId!)
         .order("next_due_date", { ascending: true });
-      if (selectedPropertyId !== "all") q = q.eq("property_id", selectedPropertyId);
-      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && !!selectedPropertyId,
   });
 
   const addTemplate = useMutation({
@@ -266,7 +265,7 @@ const RecurringTemplates = () => {
         </div>
         <Dialog open={open} onOpenChange={(o) => {
           setOpen(o);
-          if (o && selectedPropertyId !== "all" && !form.property_id) {
+          if (o && selectedPropertyId && !form.property_id) {
             setForm((f) => ({ ...f, property_id: selectedPropertyId }));
           }
         }}>

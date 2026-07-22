@@ -29,16 +29,15 @@ const AnalyticsInsights = () => {
   const { data: logsRaw = [] } = useQuery({
     queryKey: ["analytics_logs", user?.id, selectedPropertyId],
     queryFn: async () => {
-      let q = supabase
+      const { data, error } = await supabase
         .from("maintenance_logs")
         .select("*")
+        .eq("property_id", selectedPropertyId!)
         .order("scheduled_date", { ascending: true, nullsFirst: false });
-      if (selectedPropertyId !== "all") q = q.eq("property_id", selectedPropertyId);
-      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && !!selectedPropertyId,
   });
   const logs = logsRaw;
 

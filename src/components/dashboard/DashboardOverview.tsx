@@ -70,7 +70,7 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
 
   const { selectedPropertyId } = usePropertyFilter();
   const scopeFilter = <T extends { property_id?: string | null }>(rows: T[]) =>
-    selectedPropertyId === "all" ? rows : rows.filter((r) => r.property_id === selectedPropertyId);
+    selectedPropertyId ? rows.filter((r) => r.property_id === selectedPropertyId) : [];
 
   const scopedLogs = scopeFilter(logs as any[]);
   const scopedDocuments = scopeFilter(documents as any[]);
@@ -149,7 +149,7 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
       ]
     : null;
 
-  const scopedProperties = selectedPropertyId === "all" ? properties : properties.filter((p: any) => p.id === selectedPropertyId);
+  const scopedProperties = selectedPropertyId ? properties.filter((p: any) => p.id === selectedPropertyId) : [];
   const defaultCards = [
     { label: "Properties", value: scopedProperties.length.toString(), icon: Home, color: "text-accent" },
     { label: "Total Spent", value: fmtCurrency(totalSpent), icon: DollarSign, color: "text-accent" },

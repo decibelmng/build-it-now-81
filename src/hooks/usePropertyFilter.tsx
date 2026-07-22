@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useCallback, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,18 +12,17 @@ const URL_PARAM = "property";
 export type PropertyLite = { id: string; name: string; created_at?: string | null };
 
 type Ctx = {
-  // New standardized API
   properties: PropertyLite[];
   isLoading: boolean;
-  activePropertyId: string | null; // null = "All"
+  activePropertyId: string | null; // null only while loading or when user has zero properties
   activeProperty: PropertyLite | null;
-  setActivePropertyId: (id: string | null) => void;
-  allowAll: boolean;
-  setAllowAll: (v: boolean) => void;
+  setActivePropertyId: (id: string) => void;
 
-  // Legacy API (kept for existing consumers)
-  selectedPropertyId: string | "all";
-  setSelectedPropertyId: (id: string | "all") => void;
+  // Legacy API retained for existing consumers. `selectedPropertyId` is now
+  // always the same as activePropertyId (or "" while loading/zero properties);
+  // it never returns the literal "all".
+  selectedPropertyId: string;
+  setSelectedPropertyId: (id: string) => void;
   propertyNameById: (id?: string | null) => string;
   scope: <T extends { property_id?: string | null }>(rows: T[]) => T[];
   notifyIfDifferent: (newPropertyId?: string | null) => void;
@@ -33,7 +32,7 @@ const PropertyFilterContext = createContext<Ctx | null>(null);
 
 export const PropertyFilterProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const { data: properties = [], isLoading } = useQuery({
     queryKey: ["property_filter_list", user?.id],
@@ -48,12 +47,17 @@ export const PropertyFilterProvider = ({ children }: { children: ReactNode }) =>
     enabled: !!user,
   });
 
-  // activePropertyId: null == "All"
   const [activePropertyId, setActive] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
-  const [allowAll, setAllowAll] = useState(true);
 
-  // Initial resolution (URL > localStorage > first)
+  const writeUrlLS = useCallback((id: string) => {
+    try { localStorage.setItem(STORAGE_KEY, id); } catch {}
+    const url = new URL(window.location.href);
+    url.searchParams.set(URL_PARAM, id);
+    window.history.replaceState(window.history.state, "", url.toString());
+  }, []);
+
+  // Initial resolution: URL > localStorage > first property
   useEffect(() => {
     if (restored || isLoading) return;
     if (properties.length === 0) {
@@ -61,60 +65,41 @@ export const PropertyFilterProvider = ({ children }: { children: ReactNode }) =>
       return;
     }
     const urlId = searchParams.get(URL_PARAM);
-    let resolved: string | null = null;
-    if (urlId && properties.some((p) => p.id === urlId)) {
+    let stored: string | null = null;
+    try { stored = localStorage.getItem(STORAGE_KEY); } catch {}
+
+    let resolved: string;
+    if (urlId && urlId !== "all" && properties.some((p) => p.id === urlId)) {
       resolved = urlId;
+    } else if (stored && stored !== "all" && properties.some((p) => p.id === stored)) {
+      resolved = stored;
     } else {
-      let stored: string | null = null;
-      try { stored = localStorage.getItem(STORAGE_KEY); } catch {}
-      if (stored && stored !== "all" && properties.some((p) => p.id === stored)) {
-        resolved = stored;
-      } else if (stored === "all") {
-        resolved = null;
-      } else {
-        resolved = properties[0].id;
-      }
+      resolved = properties[0].id;
     }
     setActive(resolved);
+    // Overwrite any stale "all" or unknown value in URL/LS with the resolved uuid.
+    writeUrlLS(resolved);
     setRestored(true);
-  }, [properties, isLoading, restored, searchParams]);
+  }, [properties, isLoading, restored, searchParams, writeUrlLS]);
 
   // Guard against stale/deleted id
   useEffect(() => {
     if (!restored || properties.length === 0) return;
     if (activePropertyId && !properties.some((p) => p.id === activePropertyId)) {
-      const first = properties[0]?.id ?? null;
+      const first = properties[0].id;
       setActive(first);
-      try { localStorage.setItem(STORAGE_KEY, first ?? "all"); } catch {}
+      writeUrlLS(first);
     }
-  }, [activePropertyId, properties, restored]);
+  }, [activePropertyId, properties, restored, writeUrlLS]);
 
-  const writeUrlLS = useCallback((id: string | null) => {
-    try { localStorage.setItem(STORAGE_KEY, id ?? "all"); } catch {}
-    // Use replaceState to keep browser back navigation between pages.
-    const url = new URL(window.location.href);
-    if (id) url.searchParams.set(URL_PARAM, id);
-    else url.searchParams.delete(URL_PARAM);
-    window.history.replaceState(window.history.state, "", url.toString());
-  }, []);
-
-  const setActivePropertyId = useCallback((id: string | null) => {
+  const setActivePropertyId = useCallback((id: string) => {
     setActive(id);
     writeUrlLS(id);
   }, [writeUrlLS]);
 
-  // If a route disallows "All" and current is null, auto-select first
-  useEffect(() => {
-    if (!restored) return;
-    if (!allowAll && activePropertyId === null && properties.length > 0) {
-      setActivePropertyId(properties[0].id);
-    }
-  }, [allowAll, activePropertyId, properties, restored, setActivePropertyId]);
-
-  // Legacy helpers
-  const selectedPropertyId: string | "all" = activePropertyId ?? "all";
+  const selectedPropertyId: string = activePropertyId ?? "";
   const setSelectedPropertyId = useCallback(
-    (id: string | "all") => setActivePropertyId(id === "all" ? null : id),
+    (id: string) => { if (id) setActivePropertyId(id); },
     [setActivePropertyId]
   );
 
@@ -125,19 +110,18 @@ export const PropertyFilterProvider = ({ children }: { children: ReactNode }) =>
 
   const scope = useCallback(
     <T extends { property_id?: string | null }>(rows: T[]) =>
-      activePropertyId === null ? rows : rows.filter((r) => r.property_id === activePropertyId),
+      activePropertyId ? rows.filter((r) => r.property_id === activePropertyId) : rows,
     [activePropertyId]
   );
 
   const activeProperty = useMemo(
-    () => (activePropertyId === null ? null : properties.find((p) => p.id === activePropertyId) ?? null),
+    () => (activePropertyId ? properties.find((p) => p.id === activePropertyId) ?? null : null),
     [activePropertyId, properties]
   );
 
   const notifyIfDifferent = useCallback(
     (newPropertyId?: string | null) => {
-      if (!newPropertyId) return;
-      if (activePropertyId === null) return;
+      if (!newPropertyId || !activePropertyId) return;
       if (newPropertyId === activePropertyId) return;
       const name = getPropertyDisplayName(properties.find((p) => p.id === newPropertyId)) || "another property";
       toast(`Saved to ${name}`, {
@@ -154,15 +138,13 @@ export const PropertyFilterProvider = ({ children }: { children: ReactNode }) =>
       activePropertyId,
       activeProperty,
       setActivePropertyId,
-      allowAll,
-      setAllowAll,
       selectedPropertyId,
       setSelectedPropertyId,
       propertyNameById,
       scope,
       notifyIfDifferent,
     }),
-    [properties, isLoading, activePropertyId, activeProperty, setActivePropertyId, allowAll, selectedPropertyId, setSelectedPropertyId, propertyNameById, scope, notifyIfDifferent]
+    [properties, isLoading, activePropertyId, activeProperty, setActivePropertyId, selectedPropertyId, setSelectedPropertyId, propertyNameById, scope, notifyIfDifferent]
   );
 
   return <PropertyFilterContext.Provider value={value}>{children}</PropertyFilterContext.Provider>;
@@ -177,9 +159,7 @@ export const usePropertyFilter = (): Ctx => {
       activePropertyId: null,
       activeProperty: null,
       setActivePropertyId: () => {},
-      allowAll: true,
-      setAllowAll: () => {},
-      selectedPropertyId: "all",
+      selectedPropertyId: "",
       setSelectedPropertyId: () => {},
       propertyNameById: () => "",
       scope: (rows) => rows,
@@ -187,18 +167,4 @@ export const usePropertyFilter = (): Ctx => {
     };
   }
   return ctx;
-};
-
-/**
- * Route-level helper: set whether the global switcher should offer an "All"
- * option on this page. Call at the top of a page component.
- */
-export const useAllowAllProperty = (allow: boolean) => {
-  const { setAllowAll } = usePropertyFilter();
-  const ref = useRef(allow);
-  ref.current = allow;
-  useEffect(() => {
-    setAllowAll(allow);
-    return () => setAllowAll(true);
-  }, [allow, setAllowAll]);
 };

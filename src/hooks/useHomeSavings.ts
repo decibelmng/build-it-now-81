@@ -44,7 +44,7 @@ export function useHomeSavings(propertyId?: string | null): HomeSavingsResult {
   });
 
   const { data: payments = [], isLoading: paymentsLoading } = useQuery({
-    queryKey: ["home_savings_payments", user?.id, propertyId ?? "all", windowStartIso],
+    queryKey: ["home_savings_payments", user?.id, propertyId, windowStartIso],
     queryFn: async () => {
       let q = supabase
         .from("utility_payments")
@@ -59,7 +59,7 @@ export function useHomeSavings(propertyId?: string | null): HomeSavingsResult {
   });
 
   const { data: logs = [], isLoading: logsLoading } = useQuery({
-    queryKey: ["home_savings_logs", user?.id, propertyId ?? "all", windowStartIso],
+    queryKey: ["home_savings_logs", user?.id, propertyId, windowStartIso],
     queryFn: async () => {
       let q = supabase
         .from("maintenance_logs")

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -34,7 +35,7 @@ const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
 const ExportReports = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedProperty, setSelectedProperty] = useState<string>("all");
+  const { selectedPropertyId: selectedProperty } = usePropertyFilter();
   const [exporting, setExporting] = useState<string | null>(null);
 
   const { data: properties = [] } = useQuery({
@@ -55,7 +56,7 @@ const ExportReports = () => {
         .select("*, properties(name)")
         .order("scheduled_date", { ascending: false, nullsFirst: false });
 
-      if (selectedProperty !== "all") {
+      if (selectedProperty) {
         query = query.eq("property_id", selectedProperty);
       }
 
@@ -92,7 +93,7 @@ const ExportReports = () => {
         .select("*, properties(name)")
         .not("cost", "is", null);
 
-      if (selectedProperty !== "all") {
+      if (selectedProperty) {
         query = query.eq("property_id", selectedProperty);
       }
 
@@ -141,7 +142,7 @@ const ExportReports = () => {
   const exportPropertyDetails = async () => {
     setExporting("property");
     try {
-      const propsToExport = selectedProperty === "all" ? properties : properties.filter((p) => p.id === selectedProperty);
+      const propsToExport = properties.filter((p) => p.id === selectedProperty);
 
       // Get contacts for these properties
       const propIds = propsToExport.map((p) => p.id);
@@ -196,7 +197,7 @@ const ExportReports = () => {
       const year = new Date().getFullYear() - 1;
       const start = `${year}-01-01`;
       const end = `${year + 1}-01-01`;
-      const targets = selectedProperty === "all" ? properties : properties.filter((p) => p.id === selectedProperty);
+      const targets = properties.filter((p) => p.id === selectedProperty);
       if (!targets.length) throw new Error("No properties to export");
 
       const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -340,19 +341,6 @@ const ExportReports = () => {
           <h2 className="font-display text-2xl font-bold">Export & Reports</h2>
           <p className="font-body text-sm text-muted-foreground">Download CSV reports for your records</p>
         </div>
-        {properties.length > 1 && (
-          <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-            <SelectTrigger className="w-48 font-body">
-              <SelectValue placeholder="All properties" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="font-body">All Properties</SelectItem>
-              {properties.map((p) => (
-                <SelectItem key={p.id} value={p.id} className="font-body">{getPropertyDisplayName(p)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
       </div>
 
       {properties.length === 0 ? (

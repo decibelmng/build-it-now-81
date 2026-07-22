@@ -182,7 +182,7 @@ const PropertyTimeline = () => {
 
   // Build timeline events
   const events: TimelineEvent[] = [];
-  const propsToShow = selectedProperty === "all" ? properties : properties.filter((p) => p.id === selectedProperty);
+  const propsToShow = properties.filter((p) => p.id === selectedProperty);
 
   propsToShow.forEach((prop) => {
     if (prop.year_built) {
@@ -215,7 +215,7 @@ const PropertyTimeline = () => {
     }
   });
 
-  const filteredLogs = selectedProperty === "all" ? logs : logs.filter((l: any) => l.property_id === selectedProperty);
+  const filteredLogs = logs.filter((l: any) => l.property_id === selectedProperty);
 
   filteredLogs.forEach((log: any) => {
     const eventDate = log.scheduled_date || log.completed_date || log.created_at?.split("T")[0];
@@ -236,7 +236,7 @@ const PropertyTimeline = () => {
   });
 
   // Add home inventory items
-  const filteredItems = selectedProperty === "all" ? homeItems : homeItems.filter((i: any) => i.property_id === selectedProperty);
+  const filteredItems = homeItems.filter((i: any) => i.property_id === selectedProperty);
 
   filteredItems.forEach((item: any) => {
     if (item.install_date) {
@@ -266,7 +266,7 @@ const PropertyTimeline = () => {
   });
 
   // Add utility accounts
-  const filteredUtilities = selectedProperty === "all" ? utilities : utilities.filter((u: any) => u.property_id === selectedProperty);
+  const filteredUtilities = utilities.filter((u: any) => u.property_id === selectedProperty);
 
   filteredUtilities.forEach((util: any) => {
     events.push({
@@ -286,7 +286,7 @@ const PropertyTimeline = () => {
   });
 
   // Add transfer events
-  const filteredTransfers = selectedProperty === "all" ? transfers : transfers.filter((t: any) => t.property_id === selectedProperty);
+  const filteredTransfers = transfers.filter((t: any) => t.property_id === selectedProperty);
 
   filteredTransfers.forEach((transfer: any) => {
     const statusLabel = transfer.status === "accepted" ? "Completed" : transfer.status === "pending" ? "Pending" : transfer.status;
@@ -303,7 +303,7 @@ const PropertyTimeline = () => {
   });
 
   // Add document events
-  const filteredDocs = selectedProperty === "all" ? documents : documents.filter((d: any) => d.property_id === selectedProperty);
+  const filteredDocs = documents.filter((d: any) => d.property_id === selectedProperty);
 
   filteredDocs.forEach((doc: any) => {
     const docDate = doc.document_date || doc.uploaded_at?.split("T")[0] || doc.created_at?.split("T")[0];
@@ -321,7 +321,7 @@ const PropertyTimeline = () => {
   });
 
   // Add valuation events (financial milestones) — skip purchase_appraisal since we already add purchase event above
-  const filteredValuations = selectedProperty === "all" ? valuations : valuations.filter((v: any) => v.property_id === selectedProperty);
+  const filteredValuations = valuations.filter((v: any) => v.property_id === selectedProperty);
 
   filteredValuations.forEach((val: any) => {
     // Skip purchase_appraisal to avoid duplicating the purchase event
@@ -383,7 +383,7 @@ const PropertyTimeline = () => {
           </p>
         </div>
       </div>
-      <PropertyFilterBar />
+      
 
       {/* Category Filters */}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -625,9 +625,6 @@ const PropertyTimeline = () => {
                   {/* Date */}
                   <p className="font-body text-xs font-medium text-muted-foreground">
                     {format(new Date(event.date), isConstruction ? "yyyy" : "MMM d, yyyy")}
-                    {event.propertyName && selectedProperty === "all" && (
-                      <span className="ml-2 text-muted-foreground/60">· {event.propertyName}</span>
-                    )}
                   </p>
 
                   {/* Title + thumbnail */}

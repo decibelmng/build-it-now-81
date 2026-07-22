@@ -196,7 +196,7 @@ const PropertyUtilities = () => {
   }, [revealed]);
 
   const filtered = useMemo(() => {
-    if (propertyFilter === "all") return utilities;
+    if (!propertyFilter) return [];
     return utilities.filter((u) => u.property_id === propertyFilter);
   }, [utilities, propertyFilter]);
 
@@ -376,9 +376,9 @@ const PropertyUtilities = () => {
     setSheetOpen(true);
   };
 
-  const activeProperty = propertyFilter !== "all" ? propertyFilter : properties[0]?.id;
+  const activeProperty = propertyFilter || properties[0]?.id;
   const { role: activeRole, canEdit: canEditActive } = useAccessRole(activeProperty ?? null);
-  const isViewerOnly = propertyFilter !== "all" && activeRole === "viewer";
+  const isViewerOnly = !!propertyFilter && activeRole === "viewer";
 
   return (
     <div>
@@ -401,8 +401,6 @@ const PropertyUtilities = () => {
         )}
       </div>
 
-      {/* Global property filter */}
-      <PropertyFilterBar />
 
       {/* Summary strip */}
       {filtered.length > 0 && (

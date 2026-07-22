@@ -41,10 +41,8 @@ const ContractorLinks = () => {
     enabled: !!user,
   });
 
-  // Which properties need a QuickShareCard rendered
-  const visibleProperties = selectedPropertyId === "all"
-    ? properties
-    : properties.filter((p) => p.id === selectedPropertyId);
+  // Which properties need a QuickShareCard rendered (always the active one)
+  const visibleProperties = properties.filter((p) => p.id === selectedPropertyId);
 
 
 
@@ -123,7 +121,7 @@ const ContractorLinks = () => {
   // Filter out the default link from the custom links list, then by selected property
   const customLinks = links
     .filter((l: any) => !l.is_default)
-    .filter((l: any) => selectedPropertyId === "all" || l.property_id === selectedPropertyId);
+    .filter((l: any) => l.property_id === selectedPropertyId);
 
   return (
     <div className="space-y-6">
@@ -135,7 +133,7 @@ const ContractorLinks = () => {
         <Dialog open={open} onOpenChange={(o) => {
           setOpen(o);
           if (!o) { setCreatedLink(null); setForm({ property_id: "", label: "", expiry: "none" }); }
-          else if (selectedPropertyId !== "all" && !form.property_id) {
+          else if (selectedPropertyId && !form.property_id) {
             setForm((f) => ({ ...f, property_id: selectedPropertyId }));
           }
         }}>
@@ -210,7 +208,7 @@ const ContractorLinks = () => {
         </DialogContent>
       </Dialog>
 
-      <PropertyFilterBar allowAll={false} />
+      
 
 
       {/* Per-property Quick Share Cards */}

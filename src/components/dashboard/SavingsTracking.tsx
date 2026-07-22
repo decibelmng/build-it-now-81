@@ -52,25 +52,21 @@ const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => voi
     enabled: !!user,
   });
 
-  const scopedPropertyId =
-    selectedPropertyId === "all"
-      ? (propertiesList.length === 1 ? propertiesList[0].id : null)
-      : selectedPropertyId;
+  const scopedPropertyId = selectedPropertyId || null;
   const savings = useHomeSavings(scopedPropertyId ?? undefined);
 
   const { data: logs = [], isLoading } = useQuery({
-    queryKey: ["maintenance_logs_savings", user?.id, scopedPropertyId ?? "all"],
+    queryKey: ["maintenance_logs_savings", user?.id, scopedPropertyId],
     queryFn: async () => {
-      let q = supabase
+      const { data, error } = await supabase
         .from("maintenance_logs")
         .select("cost, category, status, created_at, completed_date, scheduled_date, property_id")
+        .eq("property_id", scopedPropertyId!)
         .order("scheduled_date", { ascending: true, nullsFirst: false });
-      if (scopedPropertyId) q = q.eq("property_id", scopedPropertyId);
-      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && !!scopedPropertyId,
   });
 
   // Discover all categories present in data
@@ -150,7 +146,7 @@ const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => voi
         <h2 className="font-display text-2xl font-bold">Savings & Spending</h2>
         <p className="font-body text-sm text-muted-foreground">Forecast future costs and track your maintenance spending</p>
       </div>
-      <PropertyFilterBar allowAll={false} />
+      
 
       {/* Predictive Forecast Section */}
       <SavingsForecast onNavigate={onNavigate} />
