@@ -86,6 +86,7 @@ const PropertySharing = () => {
         shared_with_email: form.email.toLowerCase(),
         shared_with_user_id: profile?.user_id ?? null,
         status: profile?.user_id ? "pending" : "invited",
+        permission: form.permission,
       });
       if (error) {
         if (error.code === "23505") throw new Error("This user already has access to this property");
@@ -95,7 +96,7 @@ const PropertySharing = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["property_shares_sent"] });
       setOpen(false);
-      setForm({ property_id: "", email: "" });
+      setForm({ property_id: "", email: "", permission: "viewer" });
       toast({ title: "Invitation sent!" });
     },
     onError: (err: Error) => {
