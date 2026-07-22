@@ -20,6 +20,7 @@ interface SavingsForecastProps {
 
 const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
   const { user } = useAuth();
+  const { depositTotal } = useHomeSavings();
 
   const { data: properties = [] } = useQuery({
     queryKey: ["properties_forecast", user?.id],
