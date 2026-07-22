@@ -40,6 +40,7 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [saleOpen, setSaleOpen] = useState(false);
+  const feat = useResidencyFeatures(property);
 
   const [purchase, setPurchase] = useState({
     purchase_price: "",
