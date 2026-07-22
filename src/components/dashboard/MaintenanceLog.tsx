@@ -33,6 +33,7 @@ import { SYSTEMS_CATALOG, type HomeSystemsRegistry, migrateOldRegistry } from "@
 import ReplacementConfirmDialog from "@/components/dashboard/ReplacementConfirmDialog";
 import { setPendingInventoryAction } from "@/lib/pendingInventoryAction";
 import { SignedImage } from "@/components/dashboard/SignedImage";
+import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
 
 type Property = Tables<"properties">;
 
