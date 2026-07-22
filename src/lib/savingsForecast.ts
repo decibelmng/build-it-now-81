@@ -85,6 +85,7 @@ export interface HomeItem {
   estimated_value: number | null;
   system_key?: string | null;
   is_registry_skeleton?: boolean;
+  status?: string | null;
 }
 
 export interface PropertyInfo {
