@@ -19,6 +19,7 @@ import { profileUpdateSchema, validateForm, transferEmailSchema } from "@/lib/sc
 import { friendlyPasswordError } from "@/lib/authErrors";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Property = Tables<"properties">;
 
@@ -391,7 +392,7 @@ const ProfileSettings = () => {
                     <SelectContent>
                       {userProperties.filter((p) => p.residency_type !== "renting").map((p) => (
                         <SelectItem key={p.id} value={p.id} className="font-body">
-                          {p.name} — {p.address}
+                          {getPropertyDisplayName(p)} — {p.address}
                         </SelectItem>
                       ))}
                     </SelectContent>

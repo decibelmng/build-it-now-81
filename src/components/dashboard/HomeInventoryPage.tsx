@@ -10,6 +10,7 @@ import HomeInventory from "@/components/dashboard/HomeInventory";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 import type { Tables } from "@/integrations/supabase/types";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Property = Tables<"properties">;
 
@@ -121,7 +122,7 @@ const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
               <div className="space-y-8">
                 {properties.map((p) => (
                   <div key={p.id}>
-                    <h3 className="font-display text-lg font-semibold mb-3">{p.name}</h3>
+                    <h3 className="font-display text-lg font-semibold mb-3">{getPropertyDisplayName(p)}</h3>
                     <HomeInventory propertyId={p.id} itemType="home_component" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
                   </div>
                 ))}
@@ -152,7 +153,7 @@ const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
               <div className="space-y-8">
                 {properties.map((p) => (
                   <div key={p.id}>
-                    <h3 className="font-display text-lg font-semibold mb-3">{p.name}</h3>
+                    <h3 className="font-display text-lg font-semibold mb-3">{getPropertyDisplayName(p)}</h3>
                     <HomeInventory propertyId={p.id} itemType="personal_item" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
                   </div>
                 ))}

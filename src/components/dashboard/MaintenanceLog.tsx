@@ -36,6 +36,7 @@ import ReplacementConfirmDialog from "@/components/dashboard/ReplacementConfirmD
 import { setPendingInventoryAction } from "@/lib/pendingInventoryAction";
 import { SignedImage } from "@/components/dashboard/SignedImage";
 import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Property = Tables<"properties">;
 
@@ -217,7 +218,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     enabled: !!user,
   });
 
-  const propertySummaries = properties.map((p) => ({ id: p.id, name: p.name }));
+  const propertySummaries = properties.map((p) => ({ id: p.id, name: getPropertyDisplayName(p) }));
 
 
   const { data: pendingSubmissionsCount = 0 } = useQuery({
@@ -654,7 +655,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                 <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
                 <SelectContent>
                   {properties.map((p) => (
-                    <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id} className="font-body">{getPropertyDisplayName(p)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1121,7 +1122,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                       <LinkedDocuments
                         maintenanceLogId={log.id}
                         propertyId={log.property_id}
-                        propertyName={log.properties?.name}
+                        propertyName={getPropertyDisplayName(log.properties)}
                         defaultCategory="maintenance_photo"
                         onViewAll={() => onNavigate?.("documents")}
                       />

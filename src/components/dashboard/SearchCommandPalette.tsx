@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Home, Wrench, FileText, Users, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 interface SearchResult {
   type: "property" | "maintenance" | "document" | "contact";
@@ -60,7 +61,7 @@ const SearchCommandPalette = ({ open, onOpenChange, onNavigate }: SearchCommandP
         ...(props.data ?? []).map((p) => ({
           type: "property" as const,
           id: p.id,
-          title: p.name,
+          title: getPropertyDisplayName(p),
           subtitle: `${p.address}${p.city ? `, ${p.city}` : ""}`,
           section: "properties",
         })),

@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Property = Tables<"properties">;
 
@@ -123,7 +124,7 @@ const DeletePropertyDialog = ({ property, open, onOpenChange, onDeleted }: Props
       if (delErr) throw delErr;
     },
     onSuccess: () => {
-      toast({ title: "Property deleted", description: `${property.name} and all its data were removed.` });
+      toast({ title: "Property deleted", description: `${getPropertyDisplayName(property)} and all its data were removed.` });
       // Invalidate everything property-scoped
       qc.invalidateQueries();
       sessionStorage.removeItem("selectedPropertyId");
@@ -143,7 +144,7 @@ const DeletePropertyDialog = ({ property, open, onOpenChange, onDeleted }: Props
             <AlertTriangle className="h-5 w-5" /> Delete this property?
           </DialogTitle>
           <DialogDescription className="font-body">
-            This permanently removes <span className="font-semibold">{property.name}</span> and every record tied to it. This cannot be undone.
+            This permanently removes <span className="font-semibold">{getPropertyDisplayName(property)}</span> and every record tied to it. This cannot be undone.
           </DialogDescription>
         </DialogHeader>
 
@@ -174,7 +175,7 @@ const DeletePropertyDialog = ({ property, open, onOpenChange, onDeleted }: Props
             {!blocked && (
               <div className="space-y-2">
                 <Label className="font-body text-sm">
-                  Type <span className="font-mono font-semibold">{property.name}</span> to confirm.
+                  Type <span className="font-mono font-semibold">{getPropertyDisplayName(property)}</span> to confirm.
                 </Label>
                 <Input value={typed} onChange={(e) => setTyped(e.target.value)} className="font-body" autoFocus />
               </div>

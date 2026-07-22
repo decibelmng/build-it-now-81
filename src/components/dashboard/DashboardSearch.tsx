@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Home, Wrench, FileText, Users, Loader2 } from "lucide-react";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 interface SearchResult {
   type: "property" | "maintenance" | "document" | "contact";
@@ -50,7 +51,7 @@ const DashboardSearch = () => {
       ...(props.data ?? []).map((p) => ({
         type: "property" as const,
         id: p.id,
-        title: p.name,
+        title: getPropertyDisplayName(p),
         subtitle: `${p.address}${p.city ? `, ${p.city}` : ""}`,
       })),
       ...(logs.data ?? []).map((l: any) => ({
