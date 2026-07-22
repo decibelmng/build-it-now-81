@@ -89,10 +89,10 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
               </div>
             </li>
           </ul>
-          {depositTotal > 0 && (
+          {(depositTotal ?? 0) > 0 && (
             <div className="rounded-lg border border-border/50 bg-secondary/30 p-3">
               <p className="font-body text-sm">
-                You've set aside <span className="font-semibold">${depositTotal.toLocaleString()}</span> this year — nice work.
+                You've set aside <span className="font-semibold">${(depositTotal ?? 0).toLocaleString()}</span> this year — nice work.
               </p>
             </div>
           )}
