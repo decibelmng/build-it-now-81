@@ -417,30 +417,37 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
           </div>
 
           {/* Property details for selected property */}
-          {selectedPropertyId && (() => {
-            const selected = properties.find((p) => p.id === selectedPropertyId)!;
-            const feat = useResidencyFeatures(selected);
-            return (
-              <div className="mt-6 space-y-6">
-                {feat.showLeaseDetails && <LeaseDetailsCard property={selected} />}
-                <PurchaseInfoSection property={selected} />
-                <HomeSystemsSettings
-                  propertyId={selectedPropertyId}
-                  propertyType={selected.property_type || "single_family"}
-                  homeSystems={(selected as any)?.home_systems || null}
-                  registryCompleted={(selected as any)?.registry_completed || false}
-                  onNavigate={onNavigate}
-                  bathroomCount={selected.bathrooms || undefined}
-                  residencyType={(selected as any).residency_type}
-                />
-                {feat.showCostBasis && <CostBasisSummarySection propertyId={selectedPropertyId} />}
-              </div>
-            );
-          })()}
+          {selectedPropertyId && (
+            <PropertyDetailsPanel
+              property={properties.find((p) => p.id === selectedPropertyId)!}
+              onNavigate={onNavigate}
+            />
+          )}
         </>
       )}
     </div>
   );
 };
+
+const PropertyDetailsPanel = ({ property, onNavigate }: { property: Property; onNavigate?: (s: string) => void }) => {
+  const feat = useResidencyFeatures(property);
+  return (
+    <div className="mt-6 space-y-6">
+      {feat.showLeaseDetails && <LeaseDetailsCard property={property} />}
+      <PurchaseInfoSection property={property} />
+      <HomeSystemsSettings
+        propertyId={property.id}
+        propertyType={property.property_type || "single_family"}
+        homeSystems={(property as any)?.home_systems || null}
+        registryCompleted={(property as any)?.registry_completed || false}
+        onNavigate={onNavigate}
+        bathroomCount={property.bathrooms || undefined}
+        residencyType={(property as any).residency_type}
+      />
+      {feat.showCostBasis && <CostBasisSummarySection propertyId={property.id} />}
+    </div>
+  );
+};
+
 
 export default PropertyCards;
