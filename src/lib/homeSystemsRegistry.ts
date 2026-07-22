@@ -211,13 +211,27 @@ export function avgReplacementCost(comp: ComponentCatalogEntry): number {
 
 // ─── Registry builders ───
 
-export function getDefaultRegistry(propertyType: string, bathroomCount?: number): HomeSystemsRegistry {
+// Structural systems the landlord handles when the resident is renting.
+export const RENTER_DISABLED_SYSTEMS = new Set([
+  "roofing", "hvac", "plumbing", "electrical", "exterior", "foundation",
+]);
+
+export function getDefaultRegistry(
+  propertyType: string,
+  bathroomCount?: number,
+  residencyType?: string,
+): HomeSystemsRegistry {
   const baths = bathroomCount || 2;
   const registry: HomeSystemsRegistry = {};
+  const isRenting = residencyType === "renting";
+  // Apartments use condo-style defaults when owned.
+  const useCondoDefaults = propertyType === "condo" || propertyType === "apartment";
 
   for (const sys of SYSTEMS_CATALOG) {
-    const isCondo = propertyType === "condo";
-    const enabled = isCondo ? sys.defaultEnabledCondo : sys.defaultEnabled;
+    let enabled = useCondoDefaults ? sys.defaultEnabledCondo : sys.defaultEnabled;
+    if (isRenting && RENTER_DISABLED_SYSTEMS.has(sys.key)) {
+      enabled = false;
+    }
 
     const components: Record<string, ComponentRegistryEntry> = {};
     for (const comp of sys.components) {
