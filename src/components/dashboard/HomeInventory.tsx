@@ -688,7 +688,17 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
               </div>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {itemType === "home_component" && historyItems.length > 0 && (
+              <Button
+                size="sm"
+                variant={showHistory ? "default" : "outline"}
+                className="rounded-full font-body text-xs"
+                onClick={() => setShowHistory((s) => !s)}
+              >
+                History ({historyItems.length})
+              </Button>
+            )}
             {items.length > 0 && (
               <div className="flex gap-1">
                 <Button size="sm" variant="outline" className="rounded-full font-body text-xs" onClick={isPro ? exportCSV : () => setUpgradeOpen(true)}>
