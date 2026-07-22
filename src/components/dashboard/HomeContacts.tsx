@@ -256,6 +256,81 @@ const HomeContacts = () => {
 
   const archivedCount = contacts.filter((c: any) => c.is_archived).length;
 
+  // ── Community directory suggestions ─────────────────────────────
+  const selectedProperty = properties.find((p: any) => p.id === form.property_id);
+  const propCity = (selectedProperty as any)?.city ?? null;
+  const propState = (selectedProperty as any)?.state ?? null;
+
+  // Debounce the company input
+  const [companyDebounced, setCompanyDebounced] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setCompanyDebounced(form.company.trim()), 300);
+    return () => clearTimeout(t);
+  }, [form.company]);
+
+  const isSharableRole = form.role !== "personal" && form.role !== "landlord";
+
+  const { data: companySuggestions = [] } = useQuery({
+    queryKey: ["directory_company_suggestions", companyDebounced, propState, propCity, form.role],
+    queryFn: async () => {
+      let q = supabase
+        .from("service_provider_directory")
+        .select("id, display_name, role, city, state, phone_normalized, times_saved")
+        .ilike("display_name", `${companyDebounced}%`)
+        .order("times_saved", { ascending: false })
+        .limit(4);
+      if (propState) q = q.eq("state", propState);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: dialogOpen && companyDebounced.length >= 2 && !!user,
+  });
+
+  // Empty-state "Popular pros near you"
+  const showPopularPros = properties.length > 0 && contacts.length === 0 && !isLoading;
+  const primaryProperty: any = properties[0];
+  const popularCity = primaryProperty?.city ?? null;
+  const popularState = primaryProperty?.state ?? null;
+
+  const { data: popularPros = [] } = useQuery({
+    queryKey: ["popular_pros", popularState, popularCity],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("suggest_providers", {
+        p_role: null,
+        p_city: popularCity,
+        p_state: popularState,
+        p_limit: 6,
+      });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: showPopularPros && !!popularState,
+  });
+
+  const prefillFromDirectory = (s: any) => {
+    setForm((f) => ({
+      ...f,
+      company: s.display_name ?? f.company,
+      role: s.role ?? f.role,
+      phone: f.phone || s.phone_normalized || "",
+    }));
+  };
+
+  const addFromDirectory = (s: any) => {
+    if (!primaryProperty?.id) return;
+    setEditingId(null);
+    setForm({
+      ...emptyForm,
+      property_id: primaryProperty.id,
+      name: s.display_name ?? "",
+      company: s.display_name ?? "",
+      role: s.role ?? "other",
+      phone: s.phone_normalized ?? "",
+    });
+    setDialogOpen(true);
+  };
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
