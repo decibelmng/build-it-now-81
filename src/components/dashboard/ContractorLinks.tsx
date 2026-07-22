@@ -18,6 +18,7 @@ import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
 import QuickShareCard from "@/components/dashboard/QuickShareCard";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 const ContractorLinks = () => {
   const { user } = useAuth();
@@ -166,7 +167,7 @@ const ContractorLinks = () => {
                     <SelectTrigger><SelectValue placeholder="Select property" /></SelectTrigger>
                     <SelectContent>
                       {properties.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        <SelectItem key={p.id} value={p.id}>{getPropertyDisplayName(p)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -219,7 +220,7 @@ const ContractorLinks = () => {
             <PropertyQuickShareCard
               key={p.id}
               propertyId={p.id}
-              propertyName={p.name}
+              propertyName={getPropertyDisplayName(p)}
               compact={visibleProperties.length > 1}
             />
           ))}

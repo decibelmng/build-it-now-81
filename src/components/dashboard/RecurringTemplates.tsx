@@ -18,6 +18,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { recurringTemplateSchema, contactSchema, validateForm } from "@/lib/schemas";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Property = Tables<"properties">;
 
@@ -285,7 +286,7 @@ const RecurringTemplates = () => {
                   <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
                   <SelectContent>
                     {properties.map((p) => (
-                      <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>
+                      <SelectItem key={p.id} value={p.id} className="font-body">{getPropertyDisplayName(p)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

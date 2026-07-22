@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Loader2 } from "lucide-react";
+import { getPropertyShortName } from "@/lib/propertyDisplay";
 
 const MAPS_SCRIPT_ID = "google-maps-script";
 
@@ -151,7 +152,7 @@ const PropertyMap = () => {
             <div className="flex flex-wrap gap-2">
               {propsWithoutCoords.map((p) => (
                 <span key={p.id} className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 font-body text-xs">
-                  <MapPin className="h-3 w-3" /> {p.name}
+                  <MapPin className="h-3 w-3" /> {getPropertyShortName(p)}
                 </span>
               ))}
             </div>

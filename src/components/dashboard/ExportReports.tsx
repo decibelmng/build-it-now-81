@@ -10,6 +10,7 @@ import { Download, FileText, DollarSign, Home, Receipt } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Property = Tables<"properties">;
 
@@ -159,7 +160,7 @@ const ExportReports = () => {
 
       propsToExport.forEach((p) => {
         rows.push([
-          "Property", p.name, p.address,
+          "Property", getPropertyDisplayName(p), p.address,
           `${p.bedrooms || "?"} bed / ${p.bathrooms || "?"} bath`,
           `${p.sqft?.toLocaleString() || "?"} sqft`,
           p.year_built ? `Built ${p.year_built}` : "",
@@ -241,7 +242,7 @@ const ExportReports = () => {
         const officePct = sqft > 0 && officeSqft > 0 ? (officeSqft / sqft) * 100 : null;
 
         const rows: (string | number)[][] = [];
-        rows.push([`HomeLog Tax Package — ${p.name} — ${year}`]);
+        rows.push([`HomeLog Tax Package — ${getPropertyDisplayName(p)} — ${year}`]);
         rows.push(["Address", p.address ?? ""]);
         rows.push(["Total sqft", sqft || ""]);
         rows.push(["Home office sqft", officeSqft || ""]);
@@ -347,7 +348,7 @@ const ExportReports = () => {
             <SelectContent>
               <SelectItem value="all" className="font-body">All Properties</SelectItem>
               {properties.map((p) => (
-                <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>
+                <SelectItem key={p.id} value={p.id} className="font-body">{getPropertyDisplayName(p)}</SelectItem>
               ))}
             </SelectContent>
           </Select>

@@ -1,6 +1,7 @@
 import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getPropertyDisplayName, getPropertyShortName } from "@/lib/propertyDisplay";
 
 interface PropertyFilterBarProps {
   allowAll?: boolean;
@@ -8,12 +9,6 @@ interface PropertyFilterBarProps {
   onChange?: (id: string) => void;
   className?: string;
 }
-
-const shortName = (name: string) => {
-  const t = name.trim();
-  if (t.length <= 18) return t;
-  return t.split(/\s+/)[0].slice(0, 18);
-};
 
 const PropertyFilterBar = ({ allowAll = true, value, onChange, className }: PropertyFilterBarProps) => {
   const { selectedPropertyId, setSelectedPropertyId, properties } = usePropertyFilter();
@@ -34,7 +29,7 @@ const PropertyFilterBar = ({ allowAll = true, value, onChange, className }: Prop
           <TabsList className="w-full justify-start overflow-x-auto">
             {allowAll && <TabsTrigger value="all" className="font-body">All</TabsTrigger>}
             {properties.map((p) => (
-              <TabsTrigger key={p.id} value={p.id} className="font-body">{shortName(p.name)}</TabsTrigger>
+              <TabsTrigger key={p.id} value={p.id} className="font-body">{getPropertyShortName(p, 18)}</TabsTrigger>
             ))}
           </TabsList>
         </Tabs>

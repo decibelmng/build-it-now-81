@@ -28,6 +28,7 @@ import { validateForm, utilityAccountSchema } from "@/lib/schemas";
 import { useAccessRole } from "@/hooks/useAccessRole";
 import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 // ── Service type config ──
 type ServiceType = {
@@ -869,7 +870,7 @@ const AccountFormSheet = ({ open, onOpenChange, editing, prefillType, defaultPro
             <div><Label className="font-body">Property *</Label>
               <Select value={form.property_id} onValueChange={(v) => set({ property_id: v })}>
                 <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
-                <SelectContent>{properties.map((p: any) => <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{properties.map((p: any) => <SelectItem key={p.id} value={p.id} className="font-body">{getPropertyDisplayName(p)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div><Label className="font-body">Type *</Label>

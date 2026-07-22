@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 const STORAGE_KEY = "propertyFilter";
 
@@ -62,7 +63,7 @@ export const PropertyFilterProvider = ({ children }: { children: ReactNode }) =>
   }, []);
 
   const propertyNameById = useCallback(
-    (id?: string | null) => (id ? properties.find((p) => p.id === id)?.name ?? "" : ""),
+    (id?: string | null) => (id ? getPropertyDisplayName(properties.find((p) => p.id === id)) : ""),
     [properties]
   );
 
@@ -77,7 +78,7 @@ export const PropertyFilterProvider = ({ children }: { children: ReactNode }) =>
       if (!newPropertyId) return;
       if (selectedPropertyId === "all") return;
       if (newPropertyId === selectedPropertyId) return;
-      const name = properties.find((p) => p.id === newPropertyId)?.name ?? "another property";
+      const name = getPropertyDisplayName(properties.find((p) => p.id === newPropertyId)) || "another property";
       toast(`Saved to ${name}`, {
         action: { label: "View", onClick: () => setSelectedPropertyId(newPropertyId) },
       });

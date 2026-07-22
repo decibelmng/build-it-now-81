@@ -22,6 +22,7 @@ import HomeSystemsSettings from "@/components/dashboard/HomeSystemsSettings";
 import LeaseDetailsCard from "@/components/dashboard/LeaseDetailsCard";
 import DeletePropertyDialog from "@/components/dashboard/DeletePropertyDialog";
 import { RESIDENCY_OPTIONS, useResidencyFeatures, type ResidencyType } from "@/hooks/useResidencyFeatures";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Property = Tables<"properties">;
 
@@ -372,7 +373,7 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
                 </div>
                 <CardContent className="p-5">
                   <div className="mb-1 flex items-center gap-2 flex-wrap">
-                    <h3 className="font-display text-lg font-semibold">{property.name}</h3>
+                    <h3 className="font-display text-lg font-semibold">{getPropertyDisplayName(property)}</h3>
                     {rolesByProperty[property.id] && rolesByProperty[property.id] !== "owner" && (
                       <Badge variant="outline" className="font-body text-[10px] capitalize">
                         Shared · {rolesByProperty[property.id]}
@@ -461,7 +462,7 @@ const PropertyDetailsPanel = ({ property, onNavigate }: { property: Property; on
             variant="destructive"
             onClick={() => setDeleteOpen(true)}
             className="font-body"
-            aria-label={`Delete ${property.name}`}
+            aria-label={`Delete ${getPropertyDisplayName(property)}`}
           >
             Delete this property
           </Button>

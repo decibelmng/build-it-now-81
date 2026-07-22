@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { propertyShareSchema, validateForm } from "@/lib/schemas";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Property = Tables<"properties">;
 
@@ -168,7 +169,7 @@ const PropertySharing = () => {
                   <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
                   <SelectContent>
                     {properties.map((p) => (
-                      <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>
+                      <SelectItem key={p.id} value={p.id} className="font-body">{getPropertyDisplayName(p)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

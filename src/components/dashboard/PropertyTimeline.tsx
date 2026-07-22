@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Property = Tables<"properties">;
 
@@ -189,11 +190,11 @@ const PropertyTimeline = () => {
         id: `construction-${prop.id}`,
         type: "construction",
         date: `${prop.year_built}-01-01`,
-        title: `${prop.name} — Built`,
+        title: `${getPropertyDisplayName(prop)} — Built`,
         description: `${prop.address}${prop.city ? `, ${prop.city}` : ""}`,
         category: "construction",
         cost: null,
-        propertyName: prop.name,
+        propertyName: getPropertyDisplayName(prop),
       });
     }
 
@@ -203,11 +204,11 @@ const PropertyTimeline = () => {
         id: `purchase-${prop.id}`,
         type: "financial",
         date: prop.purchase_date,
-        title: `${prop.name} — Purchased`,
+        title: `${getPropertyDisplayName(prop)} — Purchased`,
         description: `Purchase price: ${fmtCurrency(Number(prop.purchase_price))}`,
         category: "financial",
         cost: null,
-        propertyName: prop.name,
+        propertyName: getPropertyDisplayName(prop),
         valuationType: "purchase",
         valuationValue: Number(prop.purchase_price),
       });
@@ -229,7 +230,7 @@ const PropertyTimeline = () => {
       category: log.category,
       cost: log.cost ? Number(log.cost) : null,
       status: log.status,
-      propertyName: log.properties?.name,
+      propertyName: getPropertyDisplayName(log.properties),
       image_url: log.image_url,
     });
   });
@@ -247,7 +248,7 @@ const PropertyTimeline = () => {
         description: [item.brand, item.model, item.serial_number ? `S/N: ${item.serial_number}` : null].filter(Boolean).join(" · ") || item.notes,
         category: item.category,
         cost: null,
-        propertyName: item.properties?.name,
+        propertyName: getPropertyDisplayName(item.properties),
       });
     }
     if (item.last_maintained) {
@@ -259,7 +260,7 @@ const PropertyTimeline = () => {
         description: item.notes,
         category: item.category,
         cost: null,
-        propertyName: item.properties?.name,
+        propertyName: getPropertyDisplayName(item.properties),
       });
     }
   });
@@ -280,7 +281,7 @@ const PropertyTimeline = () => {
       ].filter(Boolean).join(" · ") || null,
       category: "utility",
       cost: util.monthly_cost ? Number(util.monthly_cost) : null,
-      propertyName: util.properties?.name,
+      propertyName: getPropertyDisplayName(util.properties),
     });
   });
 
@@ -293,11 +294,11 @@ const PropertyTimeline = () => {
       id: `transfer-${transfer.id}`,
       type: "transfer",
       date: transfer.created_at?.split("T")[0],
-      title: `${transfer.properties?.name ?? "Property"} — Transferred`,
+      title: `${getPropertyDisplayName(transfer.properties) || "Property"} — Transferred`,
       description: `To: ${transfer.to_email}${statusLabel ? ` · Status: ${statusLabel}` : ""}`,
       category: "transfer",
       cost: null,
-      propertyName: transfer.properties?.name,
+      propertyName: getPropertyDisplayName(transfer.properties),
     });
   });
 
@@ -315,7 +316,7 @@ const PropertyTimeline = () => {
       description: [doc.description, doc.category ? doc.category.replace(/_/g, " ") : null].filter(Boolean).join(" · ") || null,
       category: "document",
       cost: null,
-      propertyName: doc.properties?.name,
+      propertyName: getPropertyDisplayName(doc.properties),
     });
   });
 
@@ -336,11 +337,11 @@ const PropertyTimeline = () => {
       title: `${typeLabel} — ${fmtCurrency(value)}`,
       description: [
         val.source,
-        val.properties?.name,
+        getPropertyDisplayName(val.properties) || null,
       ].filter(Boolean).join(" · ") || null,
       category: "financial",
       cost: null,
-      propertyName: val.properties?.name,
+      propertyName: getPropertyDisplayName(val.properties),
       valuationType: val.valuation_type,
       valuationSource: val.source,
       valuationNotes: val.notes,

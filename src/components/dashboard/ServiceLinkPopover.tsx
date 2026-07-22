@@ -6,6 +6,7 @@ import { Copy, ExternalLink, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
 import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 interface Property {
   id: string;
@@ -92,7 +93,7 @@ const ServiceLinkPopover = ({ properties, selectedPropertyId, onNavigateToLinks 
                   className="flex w-full items-center gap-2 rounded-md border border-border px-3 py-2 text-left text-sm hover:bg-secondary/60"
                 >
                   <Home className="h-4 w-4 text-accent shrink-0" />
-                  <span className="truncate">{p.name}</span>
+                  <span className="truncate">{getPropertyDisplayName(p)}</span>
                 </button>
               ))}
             </div>
