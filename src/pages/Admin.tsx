@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useQuery } from "@tanstack/react-query";
@@ -9,20 +8,52 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Home, Wrench, Share2, ArrowLeft, BarChart3, Shield, Sparkles } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Users, Home, Wrench, Share2, ArrowLeft, Shield, Sparkles, AlertTriangle, Lock } from "lucide-react";
 import BetaCodesCard from "@/components/admin/BetaCodesCard";
+
+const isForbidden = (err: any) => {
+  const msg = (err?.message || "").toLowerCase();
+  const code = (err?.code || "").toString();
+  return (
+    code === "42501" ||
+    code === "PGRST301" ||
+    msg.includes("forbidden") ||
+    msg.includes("not authorized") ||
+    msg.includes("permission denied") ||
+    msg.includes("admin")
+  );
+};
+
+const RpcError = ({ label, error }: { label: string; error: any }) => {
+  const forbidden = isForbidden(error);
+  return (
+    <Alert variant="destructive" className="mb-4">
+      {forbidden ? <Lock className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+      <AlertTitle>{forbidden ? `Forbidden — ${label}` : `Failed to load ${label}`}</AlertTitle>
+      <AlertDescription className="break-words">
+        {forbidden
+          ? "Your account doesn't have admin privileges for this data."
+          : error?.message || "Unknown error"}
+        {error?.code ? <span className="ml-2 opacity-70">({error.code})</span> : null}
+      </AlertDescription>
+    </Alert>
+  );
+};
 
 const Admin = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: isAdmin, isLoading: adminLoading } = useAdminCheck();
 
-  // Platform stats
-  const { data: stats } = useQuery({
+  const statsQ = useQuery({
     queryKey: ["admin_stats"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_get_stats");
-      if (error) throw error;
+      if (error) {
+        console.error("admin_get_stats failed:", error);
+        throw error;
+      }
       const s = (data ?? {}) as any;
       return {
         users: s.users ?? 0,
@@ -32,41 +63,41 @@ const Admin = () => {
       };
     },
     enabled: isAdmin === true,
+    retry: false,
   });
 
-  // All users
-  const { data: allUsers = [] } = useQuery({
+  const usersQ = useQuery({
     queryKey: ["admin_users"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_users", { p_search: undefined });
-      if (error) throw error;
+      if (error) { console.error("admin_list_users failed:", error); throw error; }
       return data ?? [];
     },
     enabled: isAdmin === true,
+    retry: false,
   });
 
-  // All properties
-  const { data: allProperties = [] } = useQuery({
+  const propertiesQ = useQuery({
     queryKey: ["admin_properties"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_properties", { p_search: undefined });
-      if (error) throw error;
+      if (error) { console.error("admin_list_properties failed:", error); throw error; }
       return data ?? [];
     },
     enabled: isAdmin === true,
+    retry: false,
   });
 
-  // All shares
-  const { data: allShares = [] } = useQuery({
+  const sharesQ = useQuery({
     queryKey: ["admin_shares"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("admin_list_shares");
-      if (error) throw error;
+      if (error) { console.error("admin_list_shares failed:", error); throw error; }
       return data ?? [];
     },
     enabled: isAdmin === true,
+    retry: false,
   });
-
 
   if (adminLoading) {
     return (
@@ -86,6 +117,11 @@ const Admin = () => {
       </div>
     );
   }
+
+  const stats = statsQ.data;
+  const allUsers = usersQ.data ?? [];
+  const allProperties = propertiesQ.data ?? [];
+  const allShares = sharesQ.data ?? [];
 
   const statCards = [
     { label: "Total Users", value: stats?.users ?? 0, icon: Users, color: "text-accent" },
@@ -114,7 +150,8 @@ const Admin = () => {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-8">
-        {/* Stats */}
+        {statsQ.error && <RpcError label="platform stats" error={statsQ.error} />}
+
         <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
           {statCards.map((s) => (
             <Card key={s.label}>
@@ -146,28 +183,38 @@ const Admin = () => {
                 <CardDescription>{allUsers.length} users on the platform</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead className="hidden sm:table-cell">Persona</TableHead>
-                      <TableHead className="hidden md:table-cell">Joined</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allUsers.map((u) => (
-                      <TableRow key={u.id}>
-                        <TableCell className="font-medium">{u.display_name || "—"}</TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <Badge variant="secondary">{u.persona || "none"}</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell text-muted-foreground">
-                          {new Date(u.created_at).toLocaleDateString()}
-                        </TableCell>
+                {usersQ.error ? (
+                  <RpcError label="users" error={usersQ.error} />
+                ) : usersQ.isLoading ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">Loading users…</p>
+                ) : allUsers.length <= 1 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    You're the only user so far — this list fills in as people sign up.
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead className="hidden sm:table-cell">Persona</TableHead>
+                        <TableHead className="hidden md:table-cell">Joined</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {allUsers.map((u: any) => (
+                        <TableRow key={u.id}>
+                          <TableCell className="font-medium">{u.display_name || "—"}</TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <Badge variant="secondary">{u.persona || "none"}</Badge>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-muted-foreground">
+                            {new Date(u.created_at).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -179,31 +226,40 @@ const Admin = () => {
                 <CardDescription>{allProperties.length} properties tracked</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead className="hidden sm:table-cell">Type</TableHead>
-                      <TableHead className="hidden md:table-cell">Location</TableHead>
-                      <TableHead className="hidden lg:table-cell">Created</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allProperties.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.name}</TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <Badge variant="secondary">{p.property_type}</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell text-muted-foreground">{[p.city, p.state].filter(Boolean).join(", ")}</TableCell>
-
-                        <TableCell className="hidden lg:table-cell text-muted-foreground">
-                          {new Date(p.created_at).toLocaleDateString()}
-                        </TableCell>
+                {propertiesQ.error ? (
+                  <RpcError label="properties" error={propertiesQ.error} />
+                ) : propertiesQ.isLoading ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">Loading properties…</p>
+                ) : allProperties.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    No properties have been created yet.
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead className="hidden sm:table-cell">Type</TableHead>
+                        <TableHead className="hidden md:table-cell">Location</TableHead>
+                        <TableHead className="hidden lg:table-cell">Created</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {allProperties.map((p: any) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium">{p.name}</TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <Badge variant="secondary">{p.property_type}</Badge>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-muted-foreground">{[p.city, p.state].filter(Boolean).join(", ")}</TableCell>
+                          <TableCell className="hidden lg:table-cell text-muted-foreground">
+                            {new Date(p.created_at).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -215,30 +271,40 @@ const Admin = () => {
                 <CardDescription>All property sharing across the platform</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Property</TableHead>
-                      <TableHead>Shared With</TableHead>
-                      <TableHead className="hidden sm:table-cell">Permission</TableHead>
-                      <TableHead className="hidden sm:table-cell">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allShares.map((s: any) => (
-                      <TableRow key={s.id}>
-                        <TableCell className="font-medium">{(s as any).properties?.name || "—"}</TableCell>
-                        <TableCell className="text-muted-foreground">{s.shared_with_email}</TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <Badge variant="outline">{s.permission}</Badge>
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <Badge variant={s.status === "accepted" ? "default" : "secondary"}>{s.status}</Badge>
-                        </TableCell>
+                {sharesQ.error ? (
+                  <RpcError label="shares" error={sharesQ.error} />
+                ) : sharesQ.isLoading ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">Loading shares…</p>
+                ) : allShares.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    No shared access has been granted yet.
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Property</TableHead>
+                        <TableHead>Shared With</TableHead>
+                        <TableHead className="hidden sm:table-cell">Permission</TableHead>
+                        <TableHead className="hidden sm:table-cell">Status</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {allShares.map((s: any) => (
+                        <TableRow key={s.id}>
+                          <TableCell className="font-medium">{(s as any).properties?.name || "—"}</TableCell>
+                          <TableCell className="text-muted-foreground">{s.shared_with_email}</TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <Badge variant="outline">{s.permission}</Badge>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <Badge variant={s.status === "accepted" ? "default" : "secondary"}>{s.status}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

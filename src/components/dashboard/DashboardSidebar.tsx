@@ -1,9 +1,11 @@
-import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, Clock, Settings, Search, LayoutDashboard, RefreshCw, BarChart3, Zap, Lock, Link2, ClipboardList, Receipt, Plus, Shield } from "lucide-react";
+import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, Clock, Settings, Search, LayoutDashboard, RefreshCw, BarChart3, Zap, Lock, Link2, ClipboardList, Receipt, Plus, Shield, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSubscription, isProFeature } from "@/hooks/useSubscription";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "tax-investment" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
 
@@ -86,6 +88,9 @@ const SidebarNav = ({
   onOpenSearch,
 }: DashboardSidebarProps) => {
   const { tier } = useSubscription();
+  const { data: isAdmin } = useAdminCheck();
+  const navigate = useNavigate();
+
 
   return (
     <div className="flex h-full flex-col">
@@ -139,7 +144,7 @@ const SidebarNav = ({
         <button
           onClick={() => onSectionChange("settings")}
           className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2 font-body text-sm font-medium transition-colors mb-2",
+            "flex w-full items-center gap-3 rounded-lg px-3 py-2 font-body text-sm font-medium transition-colors mb-1",
             activeSection === "settings"
               ? "bg-accent/10 text-accent"
               : "text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -148,6 +153,15 @@ const SidebarNav = ({
           <Settings className="h-4 w-4" />
           Settings
         </button>
+        {isAdmin && (
+          <button
+            onClick={() => navigate("/admin")}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 font-body text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground mb-2"
+          >
+            <ShieldCheck className="h-4 w-4 text-accent" />
+            Admin
+          </button>
+        )}
         <div className="mb-2 px-3">
           <p className="font-body text-sm font-medium text-foreground truncate">{displayName}</p>
           <p className="font-body text-xs text-muted-foreground">Homeowner</p>
