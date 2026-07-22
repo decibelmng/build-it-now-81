@@ -15,7 +15,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Wrench, CheckCircle2, Clock, AlertTriangle, Image as ImageIcon, Users, Pencil, Paperclip, TrendingUp, ListFilter, Trash2, ChevronsUpDown, Check, Package, X } from "lucide-react";
 import FilePicker from "@/components/ui/file-picker";
-import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
+
 import ServiceLinkPopover from "@/components/dashboard/ServiceLinkPopover";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
