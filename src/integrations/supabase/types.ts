@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      beta_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          max_uses: number
+          note: string | null
+          times_used: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          max_uses?: number
+          note?: string | null
+          times_used?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          max_uses?: number
+          note?: string | null
+          times_used?: number
+        }
+        Relationships: []
+      }
+      beta_redemptions: {
+        Row: {
+          code_id: string
+          id: string
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          code_id: string
+          id?: string
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          code_id?: string
+          id?: string
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beta_redemptions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "beta_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contractor_access_links: {
         Row: {
           created_at: string
@@ -1830,6 +1892,7 @@ export type Database = {
       }
       delete_user_account: { Args: never; Returns: undefined }
       extract_house_number: { Args: { addr: string }; Returns: string }
+      has_beta_access: { Args: { _user_id: string }; Returns: boolean }
       has_property_access: {
         Args: { p_property_id: string; p_user_id: string }
         Returns: boolean
@@ -1847,6 +1910,7 @@ export type Database = {
       }
       normalize_company_name: { Args: { p_name: string }; Returns: string }
       normalize_phone: { Args: { p_phone: string }; Returns: string }
+      redeem_beta_code: { Args: { p_code: string }; Returns: Json }
       set_directory_sharing: {
         Args: { p_enabled: boolean }
         Returns: undefined
