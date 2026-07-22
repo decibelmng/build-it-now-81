@@ -58,3 +58,12 @@ export function usePropertyRoles() {
     isLoading: query.isLoading,
   };
 }
+
+/**
+ * True if the current user can edit AT LEAST ONE property (owner or editor).
+ * Use to gate global "Add" buttons in sections that span multiple properties.
+ */
+export function useCanEditAnyProperty(): boolean {
+  const { rolesByProperty } = usePropertyRoles();
+  return Object.values(rolesByProperty).some((r) => r === "owner" || r === "editor");
+}
