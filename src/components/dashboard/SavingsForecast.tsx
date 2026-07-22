@@ -13,6 +13,7 @@ import type { HomeItem, PropertyInfo } from "@/lib/savingsForecast";
 import { SYSTEM_PROFILES } from "@/lib/savingsForecast";
 import { setPendingInventoryAction } from "@/lib/pendingInventoryAction";
 import { useHomeSavings } from "@/hooks/useHomeSavings";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 
 interface SavingsForecastProps {
   onNavigate?: (section: string) => void;
@@ -20,15 +21,18 @@ interface SavingsForecastProps {
 
 const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
   const { user } = useAuth();
-  const { depositTotal } = useHomeSavings();
+  const { activePropertyId } = usePropertyFilter();
+  const { depositTotal } = useHomeSavings(activePropertyId);
 
   const { data: properties = [] } = useQuery({
-    queryKey: ["properties_forecast", user?.id],
+    queryKey: ["properties_forecast", user?.id, activePropertyId ?? "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("properties")
         .select("id, year_built, purchase_price, sqft, home_systems, registry_completed, residency_type")
         .order("created_at", { ascending: true });
+      if (activePropertyId) q = q.eq("id", activePropertyId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
@@ -36,13 +40,15 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
   });
 
   const { data: homeItems = [] } = useQuery({
-    queryKey: ["home_items_forecast", user?.id],
+    queryKey: ["home_items_forecast", user?.id, activePropertyId ?? "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("home_items")
-        .select("id, name, category, install_date, expected_replacement, estimated_value, system_key, is_registry_skeleton, status")
+        .select("id, name, category, install_date, expected_replacement, estimated_value, system_key, is_registry_skeleton, status, property_id")
         .eq("item_type", "home_component")
         .eq("status", "active");
+      if (activePropertyId) q = q.eq("property_id", activePropertyId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },

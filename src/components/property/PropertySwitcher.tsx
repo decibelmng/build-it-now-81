@@ -1,111 +1,117 @@
-import { useState } from "react";
-import { ChevronsUpDown, Check } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ChevronDown, Check, Home, Plus, Search } from "lucide-react";
 import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 import { getPropertyDisplayName, getPropertyShortName } from "@/lib/propertyDisplay";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 
 interface PropertySwitcherProps {
-  allowAll?: boolean;
+  allowAll?: boolean; // reserved; global allowAll comes from context
   className?: string;
 }
 
-const PropertySwitcher = ({ allowAll: allowAllProp, className }: PropertySwitcherProps) => {
-  const { properties, activePropertyId, setActivePropertyId, allowAll: ctxAllowAll } = usePropertyFilter();
-  const allowAll = allowAllProp ?? ctxAllowAll;
+const PropertySwitcher = ({ className }: PropertySwitcherProps) => {
+  const { properties, activePropertyId, setActivePropertyId, allowAll } = usePropertyFilter();
   const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState("");
 
-  if (properties.length < 2) return null;
+  const isAllScope = activePropertyId === null;
+  const activeProperty = useMemo(
+    () => (isAllScope ? null : properties.find((p) => p.id === activePropertyId) ?? null),
+    [properties, activePropertyId, isAllScope]
+  );
 
-  // Pill mode for 2-3 properties
-  if (properties.length <= 3) {
-    const pillCls = (active: boolean) =>
-      cn(
-        "px-3 py-1.5 rounded-full font-body text-sm transition-colors",
-        active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-      );
-    return (
-      <div
-        className={cn(
-          "inline-flex items-center gap-1 rounded-full bg-muted p-1",
-          className
-        )}
-      >
-        {allowAll && (
-          <button
-            type="button"
-            onClick={() => setActivePropertyId(null)}
-            className={pillCls(activePropertyId === null)}
-          >
-            All
-          </button>
-        )}
-        {properties.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => setActivePropertyId(p.id)}
-            className={pillCls(activePropertyId === p.id)}
-            title={getPropertyDisplayName(p)}
-          >
-            {getPropertyShortName(p, 18)}
-          </button>
-        ))}
-      </div>
-    );
-  }
+  const filtered = useMemo(() => {
+    if (!filter.trim()) return properties;
+    const q = filter.trim().toLowerCase();
+    return properties.filter((p) => getPropertyDisplayName(p).toLowerCase().includes(q));
+  }, [properties, filter]);
 
-  // Dropdown/search mode for 4+
-  const current =
-    activePropertyId === null
-      ? allowAll ? "All properties" : ""
-      : getPropertyDisplayName(properties.find((p) => p.id === activePropertyId));
+  const label = isAllScope
+    ? (allowAll ? "All properties" : "Select property")
+    : getPropertyShortName(activeProperty, 22);
+
+  const goAddProperty = () => {
+    setOpen(false);
+    window.dispatchEvent(new CustomEvent("navigate-section", { detail: "properties" }));
+  };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn("w-64 justify-between font-body", className)}
+          className={cn(
+            "h-10 w-full justify-between gap-2 rounded-lg px-3 font-body text-sm font-medium",
+            "focus-visible:ring-accent focus-visible:ring-2 focus-visible:ring-offset-0",
+            className
+          )}
         >
-          <span className="truncate">{current || "Select property"}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <span className="flex min-w-0 items-center gap-2">
+            <Home className="h-4 w-4 shrink-0 text-accent" />
+            <span className="truncate">{label}</span>
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-64 p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Search properties..." />
-          <CommandList>
-            <CommandEmpty>No property found.</CommandEmpty>
-            <CommandGroup>
-              {allowAll && (
-                <CommandItem
-                  value="all"
-                  onSelect={() => { setActivePropertyId(null); setOpen(false); }}
-                >
-                  <Check className={cn("mr-2 h-4 w-4", activePropertyId === null ? "opacity-100" : "opacity-0")} />
-                  All properties
-                </CommandItem>
-              )}
-              {properties.map((p) => (
-                <CommandItem
-                  key={p.id}
-                  value={getPropertyDisplayName(p)}
-                  onSelect={() => { setActivePropertyId(p.id); setOpen(false); }}
-                >
-                  <Check className={cn("mr-2 h-4 w-4", activePropertyId === p.id ? "opacity-100" : "opacity-0")} />
-                  <span className="truncate">{getPropertyDisplayName(p)}</span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-[--radix-dropdown-menu-trigger-width] min-w-[220px] p-1">
+        {properties.length > 8 && (
+          <div className="p-1">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                autoFocus
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Search properties..."
+                className="h-8 pl-7 font-body text-sm"
+              />
+            </div>
+          </div>
+        )}
+        {allowAll && (
+          <>
+            <DropdownMenuItem
+              onSelect={() => setActivePropertyId(null)}
+              className="font-body text-sm"
+            >
+              <Check className={cn("mr-2 h-4 w-4", isAllScope ? "opacity-100" : "opacity-0")} />
+              All properties
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        {filtered.length === 0 && (
+          <div className="px-3 py-2 font-body text-xs text-muted-foreground">No matches</div>
+        )}
+        {filtered.map((p) => {
+          const active = p.id === activePropertyId;
+          return (
+            <DropdownMenuItem
+              key={p.id}
+              onSelect={() => setActivePropertyId(p.id)}
+              className="font-body text-sm"
+            >
+              <Check className={cn("mr-2 h-4 w-4", active ? "opacity-100" : "opacity-0")} />
+              <span className="truncate">{getPropertyDisplayName(p)}</span>
+            </DropdownMenuItem>
+          );
+        })}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={goAddProperty} className="font-body text-sm text-accent">
+          <Plus className="mr-2 h-4 w-4" />
+          Add property
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
