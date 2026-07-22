@@ -435,14 +435,14 @@ const PropertyUtilities = () => {
               subtotal={groupSubtotal(grouped[g])}
               payments={paymentsByUtility}
               revealed={revealed}
-              onReveal={(id) => setRevealed((r) => ({ ...r, [id]: !r[id] }))}
+              onReveal={(id: string) => setRevealed((r) => ({ ...r, [id]: !r[id] }))}
               onEdit={openEdit}
               onPay={setPayingFor}
-              onHistory={(id) => setHistoryFor(historyFor === id ? null : id)}
+              onHistory={(id: string) => setHistoryFor(historyFor === id ? null : id)}
               historyFor={historyFor}
               onStatus={setStatusFor}
               onDelete={setDeleteFor}
-              onDeletePayment={(id) => deletePaymentMutation.mutate(id)}
+              onDeletePayment={(id: string) => deletePaymentMutation.mutate(id)}
             />
           ))}
         </div>
@@ -457,7 +457,7 @@ const PropertyUtilities = () => {
           prefillType={prefillType}
           defaultProperty={activeProperty}
           properties={properties}
-          onSubmit={(form) => saveMutation.mutate(form)}
+          onSubmit={(form: any) => saveMutation.mutate(form)}
           submitting={saveMutation.isPending}
         />
       )}
@@ -467,7 +467,7 @@ const PropertyUtilities = () => {
         <PaymentDialog
           utility={payingFor}
           onClose={() => setPayingFor(null)}
-          onSubmit={(vals) => paymentMutation.mutate({ utility: payingFor, ...vals })}
+          onSubmit={(vals: any) => paymentMutation.mutate({ utility: payingFor, ...vals })}
           submitting={paymentMutation.isPending}
         />
       )}
@@ -477,7 +477,7 @@ const PropertyUtilities = () => {
         <StatusDialog
           utility={statusFor}
           onClose={() => setStatusFor(null)}
-          onSubmit={(vals) => statusMutation.mutate({ id: statusFor.id, ...vals })}
+          onSubmit={(vals: any) => statusMutation.mutate({ id: statusFor.id, ...vals })}
           submitting={statusMutation.isPending}
         />
       )}
