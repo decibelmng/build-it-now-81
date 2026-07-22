@@ -356,6 +356,8 @@ const HomeContacts = () => {
         )}
       </div>
 
+      <PropertyFilterBar />
+
       {properties.length > 0 && contacts.length > 0 && (
         <div className="mb-4 flex items-center gap-3 flex-wrap">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
