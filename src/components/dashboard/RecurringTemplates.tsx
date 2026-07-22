@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { format, addMonths } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 import { recurringTemplateSchema, contactSchema, validateForm } from "@/lib/schemas";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 
 type Property = Tables<"properties">;
 
@@ -102,13 +104,16 @@ const RecurringTemplates = () => {
     enabled: !!user,
   });
 
+  const { selectedPropertyId, notifyIfDifferent } = usePropertyFilter();
   const { data: templates = [], isLoading } = useQuery({
-    queryKey: ["recurring_templates", user?.id],
+    queryKey: ["recurring_templates", user?.id, selectedPropertyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("recurring_templates")
         .select("*, properties(name)")
         .order("next_due_date", { ascending: true });
+      if (selectedPropertyId !== "all") q = q.eq("property_id", selectedPropertyId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
