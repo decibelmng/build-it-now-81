@@ -168,7 +168,7 @@ const Dashboard = () => {
         onQuickAdd={handleQuickAdd}
       />
 
-      <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
+      <main className="flex-1 overflow-y-auto pt-24 md:pt-0">
         <div className="mx-auto max-w-5xl px-3 py-4 sm:px-8 sm:py-8">
           <Suspense fallback={<div className="p-8"><div className="h-8 w-48 rounded bg-muted animate-pulse mb-4" /><div className="h-64 rounded bg-muted animate-pulse" /></div>}>
             {activeSection === "overview" && <DashboardOverview onNavigate={(s: string) => setActiveSection(s as Section)} />}

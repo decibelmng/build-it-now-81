@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSubscription, isProFeature } from "@/hooks/useSubscription";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import PropertySwitcher from "@/components/property/PropertySwitcher";
 
 type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "tax-investment" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
 
@@ -94,9 +95,12 @@ const SidebarNav = ({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-border px-6 py-5">
-        <Home className="h-6 w-6 text-accent" />
-        <span className="font-display text-xl font-bold">HomeLog</span>
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-4">
+        <div className="flex items-center gap-2">
+          <Home className="h-6 w-6 text-accent" />
+          <span className="font-display text-xl font-bold">HomeLog</span>
+        </div>
+        <PropertySwitcher className="w-full" />
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-3">
@@ -199,28 +203,31 @@ const DashboardSidebar = (props: DashboardSidebarProps) => {
       </aside>
 
       {/* Mobile header bar */}
-      <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-border bg-card px-4 py-3 md:hidden">
-        <div className="flex items-center gap-2 min-w-0">
-          <Home className="h-5 w-5 text-accent shrink-0" />
-          <span className="font-display text-lg font-bold shrink-0">HomeLog</span>
-          <span className="text-muted-foreground mx-1 shrink-0">›</span>
-          <span className="font-body text-sm text-muted-foreground truncate">{sectionTitle}</span>
+      <div className="fixed inset-x-0 top-0 z-40 flex flex-col gap-2 border-b border-border bg-card px-4 py-2 md:hidden">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <Home className="h-5 w-5 text-accent shrink-0" />
+            <span className="font-display text-lg font-bold shrink-0">HomeLog</span>
+            <span className="text-muted-foreground mx-1 shrink-0">›</span>
+            <span className="font-body text-sm text-muted-foreground truncate">{sectionTitle}</span>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={props.onOpenSearch}>
+              <Search className="h-4 w-4" />
+            </Button>
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 p-0">
+                <SidebarNav {...props} onSectionChange={handleSectionChange} />
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={props.onOpenSearch}>
-            <Search className="h-4 w-4" />
-          </Button>
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
-              <SidebarNav {...props} onSectionChange={handleSectionChange} />
-            </SheetContent>
-          </Sheet>
-        </div>
+        <PropertySwitcher className="w-full" />
       </div>
 
       {/* Mobile FAB - Quick Add Maintenance */}

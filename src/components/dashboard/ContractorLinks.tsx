@@ -210,7 +210,7 @@ const ContractorLinks = () => {
         </DialogContent>
       </Dialog>
 
-      <PropertyFilterBar />
+      <PropertyFilterBar allowAll={false} />
 
 
       {/* Per-property Quick Share Cards */}
