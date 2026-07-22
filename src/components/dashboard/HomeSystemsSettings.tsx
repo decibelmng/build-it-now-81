@@ -25,6 +25,7 @@ interface HomeSystemsSettingsProps {
   registryCompleted: boolean;
   onNavigate?: (section: string) => void;
   bathroomCount?: number;
+  residencyType?: string;
 }
 
 const HomeSystemsSettings = ({
@@ -34,6 +35,7 @@ const HomeSystemsSettings = ({
   registryCompleted,
   onNavigate,
   bathroomCount = 2,
+  residencyType,
 }: HomeSystemsSettingsProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -45,7 +47,7 @@ const HomeSystemsSettings = ({
     : null;
 
   const [localRegistry, setLocalRegistry] = useState<HomeSystemsRegistry>(
-    homeSystems || getDefaultRegistry(propertyType, bathroomCount)
+    homeSystems || getDefaultRegistry(propertyType, bathroomCount, residencyType)
   );
   const [saving, setSaving] = useState(false);
   const [rescanning, setRescanning] = useState(false);
