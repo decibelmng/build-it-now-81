@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DollarSign, HelpCircle, ChevronDown, Save, TrendingUp, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import { useResidencyFeatures } from "@/hooks/useResidencyFeatures";
 
 type Property = Tables<"properties">;
 
@@ -39,6 +40,7 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [saleOpen, setSaleOpen] = useState(false);
+  const feat = useResidencyFeatures(property);
 
   const [purchase, setPurchase] = useState({
     purchase_price: "",
@@ -152,6 +154,35 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
+
+  if (!feat.showPurchaseInfo) {
+    return (
+      <Card className="border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="font-display text-base font-semibold flex items-center gap-2">
+            <DollarSign className="h-4 w-4" /> Monthly Budget
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2 rounded-lg border border-border/50 bg-secondary/30 p-3">
+            <Label className="font-body" htmlFor="monthly-deposit">Monthly home budget deposit</Label>
+            <CurrencyInput id="monthly-deposit" value={monthlyDeposit} onChange={setMonthlyDeposit} />
+            <p className="font-body text-xs text-muted-foreground">
+              Set aside a little each month for renters insurance, moving costs, and small upgrades — we'll track what you actually spend.
+            </p>
+          </div>
+          <Button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {saveMutation.isPending ? "Saving..." : "Save"}
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">

@@ -19,6 +19,8 @@ import type { Tables } from "@/integrations/supabase/types";
 import PurchaseInfoSection from "@/components/dashboard/PurchaseInfoSection";
 import CostBasisSummarySection from "@/components/dashboard/CostBasisSummarySection";
 import HomeSystemsSettings from "@/components/dashboard/HomeSystemsSettings";
+import LeaseDetailsCard from "@/components/dashboard/LeaseDetailsCard";
+import { RESIDENCY_OPTIONS, useResidencyFeatures, type ResidencyType } from "@/hooks/useResidencyFeatures";
 
 type Property = Tables<"properties">;
 
@@ -27,6 +29,7 @@ const propertyTypes = [
   { value: "condo", label: "Condo" },
   { value: "townhouse", label: "Townhouse" },
   { value: "multi_family", label: "Multi Family" },
+  { value: "apartment", label: "Apartment" },
   { value: "other", label: "Other" },
 ];
 
@@ -49,6 +52,7 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
   });
   const [form, setForm] = useState({
     name: "", address: "", city: "", state: "", zip: "",
+    residency_type: "owned" as ResidencyType,
     property_type: "single_family", bedrooms: "", bathrooms: "", sqft: "", year_built: "",
     latitude: null as number | null, longitude: null as number | null,
   });
@@ -97,6 +101,7 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
         state: form.state || null,
         zip: form.zip || null,
         property_type: form.property_type,
+        residency_type: form.residency_type,
         bedrooms: form.bedrooms ? parseInt(form.bedrooms) : null,
         bathrooms: form.bathrooms ? parseFloat(form.bathrooms) : null,
         sqft: form.sqft ? parseInt(form.sqft) : null,
@@ -109,7 +114,7 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       setOpen(false);
-      setForm({ name: "", address: "", city: "", state: "", zip: "", property_type: "single_family", bedrooms: "", bathrooms: "", sqft: "", year_built: "", latitude: null, longitude: null });
+      setForm({ name: "", address: "", city: "", state: "", zip: "", residency_type: "owned", property_type: "single_family", bedrooms: "", bathrooms: "", sqft: "", year_built: "", latitude: null, longitude: null });
       toast({ title: "Property added!" });
     },
     onError: (err: Error) => {
@@ -243,6 +248,17 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
                   <Label className="font-body">ZIP</Label>
                   <Input placeholder="90210" value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} className="font-body" />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="font-body">Do you own or rent? *</Label>
+                <Select value={form.residency_type} onValueChange={(v) => setForm({ ...form, residency_type: v as ResidencyType })}>
+                  <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {RESIDENCY_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value} className="font-body">{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label className="font-body">Property Type</Label>
@@ -402,25 +418,36 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
 
           {/* Property details for selected property */}
           {selectedPropertyId && (
-            <div className="mt-6 space-y-6">
-              <PurchaseInfoSection
-                property={properties.find((p) => p.id === selectedPropertyId)!}
-              />
-              <HomeSystemsSettings
-                propertyId={selectedPropertyId}
-                propertyType={properties.find((p) => p.id === selectedPropertyId)?.property_type || "single_family"}
-                homeSystems={(properties.find((p) => p.id === selectedPropertyId) as any)?.home_systems || null}
-                registryCompleted={(properties.find((p) => p.id === selectedPropertyId) as any)?.registry_completed || false}
-                onNavigate={onNavigate}
-                bathroomCount={properties.find((p) => p.id === selectedPropertyId)?.bathrooms || undefined}
-              />
-              <CostBasisSummarySection propertyId={selectedPropertyId} />
-            </div>
+            <PropertyDetailsPanel
+              property={properties.find((p) => p.id === selectedPropertyId)!}
+              onNavigate={onNavigate}
+            />
           )}
         </>
       )}
     </div>
   );
 };
+
+const PropertyDetailsPanel = ({ property, onNavigate }: { property: Property; onNavigate?: (s: string) => void }) => {
+  const feat = useResidencyFeatures(property);
+  return (
+    <div className="mt-6 space-y-6">
+      {feat.showLeaseDetails && <LeaseDetailsCard property={property} />}
+      <PurchaseInfoSection property={property} />
+      <HomeSystemsSettings
+        propertyId={property.id}
+        propertyType={property.property_type || "single_family"}
+        homeSystems={(property as any)?.home_systems || null}
+        registryCompleted={(property as any)?.registry_completed || false}
+        onNavigate={onNavigate}
+        bathroomCount={property.bathrooms || undefined}
+        residencyType={(property as any).residency_type}
+      />
+      {feat.showCostBasis && <CostBasisSummarySection propertyId={property.id} />}
+    </div>
+  );
+};
+
 
 export default PropertyCards;

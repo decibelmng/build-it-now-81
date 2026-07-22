@@ -23,7 +23,8 @@ export const propertySchema = z.object({
   city: z.string().max(200).optional(),
   state: z.string().max(100).optional(),
   zip: z.string().max(20).optional(),
-  property_type: z.enum(["single_family", "condo", "townhouse", "multi_family", "other"]).optional(),
+  property_type: z.enum(["single_family", "condo", "townhouse", "multi_family", "apartment", "other"]).optional(),
+  residency_type: z.enum(["owned", "renting", "renting_out", "second_home"]).optional(),
   bedrooms: z.string().refine((v) => !v || (!isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100), {
     message: "Bedrooms must be 0-100",
   }).optional(),

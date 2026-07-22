@@ -27,7 +27,7 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("id, year_built, purchase_price, sqft, home_systems, registry_completed")
+        .select("id, year_built, purchase_price, sqft, home_systems, registry_completed, residency_type")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data;
@@ -50,6 +50,57 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
   });
 
   if (properties.length === 0) return null;
+
+  // Renter panel — when all properties are rentals with no enabled systems
+  const allRenting = properties.every((p: any) => p.residency_type === "renting");
+  const hasEnabledSystems = homeItems.length > 0;
+  if (allRenting && !hasEnabledSystems) {
+    return (
+      <Card className="border-border/50">
+        <CardHeader>
+          <CardTitle className="font-display text-lg font-semibold flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" /> Renter Savings Plan
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="font-body text-sm text-muted-foreground">
+            You don't own home systems to maintain, but a small monthly cushion goes a long way. Aim to cover:
+          </p>
+          <ul className="space-y-3">
+            <li className="flex items-start gap-3">
+              <Shield className="h-4 w-4 text-primary mt-1 shrink-0" />
+              <div>
+                <p className="font-body text-sm font-medium">Renters insurance</p>
+                <p className="font-body text-xs text-muted-foreground">$15–25/mo covers your belongings and liability.</p>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <DollarSign className="h-4 w-4 text-primary mt-1 shrink-0" />
+              <div>
+                <p className="font-body text-sm font-medium">Security deposit + return fund</p>
+                <p className="font-body text-xs text-muted-foreground">Set aside for cleaning, wall patches, and repairs at move-out.</p>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <TrendingUp className="h-4 w-4 text-primary mt-1 shrink-0" />
+              <div>
+                <p className="font-body text-sm font-medium">Moving fund</p>
+                <p className="font-body text-xs text-muted-foreground">Movers, deposits on your next place, first month's rent.</p>
+              </div>
+            </li>
+          </ul>
+          {(depositTotal ?? 0) > 0 && (
+            <div className="rounded-lg border border-border/50 bg-secondary/30 p-3">
+              <p className="font-body text-sm">
+                You've set aside <span className="font-semibold">${(depositTotal ?? 0).toLocaleString()}</span> this year — nice work.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
 
   // Aggregate across all properties (use primary/first property for age & value)
   const primary = properties[0];
