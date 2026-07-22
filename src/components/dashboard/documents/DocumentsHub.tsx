@@ -126,14 +126,16 @@ const DocumentsHub = () => {
         if (filters.dateTo) q = q.lte(dateCol, filters.dateTo);
       }
 
+      if (selectedPropertyId !== "all") q = q.eq("property_id", selectedPropertyId);
+
       return q.order("created_at", { ascending: false });
     },
-    [filters]
+    [filters, selectedPropertyId]
   );
 
   // Important documents (always shown)
   const { data: importantDocs = [] } = useQuery({
-    queryKey: ["documents_important", user?.id],
+    queryKey: ["documents_important", user?.id, selectedPropertyId],
     queryFn: async () => {
       const { data, error } = await buildQuery(true);
       if (error) throw error;
@@ -144,7 +146,7 @@ const DocumentsHub = () => {
 
   // Main documents query with pagination
   const { data: docsResult, isLoading } = useQuery({
-    queryKey: ["documents_hub", user?.id, filters, page],
+    queryKey: ["documents_hub", user?.id, filters, page, selectedPropertyId],
     queryFn: async () => {
       const q = buildQuery(false)
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
