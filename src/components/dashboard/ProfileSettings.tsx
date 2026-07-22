@@ -23,6 +23,7 @@ type Property = Tables<"properties">;
 
 const ProfileSettings = () => {
   const { user } = useAuth();
+  const { plan, subscriptionEnd } = useSubscription();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
