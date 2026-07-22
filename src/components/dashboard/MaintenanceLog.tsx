@@ -878,7 +878,12 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
               <Label className="font-body">Attachments (optional)</Label>
               {existingImageUrl && attachedFiles.length === 0 && (
                 <div className="mb-2">
-                  <img src={existingImageUrl} alt="Existing" className="h-24 rounded-lg object-cover" />
+                  <SignedImage
+                    bucket="maintenance-photos"
+                    storedValue={existingImageUrl}
+                    alt="Existing"
+                    className="h-24 rounded-lg object-cover"
+                  />
                   <p className="font-body text-[10px] text-muted-foreground mt-1">Current photo — add new files below to replace</p>
                 </div>
               )}
