@@ -145,6 +145,7 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       queryClient.invalidateQueries({ queryKey: ["property_valuations"] });
       queryClient.invalidateQueries({ queryKey: ["property_equity_summary"] });
+      queryClient.invalidateQueries({ queryKey: ["home_savings_properties"] });
       toast({ title: "Purchase information saved!" });
     },
     onError: (err: Error) => {
