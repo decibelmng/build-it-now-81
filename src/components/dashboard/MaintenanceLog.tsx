@@ -339,8 +339,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         }
         const firstImage = uploadedPaths.find((u) => u.file.type.startsWith("image/"));
         if (firstImage) {
-          const { data: urlData } = await supabase.storage.from("maintenance-photos").createSignedUrl(firstImage.path, 31536000);
-          image_url = urlData?.signedUrl || null;
+          // Store just the storage path; the app signs a short-lived URL on read.
+          image_url = firstImage.path;
         }
       }
 
