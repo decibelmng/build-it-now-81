@@ -55,7 +55,7 @@ const ExportReports = () => {
         .select("*, properties(name)")
         .order("scheduled_date", { ascending: false, nullsFirst: false });
 
-      if (selectedProperty !== "all") {
+      if (selectedProperty) {
         query = query.eq("property_id", selectedProperty);
       }
 
@@ -92,7 +92,7 @@ const ExportReports = () => {
         .select("*, properties(name)")
         .not("cost", "is", null);
 
-      if (selectedProperty !== "all") {
+      if (selectedProperty) {
         query = query.eq("property_id", selectedProperty);
       }
 
@@ -141,7 +141,7 @@ const ExportReports = () => {
   const exportPropertyDetails = async () => {
     setExporting("property");
     try {
-      const propsToExport = selectedProperty === "all" ? properties : properties.filter((p) => p.id === selectedProperty);
+      const propsToExport = properties.filter((p) => p.id === selectedProperty);
 
       // Get contacts for these properties
       const propIds = propsToExport.map((p) => p.id);
@@ -196,7 +196,7 @@ const ExportReports = () => {
       const year = new Date().getFullYear() - 1;
       const start = `${year}-01-01`;
       const end = `${year + 1}-01-01`;
-      const targets = selectedProperty === "all" ? properties : properties.filter((p) => p.id === selectedProperty);
+      const targets = properties.filter((p) => p.id === selectedProperty);
       if (!targets.length) throw new Error("No properties to export");
 
       const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
