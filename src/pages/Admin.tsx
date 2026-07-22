@@ -38,7 +38,7 @@ const Admin = () => {
   const { data: allUsers = [] } = useQuery({
     queryKey: ["admin_users"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("admin_list_users", { p_search: null });
+      const { data, error } = await supabase.rpc("admin_list_users", { p_search: undefined });
       if (error) throw error;
       return data ?? [];
     },
@@ -49,7 +49,7 @@ const Admin = () => {
   const { data: allProperties = [] } = useQuery({
     queryKey: ["admin_properties"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("admin_list_properties", { p_search: null });
+      const { data, error } = await supabase.rpc("admin_list_properties", { p_search: undefined });
       if (error) throw error;
       return data ?? [];
     },
