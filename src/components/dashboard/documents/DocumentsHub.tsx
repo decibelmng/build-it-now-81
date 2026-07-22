@@ -17,12 +17,14 @@ import {
   getActiveFilterCount,
   CATEGORY_GROUPS, CATEGORY_LABELS,
 } from "./constants";
+import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
 
 const PAGE_SIZE = 24;
 
 const DocumentsHub = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const canEditAny = useCanEditAnyProperty();
   const [view, setView] = useState<"grid" | "list">("grid");
   const [groupMode, setGroupMode] = useState<"none" | "category" | "system">("none");
   const [filters, setFilters] = useState<Filters>({ ...DEFAULT_FILTERS });
@@ -293,12 +295,14 @@ const DocumentsHub = () => {
               <List className="h-4 w-4" />
             </Button>
           </div>
-          <Button
-            className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body"
-            onClick={() => setUploadOpen(true)}
-          >
-            <Upload className="mr-2 h-4 w-4" /> Upload
-          </Button>
+          {canEditAny && (
+            <Button
+              className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body"
+              onClick={() => setUploadOpen(true)}
+            >
+              <Upload className="mr-2 h-4 w-4" /> Upload
+            </Button>
+          )}
         </div>
       </div>
 

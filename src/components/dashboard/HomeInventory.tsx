@@ -29,6 +29,7 @@ import { homeItemSchema, validateForm, validateFiles } from "@/lib/schemas";
 import ReplacementConfirmDialog from "./ReplacementConfirmDialog";
 import { differenceInYears } from "date-fns";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
+import { useCanEditAnyProperty, useAccessRole } from "@/hooks/useAccessRole";
 
 const homeComponentCategories = [
   { value: "roofing", label: "Roofing", icon: Package },
@@ -93,6 +94,9 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
   const isPro = tier === "pro";
   const dialogFileInputRef = useRef<HTMLInputElement>(null);
   const [fileDragOver, setFileDragOver] = useState(false);
+  const canEditAny = useCanEditAnyProperty();
+  const { canEdit: canEditProperty } = useAccessRole(propertyId ?? null);
+  const canEdit = propertyId ? canEditProperty : canEditAny;
 
   const itemsRef = useRef<any[]>([]);
   const pendingConsumed = useRef(false);
@@ -713,11 +717,13 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
               </div>
             )}
             <Dialog open={itemOpen} onOpenChange={(o) => { setItemOpen(o); if (!o) { setEditingItem(null); setItemForm(emptyItemForm); setPendingFiles([]); } }}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body">
-                  <Plus className="mr-1 h-4 w-4" /> Add Item
-                </Button>
-              </DialogTrigger>
+              {canEdit && (
+                <DialogTrigger asChild>
+                  <Button size="sm" className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body">
+                    <Plus className="mr-1 h-4 w-4" /> Add Item
+                  </Button>
+                </DialogTrigger>
+              )}
               <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="font-display">{editingItem ? "Edit Item" : itemType === "personal_item" ? "Add Personal Item" : "Add Home Component"}</DialogTitle>

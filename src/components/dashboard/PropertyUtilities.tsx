@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { format, differenceInDays, startOfMonth, parseISO, subMonths } from "date-fns";
 import { cn } from "@/lib/utils";
 import { validateForm, utilityAccountSchema } from "@/lib/schemas";
+import { useAccessRole } from "@/hooks/useAccessRole";
 
 // ── Service type config ──
 type ServiceType = {
@@ -147,9 +148,22 @@ const PropertyUtilities = () => {
   const { data: utilities = [], isLoading } = useQuery({
     queryKey: ["property_utilities_full", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("property_utilities").select("*, properties(name)").order("provider_name");
-      if (error) throw error;
-      return data as any[];
+      // Owner rows come from the base table; shared rows come from the masked view
+      // (credential fields excluded server-side for non-owners).
+      const [{ data: owned, error: e1 }, { data: shared, error: e2 }] = await Promise.all([
+        supabase.from("property_utilities").select("*, properties(name)").order("provider_name"),
+        supabase.from("property_utilities_shared").select("*, properties(name)").order("provider_name"),
+      ]);
+      if (e1) throw e1;
+      if (e2) throw e2;
+      const seen = new Set<string>();
+      const merged: any[] = [];
+      for (const row of [...(owned ?? []), ...(shared ?? [])] as any[]) {
+        if (!row?.id || seen.has(row.id)) continue;
+        seen.add(row.id);
+        merged.push(row);
+      }
+      return merged;
     },
     enabled: !!user,
   });
@@ -360,6 +374,8 @@ const PropertyUtilities = () => {
   };
 
   const activeProperty = propertyFilter !== "all" ? propertyFilter : properties[0]?.id;
+  const { role: activeRole, canEdit: canEditActive } = useAccessRole(activeProperty ?? null);
+  const isViewerOnly = propertyFilter !== "all" && activeRole === "viewer";
 
   return (
     <div>
@@ -371,13 +387,15 @@ const PropertyUtilities = () => {
             Track home accounts, budgets, and monthly payments in one place
           </p>
         </div>
-        <Button
-          onClick={() => openAdd()}
-          disabled={properties.length === 0}
-          className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body min-h-[44px]"
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Account
-        </Button>
+        {!isViewerOnly && (
+          <Button
+            onClick={() => openAdd()}
+            disabled={properties.length === 0}
+            className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body min-h-[44px]"
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Account
+          </Button>
+        )}
       </div>
 
       {/* Property filter tabs */}

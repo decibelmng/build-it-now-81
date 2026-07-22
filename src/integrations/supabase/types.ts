@@ -1834,6 +1834,10 @@ export type Database = {
         Args: { p_property_id: string; p_user_id: string }
         Returns: boolean
       }
+      has_property_edit_access: {
+        Args: { p_property_id: string; p_user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

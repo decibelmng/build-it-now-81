@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 import { contactSchema, normalizeWebsiteUrl, validateForm } from "@/lib/schemas";
+import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
 
 const roles = [
   { value: "plumber", label: "Plumber" },
@@ -51,6 +52,7 @@ const HomeContacts = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const canEditAny = useCanEditAnyProperty();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ContactForm>(emptyForm);
@@ -337,13 +339,15 @@ const HomeContacts = () => {
           <h2 className="font-display text-2xl font-bold">Home Contacts</h2>
           <p className="font-body text-sm text-muted-foreground">Your contractors, vendors, and service providers</p>
         </div>
-        <Button
-          onClick={openAddDialog}
-          className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body"
-          disabled={properties.length === 0}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Contact
-        </Button>
+        {canEditAny && (
+          <Button
+            onClick={openAddDialog}
+            className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body"
+            disabled={properties.length === 0}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Contact
+          </Button>
+        )}
       </div>
 
       {properties.length > 0 && contacts.length > 0 && (

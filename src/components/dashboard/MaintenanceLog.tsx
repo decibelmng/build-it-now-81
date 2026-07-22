@@ -33,6 +33,7 @@ import { SYSTEMS_CATALOG, type HomeSystemsRegistry, migrateOldRegistry } from "@
 import ReplacementConfirmDialog from "@/components/dashboard/ReplacementConfirmDialog";
 import { setPendingInventoryAction } from "@/lib/pendingInventoryAction";
 import { SignedImage } from "@/components/dashboard/SignedImage";
+import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
 
 type Property = Tables<"properties">;
 
@@ -100,6 +101,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const canEditAny = useCanEditAnyProperty();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -616,9 +618,11 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           {defaultLinkUrl && (
             <ServiceLinkPopover linkUrl={defaultLinkUrl} onNavigateToLinks={() => onNavigate?.("contractor-links")} />
           )}
-          <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0} onClick={openCreate}>
-            <Plus className="mr-2 h-4 w-4" /> Add Entry
-          </Button>
+          {canEditAny && (
+            <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0} onClick={openCreate}>
+              <Plus className="mr-2 h-4 w-4" /> Add Entry
+            </Button>
+          )}
         </div>
       </div>
 

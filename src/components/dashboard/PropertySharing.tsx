@@ -22,7 +22,11 @@ const PropertySharing = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ property_id: "", email: "" });
+  const [form, setForm] = useState<{ property_id: string; email: string; permission: "viewer" | "editor" }>({
+    property_id: "",
+    email: "",
+    permission: "viewer",
+  });
 
   const { data: properties = [] } = useQuery({
     queryKey: ["properties", user?.id],
@@ -82,6 +86,7 @@ const PropertySharing = () => {
         shared_with_email: form.email.toLowerCase(),
         shared_with_user_id: profile?.user_id ?? null,
         status: profile?.user_id ? "pending" : "invited",
+        permission: form.permission,
       });
       if (error) {
         if (error.code === "23505") throw new Error("This user already has access to this property");
@@ -91,7 +96,7 @@ const PropertySharing = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["property_shares_sent"] });
       setOpen(false);
-      setForm({ property_id: "", email: "" });
+      setForm({ property_id: "", email: "", permission: "viewer" });
       toast({ title: "Invitation sent!" });
     },
     onError: (err: Error) => {
@@ -172,8 +177,28 @@ const PropertySharing = () => {
                 <Label className="font-body">Email Address *</Label>
                 <Input type="email" placeholder="collaborator@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="font-body" />
               </div>
+              <div className="space-y-2">
+                <Label className="font-body">Access level *</Label>
+                <Select value={form.permission} onValueChange={(v) => setForm({ ...form, permission: v as "viewer" | "editor" })}>
+                  <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="viewer" className="font-body">
+                      <div className="flex flex-col">
+                        <span className="font-semibold">Viewer</span>
+                        <span className="text-xs text-muted-foreground">Can see everything except account numbers and logins</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="editor" className="font-body">
+                      <div className="flex flex-col">
+                        <span className="font-semibold">Editor</span>
+                        <span className="text-xs text-muted-foreground">Can also add logs, payments, documents and contacts</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <p className="font-body text-xs text-muted-foreground">
-                The user will get full collaborator access — they can view everything and add logs, documents, and contacts.
+                Only the owner can manage sharing, transfers, billing, and property financial details.
               </p>
               <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={inviteUser.isPending || !form.property_id}>
                 {inviteUser.isPending ? "Inviting..." : "Send Invitation"}
@@ -249,8 +274,9 @@ const PropertySharing = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-body text-xs capitalize">{share.permission ?? "viewer"}</Badge>
                     {statusBadge(share.status)}
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => removeShare.mutate(share.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => removeShare.mutate(share.id)} title="Revoke access">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -266,10 +292,15 @@ const PropertySharing = () => {
                     </div>
                     <div>
                       <h4 className="font-display text-sm font-semibold">{share.properties?.name}</h4>
-                      <p className="font-body text-xs text-muted-foreground">Shared with you · Collaborator access</p>
+                      <p className="font-body text-xs text-muted-foreground">
+                        Shared with you · {(share.permission ?? "viewer") === "editor" ? "Editor access" : "Viewer access"}
+                      </p>
                     </div>
                   </div>
-                  <Badge variant="default" className="font-body text-xs">Active</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-body text-xs capitalize">{share.permission ?? "viewer"}</Badge>
+                    <Badge variant="default" className="font-body text-xs">Active</Badge>
+                  </div>
                 </CardContent>
               </Card>
             ))}

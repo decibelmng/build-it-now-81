@@ -13,6 +13,8 @@ import { Plus, MapPin, BedDouble, Bath, Ruler, Calendar, Loader2, Copy, Check } 
 import { useToast } from "@/hooks/use-toast";
 import { propertySchema, validateForm } from "@/lib/schemas";
 import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
+import { usePropertyRoles } from "@/hooks/useAccessRole";
+import { Badge } from "@/components/ui/badge";
 import type { Tables } from "@/integrations/supabase/types";
 import PurchaseInfoSection from "@/components/dashboard/PurchaseInfoSection";
 import CostBasisSummarySection from "@/components/dashboard/CostBasisSummarySection";
@@ -36,6 +38,7 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { rolesByProperty } = usePropertyRoles();
   const [open, setOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(() => {
@@ -351,7 +354,14 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
                   <MapPin className="h-10 w-10 text-accent/60" />
                 </div>
                 <CardContent className="p-5">
-                  <h3 className="mb-1 font-display text-lg font-semibold">{property.name}</h3>
+                  <div className="mb-1 flex items-center gap-2 flex-wrap">
+                    <h3 className="font-display text-lg font-semibold">{property.name}</h3>
+                    {rolesByProperty[property.id] && rolesByProperty[property.id] !== "owner" && (
+                      <Badge variant="outline" className="font-body text-[10px] capitalize">
+                        Shared · {rolesByProperty[property.id]}
+                      </Badge>
+                    )}
+                  </div>
                   {(property as any).property_code && (
                     <button
                       onClick={(e) => { e.stopPropagation(); copyCode((property as any).property_code, property.id); }}
