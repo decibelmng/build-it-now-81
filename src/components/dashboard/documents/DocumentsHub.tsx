@@ -295,12 +295,14 @@ const DocumentsHub = () => {
               <List className="h-4 w-4" />
             </Button>
           </div>
-          <Button
-            className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body"
-            onClick={() => setUploadOpen(true)}
-          >
-            <Upload className="mr-2 h-4 w-4" /> Upload
-          </Button>
+          {canEditAny && (
+            <Button
+              className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body"
+              onClick={() => setUploadOpen(true)}
+            >
+              <Upload className="mr-2 h-4 w-4" /> Upload
+            </Button>
+          )}
         </div>
       </div>
 
