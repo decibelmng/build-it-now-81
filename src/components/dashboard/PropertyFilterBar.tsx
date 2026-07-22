@@ -29,7 +29,7 @@ const PropertyFilterBar = ({ allowAll = true, value, onChange, className }: Prop
           <TabsList className="w-full justify-start overflow-x-auto">
             {allowAll && <TabsTrigger value="all" className="font-body">All</TabsTrigger>}
             {properties.map((p) => (
-              <TabsTrigger key={p.id} value={p.id} className="font-body">{shortName(p.name)}</TabsTrigger>
+              <TabsTrigger key={p.id} value={p.id} className="font-body">{getPropertyShortName(p, 18)}</TabsTrigger>
             ))}
           </TabsList>
         </Tabs>

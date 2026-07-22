@@ -1,9 +1,11 @@
-import type { Database } from "@/integrations/supabase/types";
-
-type PropertyRow = Database["public"]["Tables"]["properties"]["Row"];
+type PropertyLike = {
+  name?: string | null;
+  address?: string | null;
+  [key: string]: unknown;
+};
 
 export function getPropertyDisplayName(
-  property: Partial<PropertyRow> | null | undefined
+  property: PropertyLike | null | undefined
 ): string {
   if (!property) return "Untitled Property";
 
@@ -19,7 +21,7 @@ export function getPropertyDisplayName(
 }
 
 export function getPropertyShortName(
-  property: Partial<PropertyRow> | null | undefined,
+  property: PropertyLike | null | undefined,
   maxLength = 22
 ): string {
   const full = getPropertyDisplayName(property);
