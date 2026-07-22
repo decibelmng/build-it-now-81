@@ -30,6 +30,8 @@ import { matchLogToComponent } from "@/lib/componentMatcher";
 import ComponentUpdateSheet from "@/components/dashboard/ComponentUpdateSheet";
 import { cn } from "@/lib/utils";
 import { SYSTEMS_CATALOG, type HomeSystemsRegistry, migrateOldRegistry } from "@/lib/homeSystemsRegistry";
+import ReplacementConfirmDialog from "@/components/dashboard/ReplacementConfirmDialog";
+import { setPendingInventoryAction } from "@/lib/pendingInventoryAction";
 
 type Property = Tables<"properties">;
 
@@ -124,6 +126,17 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     logDate: string;
     logCost: string;
     logContactName: string;
+    propertyId: string;
+  } | null>(null);
+
+  // Post-save replacement dialog state
+  const [replaceDialog, setReplaceDialog] = useState<{
+    existing: any;
+    logId: string;
+    logDate: string;
+    logCost: string;
+    logCategory: string;
+    logTitle: string;
     propertyId: string;
   } | null>(null);
 
@@ -517,6 +530,27 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         setSheetOpen(true);
       } else {
         toast({ title: editingId ? "Maintenance log updated!" : "Maintenance log added!" });
+      }
+
+      // Replacement lifecycle trigger: capital expense OR title/description matches replace keywords
+      const boundComponentId = result.component_id;
+      const replaceRegex = /replac|new (water heater|hvac|roof|furnace|ac unit)/i;
+      const looksLikeReplacement = form.expense_type === "capital_improvement" ||
+        replaceRegex.test(form.title || "") ||
+        replaceRegex.test(form.description || "");
+      if (!editingId && boundComponentId && looksLikeReplacement) {
+        const existing = homeComponents.find((c: any) => c.id === boundComponentId);
+        if (existing && ((existing as any).status ?? "active") === "active") {
+          setReplaceDialog({
+            existing,
+            logId: result.logId,
+            logDate: form.scheduled_date,
+            logCost: form.cost,
+            logCategory: form.category,
+            logTitle: form.title,
+            propertyId: form.property_id,
+          });
+        }
       }
 
       resetForm();
@@ -1066,6 +1100,51 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       )}
 
       <BulkClassifyDialog open={bulkClassifyOpen} onOpenChange={setBulkClassifyOpen} />
+
+      {replaceDialog && (
+        <ReplacementConfirmDialog
+          open={!!replaceDialog}
+          onOpenChange={(o) => { if (!o) setReplaceDialog(null); }}
+          existingName={replaceDialog.existing.name}
+          onYes={async () => {
+            const retired = replaceDialog.logDate || new Date().toISOString().split("T")[0];
+            const { error } = await supabase
+              .from("home_items")
+              .update({
+                status: "replaced",
+                retired_at: retired,
+                retirement_log_id: replaceDialog.logId,
+              })
+              .eq("id", replaceDialog.existing.id);
+            if (error) {
+              toast({ title: "Could not retire component", description: error.message, variant: "destructive" });
+            } else {
+              toast({ title: `${replaceDialog.existing.name} retired — its history stays on your timeline.` });
+              queryClient.invalidateQueries({ queryKey: ["home_items"] });
+              queryClient.invalidateQueries({ queryKey: ["home_components_for_property"] });
+            }
+            setReplaceDialog(null);
+          }}
+          onNo={() => setReplaceDialog(null)}
+          onAddNew={() => {
+            // Prefill inventory form + carry the log id so the new item's retirement links back
+            setPendingInventoryAction({
+              mode: "add",
+              category: replaceDialog.logCategory || replaceDialog.existing.category || "general",
+              timestamp: Date.now(),
+              prefill: {
+                name: replaceDialog.existing.name,
+                system_key: (replaceDialog.existing as any).system_key || "",
+                install_date: replaceDialog.logDate || new Date().toISOString().split("T")[0],
+                purchase_price: replaceDialog.logCost || "",
+              },
+              retirement_log_id: replaceDialog.logId,
+            });
+            setReplaceDialog(null);
+            onNavigate?.("inventory");
+          }}
+        />
+      )}
     </div>
   );
 };

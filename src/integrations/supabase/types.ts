@@ -435,7 +435,11 @@ export type Database = {
           name: string
           notes: string | null
           property_id: string | null
+          replaced_by_item_id: string | null
+          retired_at: string | null
+          retirement_log_id: string | null
           serial_number: string | null
+          status: string
           system_instance: number | null
           system_key: string | null
           updated_at: string
@@ -461,7 +465,11 @@ export type Database = {
           name: string
           notes?: string | null
           property_id?: string | null
+          replaced_by_item_id?: string | null
+          retired_at?: string | null
+          retirement_log_id?: string | null
           serial_number?: string | null
+          status?: string
           system_instance?: number | null
           system_key?: string | null
           updated_at?: string
@@ -487,7 +495,11 @@ export type Database = {
           name?: string
           notes?: string | null
           property_id?: string | null
+          replaced_by_item_id?: string | null
+          retired_at?: string | null
+          retirement_log_id?: string | null
           serial_number?: string | null
+          status?: string
           system_instance?: number | null
           system_key?: string | null
           updated_at?: string
@@ -522,6 +534,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "property_equity_summary"
             referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "home_items_replaced_by_item_id_fkey"
+            columns: ["replaced_by_item_id"]
+            isOneToOne: false
+            referencedRelation: "home_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "home_items_retirement_log_id_fkey"
+            columns: ["retirement_log_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_logs"
+            referencedColumns: ["id"]
           },
         ]
       }

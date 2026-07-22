@@ -85,6 +85,7 @@ export interface HomeItem {
   estimated_value: number | null;
   system_key?: string | null;
   is_registry_skeleton?: boolean;
+  status?: string | null;
 }
 
 export interface PropertyInfo {
@@ -134,7 +135,8 @@ export function calculateForecast(
   const coveredCompKeys = new Set<string>();
   const events: ForecastEvent[] = [];
 
-  const normalizedItems = homeItems.map((item) => ({
+  const activeItems = homeItems.filter((i) => (i.status ?? "active") === "active");
+  const normalizedItems = activeItems.map((item) => ({
     ...item,
     category: normalizeCategory(item.category),
   }));

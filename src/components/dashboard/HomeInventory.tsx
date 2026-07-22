@@ -26,6 +26,8 @@ import { calculateComponentCompleteness } from "@/lib/componentCompleteness";
 import { consumePendingInventoryAction } from "@/lib/pendingInventoryAction";
 import { SYSTEMS_CATALOG, getEnabledComponents, avgReplacementCost, migrateOldRegistry, type HomeSystemsRegistry } from "@/lib/homeSystemsRegistry";
 import { homeItemSchema, validateForm, validateFiles } from "@/lib/schemas";
+import ReplacementConfirmDialog from "./ReplacementConfirmDialog";
+import { differenceInYears } from "date-fns";
 
 const homeComponentCategories = [
   { value: "roofing", label: "Roofing", icon: Package },
@@ -93,8 +95,9 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
 
   const itemsRef = useRef<any[]>([]);
   const pendingConsumed = useRef(false);
+  const pendingRetirementLogRef = useRef<string | null>(null);
 
-  const { data: items = [], isLoading: itemsLoading } = useQuery({
+  const { data: allItemsRaw = [], isLoading: itemsLoading } = useQuery({
     queryKey: ["home_items", propertyId, itemType, warrantyFilter],
     queryFn: async () => {
       let query = supabase
@@ -116,6 +119,10 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     },
     enabled: !!user && !!propertyId,
   });
+
+  const [showHistory, setShowHistory] = useState(false);
+  const items = (allItemsRaw as any[]).filter((i) => ((i as any).status ?? "active") === "active");
+  const historyItems = (allItemsRaw as any[]).filter((i) => ((i as any).status ?? "active") !== "active");
 
   // Fetch registry data for this property
   const { data: propertyRegistry } = useQuery({
@@ -180,7 +187,17 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
       }
     }
     setEditingItem(null);
-    setItemForm({ ...emptyItemForm, category: pending.category || "general", item_type: "home_component" });
+    setItemForm({
+      ...emptyItemForm,
+      category: pending.category || "general",
+      item_type: "home_component",
+      name: pending.prefill?.name || "",
+      system_key: pending.prefill?.system_key || "",
+      install_date: pending.prefill?.install_date || "",
+    });
+    if (pending.retirement_log_id) {
+      pendingRetirementLogRef.current = pending.retirement_log_id;
+    }
     setItemOpen(true);
   }, [items, itemType]);
 
@@ -200,6 +217,17 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     },
     enabled: !!user && itemIds.length > 0,
   });
+
+  // Pending replacement candidate — checked before saving a NEW item
+  const [pendingReplace, setPendingReplace] = useState<{ existing: any; newId: string; installDate: string | null } | null>(null);
+
+  const retireItem = async (existingId: string, newId: string, installDate: string | null, logId?: string | null) => {
+    const retired = installDate || new Date().toISOString().split("T")[0];
+    const patch: any = { status: "replaced", retired_at: retired, replaced_by_item_id: newId };
+    if (logId) patch.retirement_log_id = logId;
+    const { error } = await supabase.from("home_items").update(patch).eq("id", existingId);
+    if (error) throw error;
+  };
 
   const upsertItem = useMutation({
     mutationFn: async () => {
@@ -230,6 +258,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
         system_key: effectiveType === "home_component" && itemForm.system_key ? itemForm.system_key : null,
       };
       let itemId = editingItem;
+      let createdNew = false;
       if (editingItem) {
         // Manual edit: clear log link and update timestamp
         payload.last_updated_from_log_id = null;
@@ -267,6 +296,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
         const { data, error } = await supabase.from("home_items").insert(payload).select("id").single();
         if (error) throw error;
         itemId = data.id;
+        createdNew = true;
       }
       // Upload any pending files
       if (pendingFiles.length > 0 && itemId) {
@@ -298,8 +328,34 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
           });
         }
       }
+
+      // Detect replacement candidate for a NEW item (not editing).
+      // Match by system_key when available, otherwise by category — on same property, active only.
+      let replacementCandidate: any = null;
+      if (createdNew && effectiveType === "home_component" && itemId) {
+        const skey = payload.system_key as string | null;
+        const cat = payload.category as string | null;
+        const candidates = (allItemsRaw as any[]).filter((i: any) => {
+          if (i.id === itemId) return false;
+          if (((i as any).status ?? "active") !== "active") return false;
+          if (i.item_type !== "home_component") return false;
+          if (skey) return i.system_key === skey;
+          return !i.system_key && i.category === cat;
+        });
+        if (candidates.length > 0) {
+          // Prefer the oldest install_date, then earliest created
+          candidates.sort((a, b) => {
+            const ai = a.install_date || "9999";
+            const bi = b.install_date || "9999";
+            if (ai !== bi) return ai.localeCompare(bi);
+            return (a.created_at || "").localeCompare(b.created_at || "");
+          });
+          replacementCandidate = candidates[0];
+        }
+      }
+      return { itemId, createdNew, replacementCandidate, installDate: payload.install_date as string | null };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
       queryClient.invalidateQueries({ queryKey: ["home_item_attachments"] });
       setItemOpen(false);
@@ -307,6 +363,9 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
       setItemForm(emptyItemForm);
       setPendingFiles([]);
       toast({ title: editingItem ? "Item updated" : "Item added" });
+      if (result?.replacementCandidate && result.itemId) {
+        setPendingReplace({ existing: result.replacementCandidate, newId: result.itemId, installDate: result.installDate });
+      }
     },
     onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
   });
@@ -640,7 +699,17 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
               </div>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {itemType === "home_component" && historyItems.length > 0 && (
+              <Button
+                size="sm"
+                variant={showHistory ? "default" : "outline"}
+                className="rounded-full font-body text-xs"
+                onClick={() => setShowHistory((s) => !s)}
+              >
+                History ({historyItems.length})
+              </Button>
+            )}
             {items.length > 0 && (
               <div className="flex gap-1">
                 <Button size="sm" variant="outline" className="rounded-full font-body text-xs" onClick={isPro ? exportCSV : () => setUpgradeOpen(true)}>
@@ -1169,8 +1238,92 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
             </div>
           );
         })()}
+        {/* History (replaced/removed items) */}
+        {itemType === "home_component" && showHistory && historyItems.length > 0 && (
+          <div className="mt-6">
+            <h4 className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+              History — Replaced & Removed
+            </h4>
+            <div className="space-y-2">
+              {historyItems.map((item: any) => {
+                const successor = item.replaced_by_item_id
+                  ? (allItemsRaw as any[]).find((i: any) => i.id === item.replaced_by_item_id)
+                  : null;
+                const years = item.install_date && item.retired_at
+                  ? differenceInYears(new Date(item.retired_at), new Date(item.install_date))
+                  : null;
+                return (
+                  <Card key={item.id} className="border-border/50 opacity-60 hover:opacity-100 transition-opacity">
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h5 className="font-body text-sm font-semibold line-through decoration-muted-foreground/40">{item.name}</h5>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">{item.status}</Badge>
+                          </div>
+                          <p className="font-body text-xs text-muted-foreground mt-0.5">
+                            {item.status === "replaced" ? "Replaced" : "Removed"}
+                            {item.retired_at && ` ${format(new Date(item.retired_at), "MMM d, yyyy")}`}
+                            {successor && (
+                              <>
+                                {" → "}
+                                <button
+                                  onClick={() => openEditItem(successor)}
+                                  className="text-accent hover:underline"
+                                >
+                                  {successor.name}
+                                </button>
+                              </>
+                            )}
+                            {item.retirement_log_id && (
+                              <>
+                                {" · "}
+                                <button
+                                  onClick={() => onNavigate?.("maintenance")}
+                                  className="text-accent hover:underline"
+                                >
+                                  view log
+                                </button>
+                              </>
+                            )}
+                          </p>
+                          {item.install_date && item.retired_at && (
+                            <p className="font-body text-[11px] text-muted-foreground/80 mt-0.5">
+                              Served {format(new Date(item.install_date), "MMM yyyy")} → {format(new Date(item.retired_at), "MMM yyyy")}
+                              {years != null && ` (${years} year${years === 1 ? "" : "s"})`}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      {pendingReplace && (
+        <ReplacementConfirmDialog
+          open={!!pendingReplace}
+          onOpenChange={(o) => { if (!o) setPendingReplace(null); }}
+          existingName={pendingReplace.existing.name}
+          onYes={async () => {
+            try {
+              const logId = pendingRetirementLogRef.current;
+              await retireItem(pendingReplace.existing.id, pendingReplace.newId, pendingReplace.installDate, logId);
+              pendingRetirementLogRef.current = null;
+              toast({ title: `${pendingReplace.existing.name} retired — its history stays on your timeline.` });
+              queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
+            } catch (e: any) {
+              toast({ title: "Could not retire", description: e.message, variant: "destructive" });
+            }
+            setPendingReplace(null);
+          }}
+          onNo={() => setPendingReplace(null)}
+        />
+      )}
     </div>
   );
 };
