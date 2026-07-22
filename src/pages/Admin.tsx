@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Users, Home, Wrench, Share2, ArrowLeft, Shield, Sparkles, AlertTriangle, Lock } from "lucide-react";
 import BetaCodesCard from "@/components/admin/BetaCodesCard";
+import { getPropertyShortName } from "@/lib/propertyDisplay";
 
 const isForbidden = (err: any) => {
   const msg = (err?.message || "").toLowerCase();
@@ -247,7 +248,7 @@ const Admin = () => {
                     <TableBody>
                       {allProperties.map((p: any) => (
                         <TableRow key={p.id}>
-                          <TableCell className="font-medium">{p.name}</TableCell>
+                          <TableCell className="font-medium">{getPropertyShortName(p)}</TableCell>
                           <TableCell className="hidden sm:table-cell">
                             <Badge variant="secondary">{p.property_type}</Badge>
                           </TableCell>

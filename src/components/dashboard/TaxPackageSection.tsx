@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 import TaxBackfillDialog from "./TaxBackfillDialog";
 import { useNavigate } from "react-router-dom";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Property = Tables<"properties">;
 
@@ -285,8 +286,8 @@ const TaxPackageSection = ({ property }: Props) => {
 
   const exportTaxPackageCSV = () => {
     const rows: (string | number)[][] = [];
-    rows.push([`HomeLog Tax Package — ${property.name} — ${taxYear}`]);
-    rows.push([`Property`, property.name ?? ""]);
+    rows.push([`HomeLog Tax Package — ${getPropertyDisplayName(property)} — ${taxYear}`]);
+    rows.push([`Property`, getPropertyDisplayName(property)]);
     rows.push([`Address`, property.address ?? ""]);
     rows.push([`Generated`, generatedOn]);
     rows.push([`Total sqft`, property.sqft ?? ""]);
@@ -363,7 +364,7 @@ const TaxPackageSection = ({ property }: Props) => {
     doc.setFontSize(14);
     doc.text("Annual Tax Package", 40, 54);
     doc.setFontSize(10);
-    doc.text(`${property.name ?? ""}${property.address ? "  ·  " + property.address : ""}`, 40, 70);
+    doc.text(`${getPropertyDisplayName(property)}${property.address ? "  ·  " + property.address : ""}`, 40, 70);
     doc.text(`Tax Year ${taxYear}  ·  Generated ${generatedOn}`, 40, 84);
 
     let y = 118;

@@ -9,6 +9,7 @@ import { format, parseISO, startOfMonth, addMonths, isBefore, isAfter } from "da
 import { CalendarDays, TrendingUp, PieChart as PieIcon, BarChart3, AlertCircle } from "lucide-react";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { getPropertyShortName } from "@/lib/propertyDisplay";
 
 const COLORS = [
   "hsl(38, 92%, 50%)",   // accent
@@ -101,7 +102,7 @@ const AnalyticsInsights = () => {
     const total = logs
       .filter((l) => l.property_id === p.id && l.cost)
       .reduce((sum, l) => sum + (l.cost || 0), 0);
-    return { name: p.name.length > 15 ? p.name.slice(0, 15) + "…" : p.name, total };
+    return { name: getPropertyShortName(p, 15), total };
   });
 
   // Upcoming schedule (next 60 days)
