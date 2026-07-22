@@ -1890,6 +1890,43 @@ export type Database = {
         Args: { p_transfer_id: string }
         Returns: undefined
       }
+      admin_get_stats: { Args: never; Returns: Json }
+      admin_list_properties: {
+        Args: { p_search?: string }
+        Returns: {
+          city: string
+          created_at: string
+          id: string
+          name: string
+          owner_email: string
+          property_type: string
+          state: string
+        }[]
+      }
+      admin_list_shares: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          permission: string
+          property_id: string
+          property_name: string
+          shared_with_email: string
+          status: string
+        }[]
+      }
+      admin_list_users: {
+        Args: { p_search?: string }
+        Returns: {
+          created_at: string
+          display_name: string
+          email: string
+          id: string
+          persona: string
+          property_count: number
+          user_id: string
+        }[]
+      }
       delete_user_account: { Args: never; Returns: undefined }
       extract_house_number: { Args: { addr: string }; Returns: string }
       has_beta_access: { Args: { _user_id: string }; Returns: boolean }
