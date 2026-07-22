@@ -34,10 +34,9 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
     queryFn: async () => {
       const { data, error } = await supabase
         .from("maintenance_logs")
-        .select("id, title, status, cost, category, created_at, completed_date, scheduled_date, properties(name)")
+        .select("id, title, status, cost, category, property_id, created_at, completed_date, scheduled_date, properties(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Sort by service date (scheduled_date > completed_date > created_at)
       return (data ?? []).sort((a, b) => {
         const dateA = a.scheduled_date || a.completed_date || a.created_at;
         const dateB = b.scheduled_date || b.completed_date || b.created_at;
@@ -50,7 +49,7 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
   const { data: documents = [] } = useQuery({
     queryKey: ["documents_count", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("documents").select("id");
+      const { data, error } = await supabase.from("documents").select("id, property_id");
       if (error) throw error;
       return data;
     },
@@ -60,12 +59,20 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
   const { data: contacts = [] } = useQuery({
     queryKey: ["contacts_count", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("home_contacts").select("id");
+      const { data, error } = await supabase.from("home_contacts").select("id, property_id");
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
+
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("all");
+  const scopeFilter = <T extends { property_id?: string | null }>(rows: T[]) =>
+    selectedPropertyId === "all" ? rows : rows.filter((r) => r.property_id === selectedPropertyId);
+
+  const scopedLogs = scopeFilter(logs as any[]);
+  const scopedDocuments = scopeFilter(documents as any[]);
+  const scopedContacts = scopeFilter(contacts as any[]);
 
   const totalSpent = logs.reduce((sum, l) => sum + (Number(l.cost) || 0), 0);
   const pendingCount = logs.filter((l) => l.status === "pending").length;
