@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Home, Wrench, Share2, ArrowLeft, BarChart3, Shield } from "lucide-react";
+import { Users, Home, Wrench, Share2, ArrowLeft, BarChart3, Shield, Sparkles } from "lucide-react";
+import BetaCodesCard from "@/components/admin/BetaCodesCard";
 
 const Admin = () => {
   const { user } = useAuth();
