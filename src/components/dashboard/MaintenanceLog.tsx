@@ -30,6 +30,8 @@ import { matchLogToComponent } from "@/lib/componentMatcher";
 import ComponentUpdateSheet from "@/components/dashboard/ComponentUpdateSheet";
 import { cn } from "@/lib/utils";
 import { SYSTEMS_CATALOG, type HomeSystemsRegistry, migrateOldRegistry } from "@/lib/homeSystemsRegistry";
+import ReplacementConfirmDialog from "@/components/dashboard/ReplacementConfirmDialog";
+import { setPendingInventoryAction } from "@/lib/pendingInventoryAction";
 
 type Property = Tables<"properties">;
 
