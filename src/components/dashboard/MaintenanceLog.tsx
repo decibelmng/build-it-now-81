@@ -1001,8 +1001,9 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                   <div className="flex items-center justify-between">
                     <div className="flex items-start gap-4">
                       {log.image_url ? (
-                        <img
-                          src={log.image_url}
+                        <SignedImage
+                          bucket="maintenance-photos"
+                          storedValue={log.image_url}
                           alt={log.title}
                           className="h-10 w-10 shrink-0 rounded-xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
                           onClick={() => setPreviewImage(log.image_url)}
