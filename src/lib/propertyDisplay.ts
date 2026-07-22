@@ -1,7 +1,6 @@
 type PropertyLike = {
   name?: string | null;
   address?: string | null;
-  [key: string]: unknown;
 };
 
 export function getPropertyDisplayName(
