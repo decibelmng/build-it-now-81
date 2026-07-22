@@ -215,6 +215,22 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
             className="space-y-4"
           >
             <div className="space-y-2">
+              <Label className="font-body">Do you own or rent? *</Label>
+              <Select value={form.residency_type} onValueChange={(v) => setForm({ ...form, residency_type: v as ResidencyType })}>
+                <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {RESIDENCY_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value} className="font-body">
+                      <div className="flex flex-col">
+                        <span>{o.label}</span>
+                        <span className="text-xs text-muted-foreground">{o.hint}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label className="font-body">Property Name *</Label>
               <Input placeholder="My Home" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="font-body" />
             </div>
