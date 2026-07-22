@@ -1311,7 +1311,9 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
           existingName={pendingReplace.existing.name}
           onYes={async () => {
             try {
-              await retireItem(pendingReplace.existing.id, pendingReplace.newId, pendingReplace.installDate);
+              const logId = pendingRetirementLogRef.current;
+              await retireItem(pendingReplace.existing.id, pendingReplace.newId, pendingReplace.installDate, logId);
+              pendingRetirementLogRef.current = null;
               toast({ title: `${pendingReplace.existing.name} retired — its history stays on your timeline.` });
               queryClient.invalidateQueries({ queryKey: ["home_items", propertyId] });
             } catch (e: any) {
