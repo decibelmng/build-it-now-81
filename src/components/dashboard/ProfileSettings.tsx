@@ -247,6 +247,39 @@ const ProfileSettings = () => {
           </CardContent>
         </Card>
 
+        {/* Subscription */}
+        <Card className="border-border/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="font-display text-base font-semibold flex items-center gap-2">
+              <Crown className="h-4 w-4" /> Subscription
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="font-body text-sm text-muted-foreground">Current plan</span>
+              <Badge
+                variant={plan === "free" ? "secondary" : "default"}
+                className="capitalize font-body"
+              >
+                {plan}
+              </Badge>
+            </div>
+            {plan === "pro" && subscriptionEnd && (
+              <p className="font-body text-xs text-muted-foreground">
+                Renews {new Date(subscriptionEnd).toLocaleDateString()}
+              </p>
+            )}
+            {plan !== "beta" && (
+              <div className="pt-2 border-t border-border/50 space-y-2">
+                <p className="font-body text-xs text-muted-foreground">
+                  Have a beta code? Redeem it for full access.
+                </p>
+                <BetaCodeRedeem compact />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Change Password */}
         <Card className="border-border/50">
           <CardHeader className="pb-3">
