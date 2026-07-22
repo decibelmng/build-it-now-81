@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DollarSign, HelpCircle, ChevronDown, Save, TrendingUp, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import { useResidencyFeatures } from "@/hooks/useResidencyFeatures";
 
 type Property = Tables<"properties">;
 
