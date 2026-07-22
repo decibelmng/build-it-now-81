@@ -39,6 +39,22 @@ export const propertySchema = z.object({
 });
 
 // ── Contact ──
+const urlOrEmpty = z
+  .string()
+  .max(500)
+  .optional()
+  .or(z.literal(""))
+  .refine((v) => {
+    if (!v) return true;
+    try {
+      const withProto = /^https?:\/\//i.test(v) ? v : `https://${v}`;
+      new URL(withProto);
+      return true;
+    } catch {
+      return false;
+    }
+  }, { message: "Enter a valid URL" });
+
 export const contactSchema = z.object({
   name: z.string().min(1, "Name is required").max(200),
   email: z.string().email("Invalid email").optional().or(z.literal("")),
@@ -46,8 +62,19 @@ export const contactSchema = z.object({
   company: z.string().max(200).optional(),
   notes: z.string().max(2000).optional(),
   role: z.string().optional(),
+  website_url: urlOrEmpty,
+  is_preferred: z.boolean().optional(),
+  is_archived: z.boolean().optional(),
+  share_to_directory: z.boolean().optional(),
   property_id: z.string().min(1, "Property is required"),
 });
+
+export const normalizeWebsiteUrl = (v?: string | null) => {
+  if (!v) return null;
+  const trimmed = v.trim();
+  if (!trimmed) return null;
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+};
 
 // ── Document ──
 export const documentSchema = z.object({
