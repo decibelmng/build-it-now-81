@@ -76,10 +76,10 @@ const ProfileSettings = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("properties")
-        .select("id, name, address, property_code")
+        .select("id, name, address, property_code, residency_type")
         .order("name");
       if (error) throw error;
-      return data as (Pick<Property, "id" | "name" | "address"> & { property_code: string | null })[];
+      return data as (Pick<Property, "id" | "name" | "address"> & { property_code: string | null; residency_type: string | null })[];
     },
     enabled: !!user,
   });
@@ -389,7 +389,7 @@ const ProfileSettings = () => {
                   <Select value={transferPropertyId} onValueChange={setTransferPropertyId} required>
                     <SelectTrigger className="font-body"><SelectValue placeholder="Choose a property" /></SelectTrigger>
                     <SelectContent>
-                      {userProperties.map((p) => (
+                      {userProperties.filter((p) => p.residency_type !== "renting").map((p) => (
                         <SelectItem key={p.id} value={p.id} className="font-body">
                           {p.name} — {p.address}
                         </SelectItem>
