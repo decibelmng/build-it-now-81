@@ -149,11 +149,25 @@ const ContractorServiceLog = () => {
       </header>
 
       <div className="mx-auto max-w-2xl px-4 py-6">
-        {/* Property Address */}
-        <div className="mb-6 rounded-lg border border-border bg-card p-4">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Logging service for</p>
-          <p className="font-semibold text-foreground">{linkInfo?.property_address}</p>
-          {linkInfo?.label && <p className="text-sm text-muted-foreground mt-1">{linkInfo.label}</p>}
+        {/* Property Address — highlighted so contractors self-verify */}
+        <div className="mb-6 rounded-xl border-2 border-accent/60 bg-accent/10 p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="rounded-lg bg-accent/20 p-2">
+              <Home className="h-5 w-5 text-accent" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-accent">Logging service for</p>
+              <p className="mt-1 font-display text-lg font-bold text-foreground leading-snug break-words">
+                {linkInfo?.property_address}
+              </p>
+              {linkInfo?.label && (
+                <p className="text-sm text-muted-foreground mt-1">{linkInfo.label}</p>
+              )}
+              <p className="mt-2 text-xs text-muted-foreground">
+                Please confirm this is the correct address before filling out the form.
+              </p>
+            </div>
+          </div>
         </div>
 
         {error && (
