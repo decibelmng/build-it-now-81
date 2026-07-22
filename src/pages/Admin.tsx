@@ -184,7 +184,7 @@ const Admin = () => {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead className="hidden sm:table-cell">Type</TableHead>
-                      <TableHead className="hidden md:table-cell">Address</TableHead>
+                      <TableHead className="hidden md:table-cell">Location</TableHead>
                       <TableHead className="hidden lg:table-cell">Created</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -195,7 +195,8 @@ const Admin = () => {
                         <TableCell className="hidden sm:table-cell">
                           <Badge variant="secondary">{p.property_type}</Badge>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell text-muted-foreground">{p.address}</TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground">{[p.city, p.state].filter(Boolean).join(", ")}</TableCell>
+
                         <TableCell className="hidden lg:table-cell text-muted-foreground">
                           {new Date(p.created_at).toLocaleDateString()}
                         </TableCell>
