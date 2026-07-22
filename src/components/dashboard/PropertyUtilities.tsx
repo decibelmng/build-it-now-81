@@ -147,9 +147,22 @@ const PropertyUtilities = () => {
   const { data: utilities = [], isLoading } = useQuery({
     queryKey: ["property_utilities_full", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("property_utilities").select("*, properties(name)").order("provider_name");
-      if (error) throw error;
-      return data as any[];
+      // Owner rows come from the base table; shared rows come from the masked view
+      // (credential fields excluded server-side for non-owners).
+      const [{ data: owned, error: e1 }, { data: shared, error: e2 }] = await Promise.all([
+        supabase.from("property_utilities").select("*, properties(name)").order("provider_name"),
+        supabase.from("property_utilities_shared").select("*, properties(name)").order("provider_name"),
+      ]);
+      if (e1) throw e1;
+      if (e2) throw e2;
+      const seen = new Set<string>();
+      const merged: any[] = [];
+      for (const row of [...(owned ?? []), ...(shared ?? [])]) {
+        if (seen.has(row.id)) continue;
+        seen.add(row.id);
+        merged.push(row);
+      }
+      return merged;
     },
     enabled: !!user,
   });
