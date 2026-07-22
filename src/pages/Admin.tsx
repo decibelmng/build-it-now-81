@@ -21,17 +21,14 @@ const Admin = () => {
   const { data: stats } = useQuery({
     queryKey: ["admin_stats"],
     queryFn: async () => {
-      const [profiles, properties, logs, shares] = await Promise.all([
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("properties").select("id", { count: "exact", head: true }),
-        supabase.from("maintenance_logs").select("id", { count: "exact", head: true }),
-        supabase.from("property_shares").select("id", { count: "exact", head: true }),
-      ]);
+      const { data, error } = await supabase.rpc("admin_get_stats");
+      if (error) throw error;
+      const s = (data ?? {}) as any;
       return {
-        users: profiles.count ?? 0,
-        properties: properties.count ?? 0,
-        maintenanceLogs: logs.count ?? 0,
-        shares: shares.count ?? 0,
+        users: s.users ?? 0,
+        properties: s.properties ?? 0,
+        maintenanceLogs: s.maintenanceLogs ?? 0,
+        shares: s.shares ?? 0,
       };
     },
     enabled: isAdmin === true,
@@ -41,12 +38,9 @@ const Admin = () => {
   const { data: allUsers = [] } = useQuery({
     queryKey: ["admin_users"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("admin_list_users", { p_search: null });
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
     enabled: isAdmin === true,
   });
@@ -55,12 +49,9 @@ const Admin = () => {
   const { data: allProperties = [] } = useQuery({
     queryKey: ["admin_properties"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("properties")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("admin_list_properties", { p_search: null });
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
     enabled: isAdmin === true,
   });
@@ -69,15 +60,13 @@ const Admin = () => {
   const { data: allShares = [] } = useQuery({
     queryKey: ["admin_shares"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("property_shares")
-        .select("*, properties(name)")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("admin_list_shares");
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
     enabled: isAdmin === true,
   });
+
 
   if (adminLoading) {
     return (
