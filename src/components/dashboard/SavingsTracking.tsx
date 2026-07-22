@@ -6,14 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  DollarSign, TrendingUp, Wrench, CheckCircle2,
+  DollarSign, TrendingUp, Wrench, CheckCircle2, PiggyBank, ShieldCheck, ArrowRight,
   Droplets, Zap, Wind, Hammer, TreePine, Cog, Gem, Package, PlugZap,
 } from "lucide-react";
 import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useHomeSavings } from "@/hooks/useHomeSavings";
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
 import { format, parseISO, startOfMonth } from "date-fns";
 import SavingsForecast from "./SavingsForecast";
+
 
 const categoryConfig: Record<string, { label: string; icon: React.ElementType }> = {
   plumbing: { label: "Plumbing", icon: Droplets },
