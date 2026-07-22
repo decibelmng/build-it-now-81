@@ -1100,6 +1100,51 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       )}
 
       <BulkClassifyDialog open={bulkClassifyOpen} onOpenChange={setBulkClassifyOpen} />
+
+      {replaceDialog && (
+        <ReplacementConfirmDialog
+          open={!!replaceDialog}
+          onOpenChange={(o) => { if (!o) setReplaceDialog(null); }}
+          existingName={replaceDialog.existing.name}
+          onYes={async () => {
+            const retired = replaceDialog.logDate || new Date().toISOString().split("T")[0];
+            const { error } = await supabase
+              .from("home_items")
+              .update({
+                status: "replaced",
+                retired_at: retired,
+                retirement_log_id: replaceDialog.logId,
+              })
+              .eq("id", replaceDialog.existing.id);
+            if (error) {
+              toast({ title: "Could not retire component", description: error.message, variant: "destructive" });
+            } else {
+              toast({ title: `${replaceDialog.existing.name} retired — its history stays on your timeline.` });
+              queryClient.invalidateQueries({ queryKey: ["home_items"] });
+              queryClient.invalidateQueries({ queryKey: ["home_components_for_property"] });
+            }
+            setReplaceDialog(null);
+          }}
+          onNo={() => setReplaceDialog(null)}
+          onAddNew={() => {
+            // Prefill inventory form + carry the log id so the new item's retirement links back
+            setPendingInventoryAction({
+              mode: "add",
+              category: replaceDialog.logCategory || replaceDialog.existing.category || "general",
+              timestamp: Date.now(),
+              prefill: {
+                name: replaceDialog.existing.name,
+                system_key: (replaceDialog.existing as any).system_key || "",
+                install_date: replaceDialog.logDate || new Date().toISOString().split("T")[0],
+                purchase_price: replaceDialog.logCost || "",
+              },
+              retirement_log_id: replaceDialog.logId,
+            });
+            setReplaceDialog(null);
+            onNavigate?.("inventory");
+          }}
+        />
+      )}
     </div>
   );
 };
