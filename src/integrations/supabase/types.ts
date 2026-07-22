@@ -255,6 +255,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "documents_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "home_contacts_shared"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "documents_contractor_submission_id_fkey"
             columns: ["contractor_submission_id"]
             isOneToOne: false
@@ -737,6 +744,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "home_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_logs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "home_contacts_shared"
             referencedColumns: ["id"]
           },
           {
@@ -1359,6 +1373,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "recurring_templates_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "home_contacts_shared"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "recurring_templates_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
@@ -1537,6 +1558,79 @@ export type Database = {
           user_id: string | null
         }
         Relationships: []
+      }
+      home_contacts_shared: {
+        Row: {
+          company: string | null
+          created_at: string | null
+          email: string | null
+          id: string | null
+          is_archived: boolean | null
+          is_preferred: boolean | null
+          name: string | null
+          phone: string | null
+          property_id: string | null
+          role: string | null
+          share_to_directory: boolean | null
+          updated_at: string | null
+          user_id: string | null
+          website_url: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string | null
+          is_archived?: boolean | null
+          is_preferred?: boolean | null
+          name?: string | null
+          phone?: string | null
+          property_id?: string | null
+          role?: string | null
+          share_to_directory?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string | null
+          is_archived?: boolean | null
+          is_preferred?: boolean | null
+          name?: string | null
+          phone?: string | null
+          property_id?: string | null
+          role?: string | null
+          share_to_directory?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_contacts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "home_contacts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "home_contacts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
+          },
+        ]
       }
       property_equity_summary: {
         Row: {
