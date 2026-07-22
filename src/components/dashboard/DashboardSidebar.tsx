@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSubscription, isProFeature } from "@/hooks/useSubscription";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import PropertySwitcher from "@/components/property/PropertySwitcher";
 
 type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "tax-investment" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
 
