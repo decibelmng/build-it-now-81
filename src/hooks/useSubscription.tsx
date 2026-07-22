@@ -3,9 +3,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 export type SubscriptionTier = "free" | "pro";
+export type SubscriptionPlan = "free" | "pro" | "beta";
 
 interface SubscriptionContextType {
   tier: SubscriptionTier;
+  plan: SubscriptionPlan;
   subscribed: boolean;
   subscriptionEnd: string | null;
   loading: boolean;
