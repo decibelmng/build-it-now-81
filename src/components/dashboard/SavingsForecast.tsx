@@ -124,10 +124,43 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
               <div>
                 <p className="font-body text-xs text-muted-foreground">Recommended Monthly Savings</p>
                 <p className="font-display text-2xl font-bold">${forecast.recommendedMonthlySavings.toLocaleString()}<span className="font-body text-sm font-normal text-muted-foreground">/mo</span></p>
+                {(() => {
+                  const rec = forecast.recommendedMonthlySavings;
+                  if (depositTotal == null) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => onNavigate?.("properties")}
+                        className="mt-1 inline-flex items-center gap-1 font-body text-xs text-accent hover:underline"
+                      >
+                        Set your monthly deposit <ChevronRight className="h-3 w-3" />
+                      </button>
+                    );
+                  }
+                  const diff = depositTotal - rec;
+                  const onTrack = diff >= 0;
+                  const Icon = onTrack ? Check : (diff < 0 ? ArrowUp : ArrowDown);
+                  return (
+                    <div className="mt-1 flex items-center gap-1.5 font-body text-xs text-muted-foreground">
+                      <Icon className={`h-3 w-3 ${onTrack ? "text-sage" : "text-accent"}`} />
+                      <span>
+                        Recommended: ${rec.toLocaleString()} / Your current deposit: ${depositTotal.toLocaleString()}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onNavigate?.("properties")}
+                        className="text-accent hover:underline"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </CardContent>
         </Card>
+
 
         <Card className="border-border/50">
           <CardContent className="p-4">
