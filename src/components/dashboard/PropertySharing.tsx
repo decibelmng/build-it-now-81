@@ -292,10 +292,15 @@ const PropertySharing = () => {
                     </div>
                     <div>
                       <h4 className="font-display text-sm font-semibold">{share.properties?.name}</h4>
-                      <p className="font-body text-xs text-muted-foreground">Shared with you · Collaborator access</p>
+                      <p className="font-body text-xs text-muted-foreground">
+                        Shared with you · {(share.permission ?? "viewer") === "editor" ? "Editor access" : "Viewer access"}
+                      </p>
                     </div>
                   </div>
-                  <Badge variant="default" className="font-body text-xs">Active</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-body text-xs capitalize">{share.permission ?? "viewer"}</Badge>
+                    <Badge variant="default" className="font-body text-xs">Active</Badge>
+                  </div>
                 </CardContent>
               </Card>
             ))}
