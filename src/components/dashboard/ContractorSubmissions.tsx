@@ -253,7 +253,7 @@ const ContractorSubmissions = () => {
         </p>
       </div>
 
-      </div>
+
 
       <PropertyFilterBar />
 
