@@ -293,12 +293,14 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     : homeComponents;
 
   const { data: logs = [], isLoading } = useQuery({
-    queryKey: ["maintenance_logs", user?.id],
+    queryKey: ["maintenance_logs", user?.id, selectedPropertyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("maintenance_logs")
         .select("*, properties(name), home_contacts(name, company)")
         .order("created_at", { ascending: false });
+      if (selectedPropertyId !== "all") q = q.eq("property_id", selectedPropertyId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
