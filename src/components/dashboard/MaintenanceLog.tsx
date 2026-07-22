@@ -532,6 +532,27 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         toast({ title: editingId ? "Maintenance log updated!" : "Maintenance log added!" });
       }
 
+      // Replacement lifecycle trigger: capital expense OR title/description matches replace keywords
+      const boundComponentId = result.component_id;
+      const replaceRegex = /replac|new (water heater|hvac|roof|furnace|ac unit)/i;
+      const looksLikeReplacement = form.expense_type === "capital_improvement" ||
+        replaceRegex.test(form.title || "") ||
+        replaceRegex.test(form.description || "");
+      if (!editingId && boundComponentId && looksLikeReplacement) {
+        const existing = homeComponents.find((c: any) => c.id === boundComponentId);
+        if (existing && ((existing as any).status ?? "active") === "active") {
+          setReplaceDialog({
+            existing,
+            logId: result.logId,
+            logDate: form.scheduled_date,
+            logCost: form.cost,
+            logCategory: form.category,
+            logTitle: form.title,
+            propertyId: form.property_id,
+          });
+        }
+      }
+
       resetForm();
     },
     onError: (err: Error) => {
