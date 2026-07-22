@@ -387,13 +387,15 @@ const PropertyUtilities = () => {
             Track home accounts, budgets, and monthly payments in one place
           </p>
         </div>
-        <Button
-          onClick={() => openAdd()}
-          disabled={properties.length === 0}
-          className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body min-h-[44px]"
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Account
-        </Button>
+        {!isViewerOnly && (
+          <Button
+            onClick={() => openAdd()}
+            disabled={properties.length === 0}
+            className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body min-h-[44px]"
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Account
+          </Button>
+        )}
       </div>
 
       {/* Property filter tabs */}
