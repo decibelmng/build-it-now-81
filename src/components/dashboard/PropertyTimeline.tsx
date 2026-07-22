@@ -337,11 +337,11 @@ const PropertyTimeline = () => {
       title: `${typeLabel} — ${fmtCurrency(value)}`,
       description: [
         val.source,
-        val.properties?.name,
+        getPropertyDisplayName(val.properties) || null,
       ].filter(Boolean).join(" · ") || null,
       category: "financial",
       cost: null,
-      propertyName: val.properties?.name,
+      propertyName: getPropertyDisplayName(val.properties),
       valuationType: val.valuation_type,
       valuationSource: val.source,
       valuationNotes: val.notes,
