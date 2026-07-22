@@ -213,6 +213,7 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </PropertyFilterProvider>
   );
 };
 
