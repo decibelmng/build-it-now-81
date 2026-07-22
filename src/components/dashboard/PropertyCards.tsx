@@ -19,6 +19,8 @@ import type { Tables } from "@/integrations/supabase/types";
 import PurchaseInfoSection from "@/components/dashboard/PurchaseInfoSection";
 import CostBasisSummarySection from "@/components/dashboard/CostBasisSummarySection";
 import HomeSystemsSettings from "@/components/dashboard/HomeSystemsSettings";
+import LeaseDetailsCard from "@/components/dashboard/LeaseDetailsCard";
+import { RESIDENCY_OPTIONS, useResidencyFeatures, type ResidencyType } from "@/hooks/useResidencyFeatures";
 
 type Property = Tables<"properties">;
 
@@ -27,6 +29,7 @@ const propertyTypes = [
   { value: "condo", label: "Condo" },
   { value: "townhouse", label: "Townhouse" },
   { value: "multi_family", label: "Multi Family" },
+  { value: "apartment", label: "Apartment" },
   { value: "other", label: "Other" },
 ];
 
