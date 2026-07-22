@@ -195,7 +195,7 @@ const Auth = () => {
     } else {
       const { error } = await signUp(email, password, displayName);
       if (error) {
-        toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
+        toast({ title: "Sign up failed", description: friendlyPasswordError(error as any), variant: "destructive" });
       } else {
         navigate("/dashboard");
       }
