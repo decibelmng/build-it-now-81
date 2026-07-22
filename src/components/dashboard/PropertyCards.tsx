@@ -38,6 +38,7 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { rolesByProperty } = usePropertyRoles();
   const [open, setOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(() => {
