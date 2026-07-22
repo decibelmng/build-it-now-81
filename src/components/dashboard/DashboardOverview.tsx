@@ -181,6 +181,34 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
       {/* Quick Start Checklist */}
       <QuickStartChecklist onNavigate={(s) => onNavigate?.(s)} />
 
+      {/* Portfolio rollup (multi-property only) */}
+      {properties.length >= 2 && (
+        <PortfolioRollup
+          properties={properties}
+          onSelectProperty={() => onNavigate?.("properties")}
+        />
+      )}
+
+      {/* Scope selector — multi-property only */}
+      {properties.length >= 2 && (
+        <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
+          <p className="font-body text-sm text-muted-foreground">
+            Showing activity for {selectedPropertyId === "all" ? "all properties" : (properties.find((p: any) => p.id === selectedPropertyId)?.name || "property")}
+          </p>
+          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+            <SelectTrigger className="w-[220px] rounded-full font-body">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All properties</SelectItem>
+              {properties.map((p: any) => (
+                <SelectItem key={p.id} value={p.id}>{p.name || "Untitled"}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Onboarding banner — missing purchase price */}
       {showOnboardingBanner && (
         <div className="mb-6 relative flex items-start gap-3 rounded-lg border border-accent/30 bg-accent/5 p-4">
