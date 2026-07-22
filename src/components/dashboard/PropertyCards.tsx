@@ -38,7 +38,12 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const id = sessionStorage.getItem("selectedPropertyId");
+    if (id) sessionStorage.removeItem("selectedPropertyId");
+    return id;
+  });
   const [form, setForm] = useState({
     name: "", address: "", city: "", state: "", zip: "",
     property_type: "single_family", bedrooms: "", bathrooms: "", sqft: "", year_built: "",
