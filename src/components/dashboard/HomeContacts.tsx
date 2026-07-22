@@ -522,17 +522,61 @@ const HomeContacts = () => {
           {[1, 2, 3].map((i) => <Card key={i} className="animate-pulse border-border/50"><CardContent className="p-4"><div className="h-16 rounded bg-muted" /></CardContent></Card>)}
         </div>
       ) : visibleContacts.length === 0 && utilities.length === 0 ? (
-        <Card className="border-dashed border-2 border-border/50">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <Users className="mb-4 h-10 w-10 text-muted-foreground" />
-            <h3 className="mb-1 font-display text-lg font-semibold">
-              {showArchived ? "No archived contacts" : search ? "No matches" : "No contacts yet"}
-            </h3>
-            <p className="font-body text-sm text-muted-foreground">
-              {showArchived ? "Restore an archived contact to see it here" : "Save your go-to contractors and service providers"}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card className="border-dashed border-2 border-border/50">
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <Users className="mb-4 h-10 w-10 text-muted-foreground" />
+              <h3 className="mb-1 font-display text-lg font-semibold">
+                {showArchived ? "No archived contacts" : search ? "No matches" : "No contacts yet"}
+              </h3>
+              <p className="font-body text-sm text-muted-foreground">
+                {showArchived ? "Restore an archived contact to see it here" : "Save your go-to contractors and service providers"}
+              </p>
+            </CardContent>
+          </Card>
+          {showPopularPros && popularPros.length > 0 && (
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-accent" />
+                <h3 className="font-display text-base font-semibold">Popular pros near you</h3>
+                {(popularCity || popularState) && (
+                  <span className="font-body text-xs text-muted-foreground">
+                    <MapPin className="inline h-3 w-3 mr-0.5" />
+                    {[popularCity, popularState].filter(Boolean).join(", ")}
+                  </span>
+                )}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {popularPros.map((p: any) => (
+                  <Card key={p.id} className="border-border/50">
+                    <CardContent className="p-3 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-body text-sm font-semibold truncate">{p.display_name}</p>
+                        <p className="font-body text-xs text-muted-foreground">
+                          Saved by {p.times_saved} homeowner{p.times_saved !== 1 ? "s" : ""}
+                          {p.city ? ` in ${p.city}` : p.state ? ` in ${p.state}` : ""}
+                        </p>
+                        {p.role && (
+                          <Badge variant="secondary" className="mt-1 font-body text-[10px]">
+                            {roles.find(r => r.value === p.role)?.label ?? p.role}
+                          </Badge>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full font-body shrink-0"
+                        onClick={() => addFromDirectory(p)}
+                      >
+                        <Plus className="mr-1 h-3.5 w-3.5" /> Add
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="space-y-3">
           {visibleContacts.map((contact: any) => {
