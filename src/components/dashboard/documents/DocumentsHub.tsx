@@ -46,7 +46,9 @@ const DocumentsHub = () => {
     enabled: !!user,
   });
 
-  const selectedPropertyId = properties.length > 0 ? properties[0].id : null;
+  const defaultUploadPropertyId = selectedPropertyId !== "all"
+    ? selectedPropertyId
+    : (properties.length > 0 ? properties[0].id : null);
 
   // Build query with server-side filters
   const buildQuery = useCallback(
