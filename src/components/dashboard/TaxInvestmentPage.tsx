@@ -16,6 +16,7 @@ import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import TaxReportDialog from "@/components/dashboard/TaxReportDialog";
 import HomeValuationSection from "@/components/dashboard/HomeValuationSection";
+import TaxPackageSection from "@/components/dashboard/TaxPackageSection";
 import type { Tables } from "@/integrations/supabase/types";
 
 const fmtCurrency = (n: number | null | undefined) =>
