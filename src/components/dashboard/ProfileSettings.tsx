@@ -37,13 +37,33 @@ const ProfileSettings = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name, phone, persona, avatar_url")
+        .select("display_name, phone, persona, avatar_url, share_contacts_to_directory")
         .eq("user_id", user!.id)
         .single();
       if (error) throw error;
       return data;
     },
     enabled: !!user,
+  });
+
+  const toggleDirectorySharing = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { error } = await supabase.rpc("set_directory_sharing", { p_enabled: enabled });
+      if (error) throw error;
+    },
+    onSuccess: (_, enabled) => {
+      queryClient.invalidateQueries({ queryKey: ["profile_settings"] });
+      queryClient.invalidateQueries({ queryKey: ["home_contacts"] });
+      toast({
+        title: enabled ? "Sharing turned on" : "Sharing turned off",
+        description: enabled
+          ? "New business contacts will be suggested to nearby homeowners."
+          : "Your contributions have been removed from the community directory.",
+      });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
   });
 
   const { data: userProperties = [] } = useQuery({
