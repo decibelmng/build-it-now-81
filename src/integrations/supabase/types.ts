@@ -744,6 +744,7 @@ export type Database = {
           id: string
           persona: Database["public"]["Enums"]["user_persona"] | null
           phone: string | null
+          share_contacts_to_directory: boolean
           updated_at: string
           user_id: string
         }
@@ -754,6 +755,7 @@ export type Database = {
           id?: string
           persona?: Database["public"]["Enums"]["user_persona"] | null
           phone?: string | null
+          share_contacts_to_directory?: boolean
           updated_at?: string
           user_id: string
         }
@@ -764,6 +766,7 @@ export type Database = {
           id?: string
           persona?: Database["public"]["Enums"]["user_persona"] | null
           phone?: string | null
+          share_contacts_to_directory?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -1412,6 +1415,10 @@ export type Database = {
       }
       normalize_company_name: { Args: { p_name: string }; Returns: string }
       normalize_phone: { Args: { p_phone: string }; Returns: string }
+      set_directory_sharing: {
+        Args: { p_enabled: boolean }
+        Returns: undefined
+      }
       suggest_providers: {
         Args: {
           p_city?: string
