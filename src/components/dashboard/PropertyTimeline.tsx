@@ -73,7 +73,7 @@ const fmtCurrency = (n: number) =>
 
 const PropertyTimeline = () => {
   const { user } = useAuth();
-  const [selectedProperty, setSelectedProperty] = useState<string>("all");
+  const { selectedPropertyId: selectedProperty } = usePropertyFilter();
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
   const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(["construction", "maintenance", "major_repair", "improvement", "inventory", "utility", "transfer", "document", "financial"]));
 
@@ -372,27 +372,15 @@ const PropertyTimeline = () => {
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6">
         <div>
           <h2 className="font-display text-2xl font-bold">Property Timeline</h2>
           <p className="font-body text-sm text-muted-foreground">
             Full history from construction to present
           </p>
         </div>
-        {properties.length > 1 && (
-          <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-            <SelectTrigger className="w-48 font-body">
-              <SelectValue placeholder="All properties" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="font-body">All Properties</SelectItem>
-              {properties.map((p) => (
-                <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
       </div>
+      <PropertyFilterBar />
 
       {/* Category Filters */}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

@@ -35,7 +35,7 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType }>
 const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
   const { data: costBasis } = useCostBasisAggregated();
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string | "all">("all");
+  const { selectedPropertyId } = usePropertyFilter();
 
   const { data: propertiesList = [] } = useQuery({
     queryKey: ["savings_tracking_properties", user?.id],
@@ -146,6 +146,7 @@ const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => voi
         <h2 className="font-display text-2xl font-bold">Savings & Spending</h2>
         <p className="font-body text-sm text-muted-foreground">Forecast future costs and track your maintenance spending</p>
       </div>
+      <PropertyFilterBar />
 
       {/* Predictive Forecast Section */}
       <SavingsForecast onNavigate={onNavigate} />
@@ -162,16 +163,6 @@ const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => voi
               Your monthly deposit minus what you actually spent
             </p>
           </div>
-          {propertiesList.length > 1 && (
-            <Tabs value={selectedPropertyId} onValueChange={(v) => setSelectedPropertyId(v as any)}>
-              <TabsList>
-                <TabsTrigger value="all" className="font-body text-xs">All homes</TabsTrigger>
-                {propertiesList.map((p) => (
-                  <TabsTrigger key={p.id} value={p.id} className="font-body text-xs">{p.name}</TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          )}
         </div>
 
         {!savings.hasDeposit ? (
