@@ -465,13 +465,15 @@ const HomeContacts = () => {
               </div>
               <Switch checked={form.is_preferred} onCheckedChange={(v) => setForm({ ...form, is_preferred: v })} />
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2">
-              <div>
-                <p className="font-body text-sm font-medium">Share to directory</p>
-                <p className="font-body text-xs text-muted-foreground">Suggest this contact to other owners on the platform</p>
+            {isSharableRole && (
+              <div className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2">
+                <div className="pr-3">
+                  <p className="font-body text-sm font-medium">Share this business with other homeowners</p>
+                  <p className="font-body text-xs text-muted-foreground">Only the business name, trade, phone and city. Never your name, notes, or what you paid.</p>
+                </div>
+                <Switch checked={form.share_to_directory} onCheckedChange={(v) => setForm({ ...form, share_to_directory: v })} />
               </div>
-              <Switch checked={form.share_to_directory} onCheckedChange={(v) => setForm({ ...form, share_to_directory: v })} />
-            </div>
+            )}
             <DialogFooter>
               <Button
                 type="submit"
