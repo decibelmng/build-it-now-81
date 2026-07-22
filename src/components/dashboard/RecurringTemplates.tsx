@@ -438,6 +438,9 @@ const RecurringTemplates = () => {
         </CardContent>
       </Card>
 
+      <PropertyFilterBar />
+
+
       {properties.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-16">
