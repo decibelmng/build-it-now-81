@@ -167,6 +167,41 @@ export const valuationSchema = z.object({
   property_id: z.string().min(1),
 });
 
+// ── Utility / Account ──
+export const utilityAccountSchema = z.object({
+  property_id: z.string().min(1, "Property is required"),
+  service_type: z.string().min(1, "Service type is required"),
+  provider_name: z.string().min(1, "Provider name is required").max(200),
+  account_number: z.string().max(100).optional().or(z.literal("")),
+  policy_number: z.string().max(100).optional().or(z.literal("")),
+  current_balance: z.string().refine((v) => !v || !isNaN(Number(v)), { message: "Invalid balance" }).optional(),
+  balance_as_of: z.string().optional(),
+  vendor_url: urlOrEmpty,
+  login_url: urlOrEmpty,
+  username: z.string().max(200).optional().or(z.literal("")),
+  email_on_account: z.string().email("Invalid email").optional().or(z.literal("")),
+  password_hint: z.string().max(300).optional().or(z.literal("")),
+  budget_amount: z.string().refine((v) => !v || !isNaN(Number(v)), { message: "Invalid budget" }).optional(),
+  monthly_cost: z.string().refine((v) => !v || !isNaN(Number(v)), { message: "Invalid cost" }).optional(),
+  is_autopay: z.boolean().optional(),
+  due_day_of_month: z.string().refine((v) => !v || (Number(v) >= 1 && Number(v) <= 31), { message: "Day must be 1-31" }).optional(),
+  paid_via: z.enum(["direct", "escrow", "included_in_rent", "hoa_covered", "landlord_paid"]).optional(),
+  is_income: z.boolean().optional(),
+  contract_end_date: z.string().optional(),
+  include_in_transfer: z.boolean().optional(),
+  contact_name: z.string().max(200).optional().or(z.literal("")),
+  contact_phone: z.string().max(30).optional().or(z.literal("")),
+  contact_email: z.string().email("Invalid email").optional().or(z.literal("")),
+  notes: z.string().max(2000).optional().or(z.literal("")),
+});
+
+export const utilityPaymentSchema = z.object({
+  utility_id: z.string().min(1),
+  payment_month: z.string().min(1, "Month is required"),
+  amount: z.number().min(0).max(9999999),
+  note: z.string().max(500).optional(),
+});
+
 // ── File Upload Validation ──
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export const ALLOWED_FILE_TYPES = [
