@@ -85,6 +85,7 @@ const ContractorLinks = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["contractor_links"] });
+      notifyIfDifferent(form.property_id);
       const url = `${window.location.origin}/service-log/${data.token}`;
       setCreatedLink(url);
       toast({ title: "Link created!", description: "Share this link with your contractor." });
@@ -209,6 +210,9 @@ const ContractorLinks = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PropertyFilterBar />
+
 
       {/* Quick Share Card */}
       {defaultLinkUrl && <QuickShareCard linkUrl={defaultLinkUrl} />}
