@@ -16,7 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Users, Phone, Mail, Trash2, Building2, Wrench, DollarSign, ChevronDown, ChevronUp, Zap, Paperclip, MoreVertical, Pencil, Star, Archive, ArchiveRestore, Globe, Search } from "lucide-react";
+import { Plus, Users, Phone, Mail, Trash2, Building2, Wrench, DollarSign, ChevronDown, ChevronUp, Zap, Paperclip, MoreVertical, Pencil, Star, Archive, ArchiveRestore, Globe, Search, Sparkles, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
