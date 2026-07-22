@@ -95,9 +95,12 @@ const SidebarNav = ({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-border px-6 py-5">
-        <Home className="h-6 w-6 text-accent" />
-        <span className="font-display text-xl font-bold">HomeLog</span>
+      <div className="flex flex-col gap-3 border-b border-border px-4 py-4">
+        <div className="flex items-center gap-2">
+          <Home className="h-6 w-6 text-accent" />
+          <span className="font-display text-xl font-bold">HomeLog</span>
+        </div>
+        <PropertySwitcher className="w-full" />
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-3">
