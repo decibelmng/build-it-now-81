@@ -265,7 +265,7 @@ const RecurringTemplates = () => {
         </div>
         <Dialog open={open} onOpenChange={(o) => {
           setOpen(o);
-          if (o && selectedPropertyId !== "all" && !form.property_id) {
+          if (o && selectedPropertyId && !form.property_id) {
             setForm((f) => ({ ...f, property_id: selectedPropertyId }));
           }
         }}>
