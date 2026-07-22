@@ -22,6 +22,8 @@ import { format } from "date-fns";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 import { contactSchema, normalizeWebsiteUrl, validateForm } from "@/lib/schemas";
 import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 
 const roles = [
   { value: "plumber", label: "Plumber" },
@@ -54,6 +56,7 @@ const HomeContacts = () => {
   const queryClient = useQueryClient();
   const canEditAny = useCanEditAnyProperty();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { selectedPropertyId, notifyIfDifferent } = usePropertyFilter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ContactForm>(emptyForm);
   const [expandedContact, setExpandedContact] = useState<string | null>(null);
@@ -132,7 +135,8 @@ const HomeContacts = () => {
 
   const openAddDialog = () => {
     setEditingId(null);
-    setForm({ ...emptyForm, property_id: properties[0]?.id ?? "" });
+    const pref = selectedPropertyId !== "all" ? selectedPropertyId : properties[0]?.id ?? "";
+    setForm({ ...emptyForm, property_id: pref });
     setDialogOpen(true);
   };
 
@@ -181,6 +185,7 @@ const HomeContacts = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["home_contacts"] });
+      notifyIfDifferent(form.property_id);
       setDialogOpen(false);
       setEditingId(null);
       setForm(emptyForm);
