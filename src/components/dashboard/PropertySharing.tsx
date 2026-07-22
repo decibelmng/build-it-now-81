@@ -177,8 +177,28 @@ const PropertySharing = () => {
                 <Label className="font-body">Email Address *</Label>
                 <Input type="email" placeholder="collaborator@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="font-body" />
               </div>
+              <div className="space-y-2">
+                <Label className="font-body">Access level *</Label>
+                <Select value={form.permission} onValueChange={(v) => setForm({ ...form, permission: v as "viewer" | "editor" })}>
+                  <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="viewer" className="font-body">
+                      <div className="flex flex-col">
+                        <span className="font-semibold">Viewer</span>
+                        <span className="text-xs text-muted-foreground">Can see everything except account numbers and logins</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="editor" className="font-body">
+                      <div className="flex flex-col">
+                        <span className="font-semibold">Editor</span>
+                        <span className="text-xs text-muted-foreground">Can also add logs, payments, documents and contacts</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <p className="font-body text-xs text-muted-foreground">
-                The user will get full collaborator access — they can view everything and add logs, documents, and contacts.
+                Only the owner can manage sharing, transfers, billing, and property financial details.
               </p>
               <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={inviteUser.isPending || !form.property_id}>
                 {inviteUser.isPending ? "Inviting..." : "Send Invitation"}
