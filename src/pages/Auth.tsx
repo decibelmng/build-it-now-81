@@ -111,7 +111,12 @@ const Auth = () => {
         if (error) throw error;
       }
     } catch (error: any) {
-      toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });
+      console.error("[Auth] Google sign-in failed", error);
+      toast({
+        title: "Google sign-in failed",
+        description: error?.message || error?.error_description || "Unknown provider error",
+        variant: "destructive",
+      });
       setGoogleLoading(false);
     }
   };
