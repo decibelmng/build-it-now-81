@@ -22,7 +22,11 @@ const PropertySharing = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ property_id: "", email: "" });
+  const [form, setForm] = useState<{ property_id: string; email: string; permission: "viewer" | "editor" }>({
+    property_id: "",
+    email: "",
+    permission: "viewer",
+  });
 
   const { data: properties = [] } = useQuery({
     queryKey: ["properties", user?.id],
