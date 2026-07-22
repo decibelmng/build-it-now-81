@@ -523,7 +523,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       queryClient.invalidateQueries({ queryKey: ["home_contacts"] });
       queryClient.invalidateQueries({ queryKey: ["maintenance_logs_for_contacts"] });
       queryClient.invalidateQueries({ queryKey: ["home_items"] });
-      notifyIfDifferent(form.property_id, "Entry saved to a different property");
+      notifyIfDifferent(form.property_id);
       setOpen(false);
 
       const shouldShowSheet = result.component_id || result.matchResult;
