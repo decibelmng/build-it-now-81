@@ -181,6 +181,7 @@ const RecurringTemplates = () => {
       queryClient.invalidateQueries({ queryKey: ["recurring_templates"] });
       queryClient.invalidateQueries({ queryKey: ["home_contacts"] });
       queryClient.invalidateQueries({ queryKey: ["all_home_contacts"] });
+      notifyIfDifferent(form.property_id);
       setOpen(false);
       setForm({ title: "", description: "", category: "general", property_id: "", estimated_cost: "", interval_months: "12", next_due_date: "", contact_id: "" });
       setShowNewContact(false);
