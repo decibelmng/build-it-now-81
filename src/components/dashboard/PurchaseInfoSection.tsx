@@ -46,6 +46,8 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
     purchase_closing_costs: "",
   });
 
+  const [monthlyDeposit, setMonthlyDeposit] = useState("");
+
   const [sale, setSale] = useState({
     sale_price: "",
     sale_date: "",
