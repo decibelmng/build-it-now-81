@@ -781,6 +781,7 @@ export type Database = {
           city: string | null
           created_at: string
           current_estimated_value: number | null
+          home_office_sqft: number | null
           home_systems: Json | null
           id: string
           image_url: string | null
@@ -820,6 +821,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           current_estimated_value?: number | null
+          home_office_sqft?: number | null
           home_systems?: Json | null
           id?: string
           image_url?: string | null
@@ -859,6 +861,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           current_estimated_value?: number | null
+          home_office_sqft?: number | null
           home_systems?: Json | null
           id?: string
           image_url?: string | null
@@ -951,6 +954,67 @@ export type Database = {
           },
           {
             foreignKeyName: "property_shares_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
+          },
+        ]
+      }
+      property_tax_year: {
+        Row: {
+          created_at: string
+          homeowners_insurance: number | null
+          id: string
+          mortgage_interest: number | null
+          notes: string | null
+          property_id: string
+          real_estate_taxes: number | null
+          tax_year: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          homeowners_insurance?: number | null
+          id?: string
+          mortgage_interest?: number | null
+          notes?: string | null
+          property_id: string
+          real_estate_taxes?: number | null
+          tax_year: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          homeowners_insurance?: number | null
+          id?: string
+          mortgage_interest?: number | null
+          notes?: string | null
+          property_id?: string
+          real_estate_taxes?: number | null
+          tax_year?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_tax_year_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "property_tax_year_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_tax_year_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "property_equity_summary"

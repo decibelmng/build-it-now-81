@@ -16,6 +16,7 @@ import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import TaxReportDialog from "@/components/dashboard/TaxReportDialog";
 import HomeValuationSection from "@/components/dashboard/HomeValuationSection";
+import TaxPackageSection from "@/components/dashboard/TaxPackageSection";
 import type { Tables } from "@/integrations/supabase/types";
 
 const fmtCurrency = (n: number | null | undefined) =>
@@ -305,6 +306,15 @@ const TaxInvestmentPage = () => {
       {allProperties.length > 0 && (
         <div className="mb-6">
           <ImprovementROISection
+            property={allProperties.find((p) => p.id === (selectedPropertyId || allProperties[0]?.id)) || allProperties[0]}
+          />
+        </div>
+      )}
+
+      {/* Annual Tax Package (utilities grid + home office + 1098) */}
+      {allProperties.length > 0 && (
+        <div className="mb-6">
+          <TaxPackageSection
             property={allProperties.find((p) => p.id === (selectedPropertyId || allProperties[0]?.id)) || allProperties[0]}
           />
         </div>

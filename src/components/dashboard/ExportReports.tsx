@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Download, FileText, DollarSign, Home } from "lucide-react";
+import { Download, FileText, DollarSign, Home, Receipt } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
@@ -189,6 +189,114 @@ const ExportReports = () => {
     }
   };
 
+  const exportTaxPackage = async () => {
+    setExporting("taxpkg");
+    try {
+      const year = new Date().getFullYear() - 1;
+      const start = `${year}-01-01`;
+      const end = `${year + 1}-01-01`;
+      const targets = selectedProperty === "all" ? properties : properties.filter((p) => p.id === selectedProperty);
+      if (!targets.length) throw new Error("No properties to export");
+
+      const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const DEDUCTIBLE = new Set(["utilities","connectivity","services","energy","security"]);
+
+      for (const p of targets) {
+        const [paymentsRes, taxRes, improvementsRes] = await Promise.all([
+          supabase
+            .from("utility_payments")
+            .select("amount, payment_month, property_utilities!inner(service_type, account_group, is_income)")
+            .eq("property_id", p.id).gte("payment_month", start).lt("payment_month", end),
+          supabase
+            .from("property_tax_year").select("*")
+            .eq("property_id", p.id).eq("tax_year", year).maybeSingle(),
+          supabase
+            .from("maintenance_logs").select("title, category, cost, completed_date")
+            .eq("property_id", p.id).eq("expense_type", "capital_improvement")
+            .gte("completed_date", start).lt("completed_date", end),
+        ]);
+
+        const payments = (paymentsRes.data ?? []) as any[];
+        const tax = taxRes.data as any;
+        const improvements = (improvementsRes.data ?? []) as any[];
+
+        const cols = new Map<string, { group: string; monthly: number[]; total: number }>();
+        let incomeTotal = 0;
+        payments.forEach((pay: any) => {
+          const svc = pay.property_utilities?.service_type;
+          const grp = pay.property_utilities?.account_group ?? "other";
+          const isIncome = pay.property_utilities?.is_income === true;
+          const amt = Number(pay.amount) || 0;
+          const m = new Date(pay.payment_month + "T00:00:00").getMonth();
+          if (isIncome || grp === "income") { incomeTotal += amt; return; }
+          if (!svc) return;
+          if (!cols.has(svc)) cols.set(svc, { group: grp, monthly: new Array(12).fill(0), total: 0 });
+          const c = cols.get(svc)!;
+          c.monthly[m] += amt; c.total += amt;
+        });
+        const colEntries = Array.from(cols.entries()).sort(([a],[b]) => a.localeCompare(b));
+
+        const sqft = p.sqft ?? 0;
+        const officeSqft = (p as any).home_office_sqft ?? 0;
+        const officePct = sqft > 0 && officeSqft > 0 ? (officeSqft / sqft) * 100 : null;
+
+        const rows: (string | number)[][] = [];
+        rows.push([`HomeLog Tax Package — ${p.name} — ${year}`]);
+        rows.push(["Address", p.address ?? ""]);
+        rows.push(["Total sqft", sqft || ""]);
+        rows.push(["Home office sqft", officeSqft || ""]);
+        rows.push(["Home office %", officePct != null ? `${officePct.toFixed(1)}%` : "—"]);
+        rows.push([]);
+        rows.push(["Monthly utilities & accounts"]);
+        rows.push(["Month", ...colEntries.map(([svc]) => svc.replace(/_/g," "))]);
+        for (let m = 0; m < 12; m++) {
+          rows.push([MONTHS[m], ...colEntries.map(([, v]) => v.monthly[m].toFixed(2))]);
+        }
+        rows.push(["Annual Total", ...colEntries.map(([, v]) => v.total.toFixed(2))]);
+        if (officePct != null) {
+          rows.push([
+            `Deductible at ${officePct.toFixed(1)}%`,
+            ...colEntries.map(([, v]) => DEDUCTIBLE.has(v.group) ? ((v.total * officePct) / 100).toFixed(2) : ""),
+          ]);
+        }
+        rows.push([]);
+        rows.push(["Rental income received", incomeTotal.toFixed(2)]);
+        rows.push([]);
+        rows.push(["Form 1098 / Schedule A items"]);
+        rows.push(["Mortgage interest", tax?.mortgage_interest ?? 0]);
+        rows.push(["Real estate taxes", tax?.real_estate_taxes ?? 0]);
+        rows.push(["Homeowners insurance", tax?.homeowners_insurance ?? 0]);
+        if (tax?.notes) rows.push(["Notes", tax.notes]);
+        rows.push([]);
+        rows.push(["Capital improvements"]);
+        rows.push(["Date","Title","Category","Cost"]);
+        let impTotal = 0;
+        improvements.forEach((i: any) => {
+          impTotal += Number(i.cost) || 0;
+          rows.push([i.completed_date ?? "", i.title ?? "", i.category ?? "", (Number(i.cost) || 0).toFixed(2)]);
+        });
+        rows.push(["","","Total", impTotal.toFixed(2)]);
+
+        const escape = (val: any) => {
+          const s = String(val ?? "");
+          return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+        };
+        const csv = rows.map((r) => r.map(escape).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const slug = (p.name || "home").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        a.href = url; a.download = `homelog-tax-${slug}-${year}.csv`; a.click();
+        URL.revokeObjectURL(url);
+      }
+      toast({ title: "Tax package exported!" });
+    } catch (err: any) {
+      toast({ title: "Export failed", description: err.message, variant: "destructive" });
+    } finally {
+      setExporting(null);
+    }
+  };
+
   const printReport = () => {
     window.print();
   };
@@ -214,6 +322,13 @@ const ExportReports = () => {
       description: "Property info, contacts, and document listing",
       icon: Home,
       action: exportPropertyDetails,
+    },
+    {
+      id: "taxpkg",
+      title: "Tax Package (CSV)",
+      description: `Full ${new Date().getFullYear() - 1} tax package: monthly utilities grid, deductibles, 1098 items, and improvements`,
+      icon: Receipt,
+      action: exportTaxPackage,
     },
   ];
 
@@ -247,7 +362,7 @@ const ExportReports = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {reports.map((report) => {
             const Icon = report.icon;
             return (
