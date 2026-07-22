@@ -297,11 +297,10 @@ const HomeContacts = () => {
     queryKey: ["popular_pros", popularState, popularCity],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("suggest_providers", {
-        p_role: null,
         p_city: popularCity,
         p_state: popularState,
         p_limit: 6,
-      });
+      } as any);
       if (error) throw error;
       return data ?? [];
     },
