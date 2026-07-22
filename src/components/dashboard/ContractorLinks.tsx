@@ -16,6 +16,8 @@ import { format } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
 import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
 import QuickShareCard from "@/components/dashboard/QuickShareCard";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 
 const ContractorLinks = () => {
   const { user } = useAuth();
@@ -25,6 +27,7 @@ const ContractorLinks = () => {
   const [qrToken, setQrToken] = useState<string | null>(null);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
   const [form, setForm] = useState({ property_id: "", label: "", expiry: "none" });
+  const { selectedPropertyId, notifyIfDifferent } = usePropertyFilter();
 
   // Get first property for default link
   const { data: properties = [] } = useQuery({
@@ -82,6 +85,7 @@ const ContractorLinks = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["contractor_links"] });
+      notifyIfDifferent(form.property_id);
       const url = `${window.location.origin}/service-log/${data.token}`;
       setCreatedLink(url);
       toast({ title: "Link created!", description: "Share this link with your contractor." });
@@ -117,8 +121,10 @@ const ContractorLinks = () => {
   const getPropertyName = (propertyId: string) =>
     properties.find((p) => p.id === propertyId)?.name || "Unknown";
 
-  // Filter out the default link from the custom links list
-  const customLinks = links.filter((l: any) => !l.is_default);
+  // Filter out the default link from the custom links list, then by selected property
+  const customLinks = links
+    .filter((l: any) => !l.is_default)
+    .filter((l: any) => selectedPropertyId === "all" || l.property_id === selectedPropertyId);
 
   return (
     <div className="space-y-6">
@@ -127,7 +133,13 @@ const ContractorLinks = () => {
           <h2 className="font-display text-2xl font-bold">Contractor Links</h2>
           <p className="text-sm text-muted-foreground">Generate shareable links for contractors to log their service visits.</p>
         </div>
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setCreatedLink(null); setForm({ property_id: "", label: "", expiry: "none" }); } }}>
+        <Dialog open={open} onOpenChange={(o) => {
+          setOpen(o);
+          if (!o) { setCreatedLink(null); setForm({ property_id: "", label: "", expiry: "none" }); }
+          else if (selectedPropertyId !== "all" && !form.property_id) {
+            setForm((f) => ({ ...f, property_id: selectedPropertyId }));
+          }
+        }}>
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" />Generate Link</Button>
           </DialogTrigger>
@@ -198,6 +210,9 @@ const ContractorLinks = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PropertyFilterBar />
+
 
       {/* Quick Share Card */}
       {defaultLinkUrl && <QuickShareCard linkUrl={defaultLinkUrl} />}

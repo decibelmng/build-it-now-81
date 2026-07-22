@@ -26,6 +26,8 @@ import { format, differenceInDays, startOfMonth, parseISO, subMonths } from "dat
 import { cn } from "@/lib/utils";
 import { validateForm, utilityAccountSchema } from "@/lib/schemas";
 import { useAccessRole } from "@/hooks/useAccessRole";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 
 // ── Service type config ──
 type ServiceType = {
@@ -125,7 +127,7 @@ const emptyForm = (property_id: string, service_type = "electric"): any => ({
 const PropertyUtilities = () => {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [propertyFilter, setPropertyFilter] = useState<string>("all");
+  const { selectedPropertyId: propertyFilter, setSelectedPropertyId: setPropertyFilter } = usePropertyFilter();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [prefillType, setPrefillType] = useState<string | null>(null);
@@ -398,17 +400,8 @@ const PropertyUtilities = () => {
         )}
       </div>
 
-      {/* Property filter tabs */}
-      {properties.length > 1 && (
-        <Tabs value={propertyFilter} onValueChange={setPropertyFilter} className="mb-4">
-          <TabsList className="flex w-full flex-wrap justify-start">
-            <TabsTrigger value="all" className="font-body">All</TabsTrigger>
-            {properties.map((p) => (
-              <TabsTrigger key={p.id} value={p.id} className="font-body">{p.name}</TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-      )}
+      {/* Global property filter */}
+      <PropertyFilterBar />
 
       {/* Summary strip */}
       {filtered.length > 0 && (

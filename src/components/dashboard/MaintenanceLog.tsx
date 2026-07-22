@@ -28,6 +28,8 @@ import BulkClassifyDialog from "@/components/dashboard/BulkClassifyDialog";
 import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
 import { matchLogToComponent } from "@/lib/componentMatcher";
 import ComponentUpdateSheet from "@/components/dashboard/ComponentUpdateSheet";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 import { cn } from "@/lib/utils";
 import { SYSTEMS_CATALOG, type HomeSystemsRegistry, migrateOldRegistry } from "@/lib/homeSystemsRegistry";
 import ReplacementConfirmDialog from "@/components/dashboard/ReplacementConfirmDialog";
@@ -102,6 +104,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const canEditAny = useCanEditAnyProperty();
+  const { selectedPropertyId, scope: scopeByProperty, notifyIfDifferent } = usePropertyFilter();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -158,6 +161,13 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
 
   const openCreate = () => {
     resetForm();
+    // Pre-select current property filter (fallback: first property)
+    setTimeout(() => {
+      setForm((f) => ({
+        ...f,
+        property_id: selectedPropertyId !== "all" ? selectedPropertyId : "",
+      }));
+    }, 0);
     setOpen(true);
   };
 
@@ -283,12 +293,14 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     : homeComponents;
 
   const { data: logs = [], isLoading } = useQuery({
-    queryKey: ["maintenance_logs", user?.id],
+    queryKey: ["maintenance_logs", user?.id, selectedPropertyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("maintenance_logs")
         .select("*, properties(name), home_contacts(name, company)")
         .order("created_at", { ascending: false });
+      if (selectedPropertyId !== "all") q = q.eq("property_id", selectedPropertyId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
@@ -511,6 +523,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       queryClient.invalidateQueries({ queryKey: ["home_contacts"] });
       queryClient.invalidateQueries({ queryKey: ["maintenance_logs_for_contacts"] });
       queryClient.invalidateQueries({ queryKey: ["home_items"] });
+      notifyIfDifferent(form.property_id);
       setOpen(false);
 
       const shouldShowSheet = result.component_id || result.matchResult;
@@ -625,6 +638,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           )}
         </div>
       </div>
+
+      <PropertyFilterBar />
 
       {/* Add/Edit dialog */}
       <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); setOpen(v); }}>

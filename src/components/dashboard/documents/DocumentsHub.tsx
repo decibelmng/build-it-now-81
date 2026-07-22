@@ -18,6 +18,8 @@ import {
   CATEGORY_GROUPS, CATEGORY_LABELS,
 } from "./constants";
 import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 
 const PAGE_SIZE = 24;
 
@@ -25,6 +27,7 @@ const DocumentsHub = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const canEditAny = useCanEditAnyProperty();
+  const { selectedPropertyId } = usePropertyFilter();
   const [view, setView] = useState<"grid" | "list">("grid");
   const [groupMode, setGroupMode] = useState<"none" | "category" | "system">("none");
   const [filters, setFilters] = useState<Filters>({ ...DEFAULT_FILTERS });
@@ -43,7 +46,9 @@ const DocumentsHub = () => {
     enabled: !!user,
   });
 
-  const selectedPropertyId = properties.length > 0 ? properties[0].id : null;
+  const defaultUploadPropertyId = selectedPropertyId !== "all"
+    ? selectedPropertyId
+    : (properties.length > 0 ? properties[0].id : null);
 
   // Build query with server-side filters
   const buildQuery = useCallback(
@@ -121,14 +126,16 @@ const DocumentsHub = () => {
         if (filters.dateTo) q = q.lte(dateCol, filters.dateTo);
       }
 
+      if (selectedPropertyId !== "all") q = q.eq("property_id", selectedPropertyId);
+
       return q.order("created_at", { ascending: false });
     },
-    [filters]
+    [filters, selectedPropertyId]
   );
 
   // Important documents (always shown)
   const { data: importantDocs = [] } = useQuery({
-    queryKey: ["documents_important", user?.id],
+    queryKey: ["documents_important", user?.id, selectedPropertyId],
     queryFn: async () => {
       const { data, error } = await buildQuery(true);
       if (error) throw error;
@@ -139,7 +146,7 @@ const DocumentsHub = () => {
 
   // Main documents query with pagination
   const { data: docsResult, isLoading } = useQuery({
-    queryKey: ["documents_hub", user?.id, filters, page],
+    queryKey: ["documents_hub", user?.id, filters, page, selectedPropertyId],
     queryFn: async () => {
       const q = buildQuery(false)
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
@@ -303,7 +310,9 @@ const DocumentsHub = () => {
               <Upload className="mr-2 h-4 w-4" /> Upload
             </Button>
           )}
-        </div>
+      </div>
+
+      <PropertyFilterBar />
       </div>
 
       {/* Important Documents */}

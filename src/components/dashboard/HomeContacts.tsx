@@ -22,6 +22,8 @@ import { format } from "date-fns";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 import { contactSchema, normalizeWebsiteUrl, validateForm } from "@/lib/schemas";
 import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 
 const roles = [
   { value: "plumber", label: "Plumber" },
@@ -54,6 +56,7 @@ const HomeContacts = () => {
   const queryClient = useQueryClient();
   const canEditAny = useCanEditAnyProperty();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { selectedPropertyId, notifyIfDifferent } = usePropertyFilter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ContactForm>(emptyForm);
   const [expandedContact, setExpandedContact] = useState<string | null>(null);
@@ -132,7 +135,8 @@ const HomeContacts = () => {
 
   const openAddDialog = () => {
     setEditingId(null);
-    setForm({ ...emptyForm, property_id: properties[0]?.id ?? "" });
+    const pref = selectedPropertyId !== "all" ? selectedPropertyId : properties[0]?.id ?? "";
+    setForm({ ...emptyForm, property_id: pref });
     setDialogOpen(true);
   };
 
@@ -181,6 +185,7 @@ const HomeContacts = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["home_contacts"] });
+      notifyIfDifferent(form.property_id);
       setDialogOpen(false);
       setEditingId(null);
       setForm(emptyForm);
@@ -245,6 +250,7 @@ const HomeContacts = () => {
     const q = search.trim().toLowerCase();
     return contacts.filter((c: any) => {
       if (!!c.is_archived !== showArchived) return false;
+      if (selectedPropertyId !== "all" && c.property_id !== selectedPropertyId) return false;
       if (!q) return true;
       return (
         c.name?.toLowerCase().includes(q) ||
@@ -254,7 +260,7 @@ const HomeContacts = () => {
         c.phone?.toLowerCase().includes(q)
       );
     });
-  }, [contacts, search, showArchived]);
+  }, [contacts, search, showArchived, selectedPropertyId]);
 
   const archivedCount = contacts.filter((c: any) => c.is_archived).length;
 
@@ -349,6 +355,8 @@ const HomeContacts = () => {
           </Button>
         )}
       </div>
+
+      <PropertyFilterBar />
 
       {properties.length > 0 && contacts.length > 0 && (
         <div className="mb-4 flex items-center gap-3 flex-wrap">

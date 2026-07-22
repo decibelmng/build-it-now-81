@@ -7,6 +7,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer } from "recharts";
 import { format, parseISO, startOfMonth, addMonths, isBefore, isAfter } from "date-fns";
 import { CalendarDays, TrendingUp, PieChart as PieIcon, BarChart3, AlertCircle } from "lucide-react";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 
 const COLORS = [
   "hsl(38, 92%, 50%)",   // accent
@@ -21,18 +23,23 @@ const COLORS = [
 const AnalyticsInsights = () => {
   const { user } = useAuth();
 
-  const { data: logs = [] } = useQuery({
-    queryKey: ["analytics_logs", user?.id],
+  const { selectedPropertyId } = usePropertyFilter();
+
+  const { data: logsRaw = [] } = useQuery({
+    queryKey: ["analytics_logs", user?.id, selectedPropertyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("maintenance_logs")
         .select("*")
         .order("scheduled_date", { ascending: true, nullsFirst: false });
+      if (selectedPropertyId !== "all") q = q.eq("property_id", selectedPropertyId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
+  const logs = logsRaw;
 
   const { data: properties = [] } = useQuery({
     queryKey: ["analytics_properties", user?.id],
@@ -120,6 +127,9 @@ const AnalyticsInsights = () => {
         <h2 className="font-display text-2xl font-bold sm:text-3xl">Analytics & Insights</h2>
         <p className="text-sm text-muted-foreground">Track spending, compare properties, and stay ahead of maintenance</p>
       </div>
+
+      <PropertyFilterBar />
+
 
       {/* Summary stat */}
       <Card>

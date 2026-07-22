@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { format, addMonths } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 import { recurringTemplateSchema, contactSchema, validateForm } from "@/lib/schemas";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 
 type Property = Tables<"properties">;
 
@@ -102,13 +104,16 @@ const RecurringTemplates = () => {
     enabled: !!user,
   });
 
+  const { selectedPropertyId, notifyIfDifferent } = usePropertyFilter();
   const { data: templates = [], isLoading } = useQuery({
-    queryKey: ["recurring_templates", user?.id],
+    queryKey: ["recurring_templates", user?.id, selectedPropertyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("recurring_templates")
         .select("*, properties(name)")
         .order("next_due_date", { ascending: true });
+      if (selectedPropertyId !== "all") q = q.eq("property_id", selectedPropertyId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
@@ -176,6 +181,7 @@ const RecurringTemplates = () => {
       queryClient.invalidateQueries({ queryKey: ["recurring_templates"] });
       queryClient.invalidateQueries({ queryKey: ["home_contacts"] });
       queryClient.invalidateQueries({ queryKey: ["all_home_contacts"] });
+      notifyIfDifferent(form.property_id);
       setOpen(false);
       setForm({ title: "", description: "", category: "general", property_id: "", estimated_cost: "", interval_months: "12", next_due_date: "", contact_id: "" });
       setShowNewContact(false);
@@ -257,7 +263,12 @@ const RecurringTemplates = () => {
             Automated templates that create maintenance logs on schedule
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(o) => {
+          setOpen(o);
+          if (o && selectedPropertyId !== "all" && !form.property_id) {
+            setForm((f) => ({ ...f, property_id: selectedPropertyId }));
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0}>
               <Plus className="mr-2 h-4 w-4" /> Add Template
@@ -426,6 +437,9 @@ const RecurringTemplates = () => {
           </p>
         </CardContent>
       </Card>
+
+      <PropertyFilterBar />
+
 
       {properties.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">

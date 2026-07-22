@@ -18,6 +18,8 @@ import TaxReportDialog from "@/components/dashboard/TaxReportDialog";
 import HomeValuationSection from "@/components/dashboard/HomeValuationSection";
 import TaxPackageSection from "@/components/dashboard/TaxPackageSection";
 import type { Tables } from "@/integrations/supabase/types";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 
 const fmtCurrency = (n: number | null | undefined) =>
   n != null ? `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$—";
@@ -43,7 +45,10 @@ const TaxInvestmentPage = () => {
     },
     enabled: !!user,
   });
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
+  const { selectedPropertyId: globalId } = usePropertyFilter();
+  const [localPropertyId, setLocalPropertyId] = useState<string>("");
+  const selectedPropertyId = localPropertyId || (globalId !== "all" ? globalId : "");
+  const setSelectedPropertyId = setLocalPropertyId;
 
   // Aggregate across all properties
   const agg = useMemo(() => {
@@ -271,21 +276,18 @@ const TaxInvestmentPage = () => {
         </Button>
       </div>
 
+      {/* Global property filter (single-property page: no "All" option) */}
+      {allProperties.length > 1 && (
+        <PropertyFilterBar
+          allowAll={false}
+          value={selectedPropertyId || allProperties[0]?.id || ""}
+          onChange={setSelectedPropertyId}
+        />
+      )}
+
       {/* Home Value + Mortgage & Equity Section */}
       {allProperties.length > 0 && (
         <div className="mb-6">
-          {allProperties.length > 1 && (
-            <div className="mb-3">
-              <Select value={selectedPropertyId || allProperties[0]?.id || ""} onValueChange={setSelectedPropertyId}>
-                <SelectTrigger className="w-56 h-8 text-xs font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
-                <SelectContent>
-                  {allProperties.map((p) => (
-                    <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           <HomeValuationSection
             properties={allProperties}
             selectedPropertyId={selectedPropertyId || allProperties[0]?.id || ""}

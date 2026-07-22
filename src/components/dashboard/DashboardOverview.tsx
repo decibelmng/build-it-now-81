@@ -15,6 +15,8 @@ import ComponentBackfillCard from "./ComponentBackfillCard";
 import RegistryMigrationCard from "./RegistryMigrationCard";
 import PortfolioRollup from "./PortfolioRollup";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 
 const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
@@ -66,7 +68,7 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
     enabled: !!user,
   });
 
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("all");
+  const { selectedPropertyId } = usePropertyFilter();
   const scopeFilter = <T extends { property_id?: string | null }>(rows: T[]) =>
     selectedPropertyId === "all" ? rows : rows.filter((r) => r.property_id === selectedPropertyId);
 
@@ -189,25 +191,7 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
         />
       )}
 
-      {/* Scope selector — multi-property only */}
-      {properties.length >= 2 && (
-        <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
-          <p className="font-body text-sm text-muted-foreground">
-            Showing activity for {selectedPropertyId === "all" ? "all properties" : (properties.find((p: any) => p.id === selectedPropertyId)?.name || "property")}
-          </p>
-          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-            <SelectTrigger className="w-[220px] rounded-full font-body">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All properties</SelectItem>
-              {properties.map((p: any) => (
-                <SelectItem key={p.id} value={p.id}>{p.name || "Untitled"}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <PropertyFilterBar />
 
       {/* Onboarding banner — missing purchase price */}
       {showOnboardingBanner && (
