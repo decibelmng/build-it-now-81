@@ -939,7 +939,14 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       {/* Photo preview dialog */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
         <DialogContent className="max-w-2xl p-2">
-          {previewImage && <img src={previewImage} alt="Maintenance photo" className="w-full rounded-lg" />}
+          {previewImage && (
+            <SignedImage
+              bucket="maintenance-photos"
+              storedValue={previewImage}
+              alt="Maintenance photo"
+              className="w-full rounded-lg"
+            />
+          )}
         </DialogContent>
       </Dialog>
 
