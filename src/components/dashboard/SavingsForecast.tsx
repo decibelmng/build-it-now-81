@@ -5,13 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  DollarSign, TrendingUp, Shield, Lightbulb, AlertTriangle, ChevronRight,
+  DollarSign, TrendingUp, Shield, Lightbulb, AlertTriangle, ChevronRight, ArrowUp, ArrowDown, Check,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from "recharts";
 import { calculateForecast } from "@/lib/savingsForecast";
 import type { HomeItem, PropertyInfo } from "@/lib/savingsForecast";
 import { SYSTEM_PROFILES } from "@/lib/savingsForecast";
 import { setPendingInventoryAction } from "@/lib/pendingInventoryAction";
+import { useHomeSavings } from "@/hooks/useHomeSavings";
 
 interface SavingsForecastProps {
   onNavigate?: (section: string) => void;
