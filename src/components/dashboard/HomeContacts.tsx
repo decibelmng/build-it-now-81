@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 import { contactSchema, normalizeWebsiteUrl, validateForm } from "@/lib/schemas";
+import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
 
 const roles = [
   { value: "plumber", label: "Plumber" },
