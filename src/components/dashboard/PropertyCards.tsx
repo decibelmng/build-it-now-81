@@ -354,7 +354,14 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
                   <MapPin className="h-10 w-10 text-accent/60" />
                 </div>
                 <CardContent className="p-5">
-                  <h3 className="mb-1 font-display text-lg font-semibold">{property.name}</h3>
+                  <div className="mb-1 flex items-center gap-2 flex-wrap">
+                    <h3 className="font-display text-lg font-semibold">{property.name}</h3>
+                    {rolesByProperty[property.id] && rolesByProperty[property.id] !== "owner" && (
+                      <Badge variant="outline" className="font-body text-[10px] capitalize">
+                        Shared · {rolesByProperty[property.id]}
+                      </Badge>
+                    )}
+                  </div>
                   {(property as any).property_code && (
                     <button
                       onClick={(e) => { e.stopPropagation(); copyCode((property as any).property_code, property.id); }}
