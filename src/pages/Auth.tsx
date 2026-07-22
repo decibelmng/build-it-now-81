@@ -75,52 +75,42 @@ const Auth = () => {
     }
   }, [toast]);
 
-  // If already logged in (and no MFA pending), redirect to dashboard
+  // If already logged in (and no MFA pending), check MFA then redirect to dashboard
   useEffect(() => {
     if (!authLoading && user && !mfaRequired) {
-      navigate("/dashboard", { replace: true });
+      (async () => {
+        const needsMfa = await checkAndHandleMFA();
+        if (!needsMfa) navigate("/dashboard", { replace: true });
+      })();
     }
-  }, [user, authLoading, navigate, mfaRequired]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading, mfaRequired]);
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      const isCustomDomain =
-        !window.location.hostname.includes("lovable.app") &&
-        !window.location.hostname.includes("lovableproject.com") &&
-        !window.location.hostname.includes("localhost");
-
-      if (isCustomDomain) {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: `${window.location.origin}/auth`,
-            skipBrowserRedirect: true,
-            queryParams: { prompt: "select_account" },
-          },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          window.location.replace(data.url);
-          return;
-        }
-      } else {
-        const { error } = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: `${window.location.origin}/auth`,
-          extraParams: { prompt: "select_account" },
-        });
-        if (error) throw error;
-      }
+      const { error, redirected } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: `${window.location.origin}/auth`,
+        extraParams: { prompt: "select_account" },
+      });
+      if (error) throw error;
+      if (redirected) return;
+      // Session set in-place (preview/popup flow); auth effect will handle MFA + redirect.
     } catch (error: any) {
       console.error("[Auth] Google sign-in failed", error);
       toast({
         title: "Google sign-in failed",
-        description: error?.message || error?.error_description || "Unknown provider error",
+        description:
+          error?.message ||
+          error?.error_description ||
+          error?.error ||
+          "Unknown provider error",
         variant: "destructive",
       });
       setGoogleLoading(false);
     }
   };
+
 
   const checkAndHandleMFA = async () => {
     try {
