@@ -40,8 +40,9 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("home_items")
-        .select("id, name, category, install_date, expected_replacement, estimated_value, system_key, is_registry_skeleton")
-        .eq("item_type", "home_component");
+        .select("id, name, category, install_date, expected_replacement, estimated_value, system_key, is_registry_skeleton, status")
+        .eq("item_type", "home_component")
+        .eq("status", "active");
       if (error) throw error;
       return data;
     },
