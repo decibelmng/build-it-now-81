@@ -341,19 +341,6 @@ const ExportReports = () => {
           <h2 className="font-display text-2xl font-bold">Export & Reports</h2>
           <p className="font-body text-sm text-muted-foreground">Download CSV reports for your records</p>
         </div>
-        {properties.length > 1 && (
-          <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-            <SelectTrigger className="w-48 font-body">
-              <SelectValue placeholder="All properties" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="font-body">All Properties</SelectItem>
-              {properties.map((p) => (
-                <SelectItem key={p.id} value={p.id} className="font-body">{getPropertyDisplayName(p)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
       </div>
 
       {properties.length === 0 ? (
