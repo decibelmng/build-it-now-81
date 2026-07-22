@@ -717,7 +717,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
               </div>
             )}
             <Dialog open={itemOpen} onOpenChange={(o) => { setItemOpen(o); if (!o) { setEditingItem(null); setItemForm(emptyItemForm); setPendingFiles([]); } }}>
-              {canEditAny && (
+              {canEdit && (
                 <DialogTrigger asChild>
                   <Button size="sm" className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body">
                     <Plus className="mr-1 h-4 w-4" /> Add Item
