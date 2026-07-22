@@ -62,7 +62,7 @@ export const PropertyFilterProvider = ({ children }: { children: ReactNode }) =>
   }, []);
 
   const propertyNameById = useCallback(
-    (id?: string | null) => (id ? properties.find((p) => p.id === id)?.name ?? "" : ""),
+    (id?: string | null) => (id ? getPropertyDisplayName(properties.find((p) => p.id === id)) : ""),
     [properties]
   );
 
