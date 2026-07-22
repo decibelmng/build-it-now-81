@@ -35,7 +35,7 @@ const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
 const ExportReports = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedProperty, setSelectedProperty] = useState<string>("all");
+  const { selectedPropertyId: selectedProperty } = usePropertyFilter();
   const [exporting, setExporting] = useState<string | null>(null);
 
   const { data: properties = [] } = useQuery({
