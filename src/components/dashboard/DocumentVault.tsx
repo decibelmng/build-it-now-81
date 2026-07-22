@@ -13,6 +13,7 @@ import { Plus, FileText, Upload, Trash2, Download, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Document = Tables<"documents">;
 type Property = Tables<"properties">;
@@ -159,7 +160,7 @@ const DocumentVault = () => {
                   <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
                   <SelectContent>
                     {properties.map((p) => (
-                      <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>
+                      <SelectItem key={p.id} value={p.id} className="font-body">{getPropertyDisplayName(p)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

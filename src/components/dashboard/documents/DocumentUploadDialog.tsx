@@ -16,6 +16,7 @@ import { UNIVERSAL_FILE_ACCEPT, isImageFile, fileTypeLabel } from "@/lib/fileUpl
 import FilePicker from "@/components/ui/file-picker";
 import { SYSTEMS_CATALOG } from "@/lib/homeSystemsRegistry";
 import {
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
   documentSchema, validateForm, validateFiles,
   appraisalSchema, mortgageUpdateSchema, taxAssessmentSchema,
 } from "@/lib/schemas";
@@ -603,7 +604,7 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
             <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
             <SelectContent>
               {properties.map((p) => (
-                <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>
+                <SelectItem key={p.id} value={p.id} className="font-body">{getPropertyDisplayName(p)}</SelectItem>
               ))}
             </SelectContent>
           </Select>

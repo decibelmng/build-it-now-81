@@ -24,6 +24,7 @@ import { contactSchema, normalizeWebsiteUrl, validateForm } from "@/lib/schemas"
 import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 const roles = [
   { value: "plumber", label: "Plumber" },
@@ -399,7 +400,7 @@ const HomeContacts = () => {
                 <SelectTrigger className="font-body"><SelectValue placeholder="Select property" /></SelectTrigger>
                 <SelectContent>
                   {properties.map((p) => (
-                    <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id} className="font-body">{getPropertyDisplayName(p)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
