@@ -88,6 +88,9 @@ const SidebarNav = ({
   onOpenSearch,
 }: DashboardSidebarProps) => {
   const { tier } = useSubscription();
+  const { data: isAdmin } = useAdminCheck();
+  const navigate = useNavigate();
+
 
   return (
     <div className="flex h-full flex-col">
