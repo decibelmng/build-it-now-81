@@ -85,6 +85,7 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
           sale_date: sale.sale_date || null,
           sale_closing_costs: sale.sale_closing_costs ? parseFloat(sale.sale_closing_costs) : null,
           agent_commissions: sale.agent_commissions ? parseFloat(sale.agent_commissions) : null,
+          monthly_deposit: monthlyDeposit ? parseFloat(monthlyDeposit) : null,
         })
         .eq("id", property.id);
       if (error) throw error;
