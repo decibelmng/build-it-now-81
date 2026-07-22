@@ -217,12 +217,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     enabled: !!user,
   });
 
-  const firstPropertyId = properties.length > 0 ? properties[0].id : undefined;
-  const { defaultLink, ensureDefault, linkUrl: defaultLinkUrl } = useDefaultContractorLink(firstPropertyId);
+  const propertySummaries = properties.map((p) => ({ id: p.id, name: p.name }));
 
-  useEffect(() => {
-    ensureDefault();
-  }, [firstPropertyId, defaultLink]);
 
   const { data: pendingSubmissionsCount = 0 } = useQuery({
     queryKey: ["pending_submissions_count", user?.id],
@@ -628,8 +624,12 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           <Button variant="outline" size="sm" className="rounded-full font-body text-xs" onClick={() => setBulkClassifyOpen(true)}>
             <ListFilter className="mr-1 h-3.5 w-3.5" /> Classify Expenses
           </Button>
-          {defaultLinkUrl && (
-            <ServiceLinkPopover linkUrl={defaultLinkUrl} onNavigateToLinks={() => onNavigate?.("contractor-links")} />
+          {propertySummaries.length > 0 && (
+            <ServiceLinkPopover
+              properties={propertySummaries}
+              selectedPropertyId={selectedPropertyId}
+              onNavigateToLinks={() => onNavigate?.("contractor-links")}
+            />
           )}
           {canEditAny && (
             <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0} onClick={openCreate}>
