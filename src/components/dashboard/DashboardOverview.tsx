@@ -13,6 +13,8 @@ import QuickLogCard from "./QuickLogCard";
 import WarrantyAlerts from "./WarrantyAlerts";
 import ComponentBackfillCard from "./ComponentBackfillCard";
 import RegistryMigrationCard from "./RegistryMigrationCard";
+import PortfolioRollup from "./PortfolioRollup";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
@@ -32,10 +34,9 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
     queryFn: async () => {
       const { data, error } = await supabase
         .from("maintenance_logs")
-        .select("id, title, status, cost, category, created_at, completed_date, scheduled_date, properties(name)")
+        .select("id, title, status, cost, category, property_id, created_at, completed_date, scheduled_date, properties(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Sort by service date (scheduled_date > completed_date > created_at)
       return (data ?? []).sort((a, b) => {
         const dateA = a.scheduled_date || a.completed_date || a.created_at;
         const dateB = b.scheduled_date || b.completed_date || b.created_at;
@@ -48,7 +49,7 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
   const { data: documents = [] } = useQuery({
     queryKey: ["documents_count", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("documents").select("id");
+      const { data, error } = await supabase.from("documents").select("id, property_id");
       if (error) throw error;
       return data;
     },
@@ -58,18 +59,26 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
   const { data: contacts = [] } = useQuery({
     queryKey: ["contacts_count", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("home_contacts").select("id");
+      const { data, error } = await supabase.from("home_contacts").select("id, property_id");
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  const totalSpent = logs.reduce((sum, l) => sum + (Number(l.cost) || 0), 0);
-  const pendingCount = logs.filter((l) => l.status === "pending").length;
-  const inProgressCount = logs.filter((l) => l.status === "in_progress").length;
-  const completedCount = logs.filter((l) => l.status === "completed").length;
-  const recentLogs = logs.slice(0, 5);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("all");
+  const scopeFilter = <T extends { property_id?: string | null }>(rows: T[]) =>
+    selectedPropertyId === "all" ? rows : rows.filter((r) => r.property_id === selectedPropertyId);
+
+  const scopedLogs = scopeFilter(logs as any[]);
+  const scopedDocuments = scopeFilter(documents as any[]);
+  const scopedContacts = scopeFilter(contacts as any[]);
+
+  const totalSpent = scopedLogs.reduce((sum, l) => sum + (Number(l.cost) || 0), 0);
+  const pendingCount = scopedLogs.filter((l) => l.status === "pending").length;
+  const inProgressCount = scopedLogs.filter((l) => l.status === "in_progress").length;
+  const completedCount = scopedLogs.filter((l) => l.status === "completed").length;
+  const recentLogs = scopedLogs.slice(0, 5);
 
   const fmtCurrency = (n: number) =>
     `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -138,13 +147,14 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
       ]
     : null;
 
+  const scopedProperties = selectedPropertyId === "all" ? properties : properties.filter((p: any) => p.id === selectedPropertyId);
   const defaultCards = [
-    { label: "Properties", value: properties.length.toString(), icon: Home, color: "text-accent" },
+    { label: "Properties", value: scopedProperties.length.toString(), icon: Home, color: "text-accent" },
     { label: "Total Spent", value: fmtCurrency(totalSpent), icon: DollarSign, color: "text-accent" },
     { label: "Pending Tasks", value: (pendingCount + inProgressCount).toString(), icon: Clock, color: "text-destructive" },
     { label: "Completed", value: completedCount.toString(), icon: CheckCircle2, color: "text-sage" },
-    { label: "Documents", value: documents.length.toString(), icon: FileText, color: "text-muted-foreground" },
-    { label: "Contacts", value: contacts.length.toString(), icon: Users, color: "text-muted-foreground" },
+    { label: "Documents", value: scopedDocuments.length.toString(), icon: FileText, color: "text-muted-foreground" },
+    { label: "Contacts", value: scopedContacts.length.toString(), icon: Users, color: "text-muted-foreground" },
   ];
 
   const statCards = financialCards || defaultCards;
@@ -170,6 +180,34 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
 
       {/* Quick Start Checklist */}
       <QuickStartChecklist onNavigate={(s) => onNavigate?.(s)} />
+
+      {/* Portfolio rollup (multi-property only) */}
+      {properties.length >= 2 && (
+        <PortfolioRollup
+          properties={properties}
+          onSelectProperty={() => onNavigate?.("properties")}
+        />
+      )}
+
+      {/* Scope selector — multi-property only */}
+      {properties.length >= 2 && (
+        <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
+          <p className="font-body text-sm text-muted-foreground">
+            Showing activity for {selectedPropertyId === "all" ? "all properties" : (properties.find((p: any) => p.id === selectedPropertyId)?.name || "property")}
+          </p>
+          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+            <SelectTrigger className="w-[220px] rounded-full font-body">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All properties</SelectItem>
+              {properties.map((p: any) => (
+                <SelectItem key={p.id} value={p.id}>{p.name || "Untitled"}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* Onboarding banner — missing purchase price */}
       {showOnboardingBanner && (
