@@ -3,9 +3,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 export type SubscriptionTier = "free" | "pro";
+export type SubscriptionPlan = "free" | "pro" | "beta";
 
 interface SubscriptionContextType {
   tier: SubscriptionTier;
+  plan: SubscriptionPlan;
   subscribed: boolean;
   subscriptionEnd: string | null;
   loading: boolean;
@@ -33,6 +35,7 @@ export const isProFeature = (section: string): boolean => {
 export const SubscriptionProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const [tier, setTier] = useState<SubscriptionTier>("free");
+  const [plan, setPlan] = useState<SubscriptionPlan>("free");
   const [subscribed, setSubscribed] = useState(false);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +43,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
   const refreshSubscription = useCallback(async () => {
     if (!user) {
       setTier("free");
+      setPlan("free");
       setSubscribed(false);
       setSubscriptionEnd(null);
       setLoading(false);
@@ -51,11 +55,13 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
       if (error) throw error;
 
       setTier(data.tier || "free");
+      setPlan((data.plan as SubscriptionPlan) || (data.tier === "pro" ? "pro" : "free"));
       setSubscribed(data.subscribed || false);
       setSubscriptionEnd(data.subscription_end || null);
     } catch (err) {
       console.error("Failed to check subscription:", err);
       setTier("free");
+      setPlan("free");
       setSubscribed(false);
     } finally {
       setLoading(false);
@@ -74,7 +80,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
   }, [user, refreshSubscription]);
 
   return (
-    <SubscriptionContext.Provider value={{ tier, subscribed, subscriptionEnd, loading, refreshSubscription }}>
+    <SubscriptionContext.Provider value={{ tier, plan, subscribed, subscriptionEnd, loading, refreshSubscription }}>
       {children}
     </SubscriptionContext.Provider>
   );

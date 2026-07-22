@@ -11,6 +11,7 @@ import { useSubscription, SUBSCRIPTION_CONFIG } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import BetaCodeRedeem from "@/components/dashboard/BetaCodeRedeem";
 
 interface UpgradeModalProps {
   open: boolean;
@@ -89,6 +90,13 @@ const UpgradeModal = ({ open, onOpenChange }: UpgradeModalProps) => {
           <p className="text-center font-body text-xs text-muted-foreground">
             Cancel anytime. Secure checkout via Stripe.
           </p>
+
+          <div className="pt-2 border-t border-border/50">
+            <p className="mb-2 font-body text-xs text-muted-foreground text-center">
+              Have a beta code?
+            </p>
+            <BetaCodeRedeem compact onRedeemed={() => onOpenChange(false)} />
+          </div>
         </div>
       </DialogContent>
     </Dialog>

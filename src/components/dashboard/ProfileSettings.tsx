@@ -8,10 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { User, Phone, Lock, Save, ArrowRightLeft, Users2 } from "lucide-react";
+import { User, Phone, Lock, Save, ArrowRightLeft, Users2, Crown } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import MFASecurityCard from "@/components/dashboard/MFASecurityCard";
 import YourDataSection from "@/components/dashboard/YourDataSection";
+import BetaCodeRedeem from "@/components/dashboard/BetaCodeRedeem";
+import { useSubscription } from "@/hooks/useSubscription";
 import { profileUpdateSchema, validateForm, transferEmailSchema } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
@@ -20,6 +23,7 @@ type Property = Tables<"properties">;
 
 const ProfileSettings = () => {
   const { user } = useAuth();
+  const { plan, subscriptionEnd } = useSubscription();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -240,6 +244,39 @@ const ProfileSettings = () => {
               <Save className="mr-2 h-4 w-4" />
               {updateProfile.isPending ? "Saving..." : "Save Changes"}
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Subscription */}
+        <Card className="border-border/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="font-display text-base font-semibold flex items-center gap-2">
+              <Crown className="h-4 w-4" /> Subscription
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="font-body text-sm text-muted-foreground">Current plan</span>
+              <Badge
+                variant={plan === "free" ? "secondary" : "default"}
+                className="capitalize font-body"
+              >
+                {plan}
+              </Badge>
+            </div>
+            {plan === "pro" && subscriptionEnd && (
+              <p className="font-body text-xs text-muted-foreground">
+                Renews {new Date(subscriptionEnd).toLocaleDateString()}
+              </p>
+            )}
+            {plan !== "beta" && (
+              <div className="pt-2 border-t border-border/50 space-y-2">
+                <p className="font-body text-xs text-muted-foreground">
+                  Have a beta code? Redeem it for full access.
+                </p>
+                <BetaCodeRedeem compact />
+              </div>
+            )}
           </CardContent>
         </Card>
 
