@@ -5,43 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 export type AccessRole = "owner" | "editor" | "viewer" | null;
 
 /**
- * Returns the current user's access role for a specific property:
- *  - 'owner'  → they own it
- *  - 'editor' → accepted share with permission='editor'
- *  - 'viewer' → accepted share with permission='viewer'
- *  - null     → no access / not loaded
+ * Single-property role hook.
  */
 export function useAccessRole(propertyId: string | null | undefined) {
-  const { user } = useAuth();
-
-  const query = useQuery({
-    queryKey: ["access_role", user?.id, propertyId],
-    enabled: !!user && !!propertyId,
-    queryFn: async (): Promise<AccessRole> => {
-      if (!user || !propertyId) return null;
-
-      const { data: owned } = await supabase
-        .from("properties")
-        .select("id")
-        .eq("id", propertyId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (owned) return "owner";
-
-      const { data: share } = await supabase
-        .from("property_shares")
-        .select("permission,status")
-        .eq("property_id", propertyId)
-        .eq("shared_with_user_id", user.id)
-        .eq("status", "accepted")
-        .maybeSingle();
-
-      if (!share) return null;
-      return share.permission === "editor" ? "editor" : "viewer";
-    },
-  });
-
-  const role: AccessRole = query.data ?? null;
+  const { rolesByProperty, isLoading } = usePropertyRoles();
+  const role: AccessRole = propertyId ? rolesByProperty[propertyId] ?? null : null;
   return {
     role,
     isOwner: role === "owner",
@@ -49,6 +17,44 @@ export function useAccessRole(propertyId: string | null | undefined) {
     isViewer: role === "viewer",
     canEdit: role === "owner" || role === "editor",
     canManageOwnerOnly: role === "owner",
+    isLoading,
+  };
+}
+
+/**
+ * Bulk hook: returns a map of propertyId -> role for the current user.
+ * Cached across the app so per-row calls are cheap.
+ */
+export function usePropertyRoles() {
+  const { user } = useAuth();
+
+  const query = useQuery({
+    queryKey: ["property_roles", user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const out: Record<string, AccessRole> = {};
+      if (!user) return out;
+
+      const [{ data: owned }, { data: shares }] = await Promise.all([
+        supabase.from("properties").select("id").eq("user_id", user.id),
+        supabase
+          .from("property_shares")
+          .select("property_id,permission,status")
+          .eq("shared_with_user_id", user.id)
+          .eq("status", "accepted"),
+      ]);
+      (owned ?? []).forEach((p) => { out[p.id] = "owner"; });
+      (shares ?? []).forEach((s: any) => {
+        if (out[s.property_id] === "owner") return;
+        out[s.property_id] = s.permission === "editor" ? "editor" : "viewer";
+      });
+      return out;
+    },
+  });
+
+  return {
+    rolesByProperty: query.data ?? {},
     isLoading: query.isLoading,
   };
 }
