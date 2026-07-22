@@ -419,8 +419,10 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         if (uploadedPaths.length > 0) {
           const { data: oldLog } = await supabase.from("maintenance_logs").select("image_url").eq("id", editingId).single();
           if (oldLog?.image_url) {
+            // Handle both bare paths (new) and legacy signed URLs
             const oldPathMatch = oldLog.image_url.match(/maintenance-photos\/([^?]+)/);
-            if (oldPathMatch) await removeDocumentIndex(oldPathMatch[1]);
+            const oldPath = oldPathMatch ? oldPathMatch[1] : oldLog.image_url;
+            await removeDocumentIndex(oldPath);
           }
         }
         const { error } = await supabase.from("maintenance_logs").update(payload).eq("id", editingId);
