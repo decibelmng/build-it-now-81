@@ -284,4 +284,22 @@ const ContractorLinks = () => {
   );
 };
 
+const PropertyQuickShareCard = ({
+  propertyId,
+  propertyName,
+  compact,
+}: {
+  propertyId: string;
+  propertyName: string;
+  compact?: boolean;
+}) => {
+  const { defaultLink, ensureDefault, linkUrl } = useDefaultContractorLink(propertyId);
+  useEffect(() => {
+    ensureDefault();
+  }, [propertyId, defaultLink]);
+  if (!linkUrl) return null;
+  return <QuickShareCard linkUrl={linkUrl} propertyName={propertyName} compact={compact} />;
+};
+
 export default ContractorLinks;
+
