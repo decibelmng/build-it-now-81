@@ -13,6 +13,8 @@ import QuickLogCard from "./QuickLogCard";
 import WarrantyAlerts from "./WarrantyAlerts";
 import ComponentBackfillCard from "./ComponentBackfillCard";
 import RegistryMigrationCard from "./RegistryMigrationCard";
+import PortfolioRollup from "./PortfolioRollup";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
