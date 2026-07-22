@@ -232,9 +232,9 @@ const ContractorSubmissions = () => {
   });
 
   const getPropertyName = (pid: string) => properties.find((p) => p.id === pid)?.name || "Unknown";
-  const scoped = selectedPropertyId === "all"
-    ? submissions
-    : submissions.filter((s: any) => s.property_id === selectedPropertyId || s.contractor_access_links?.property_id === selectedPropertyId);
+  const scoped = selectedPropertyId
+    ? submissions.filter((s: any) => s.property_id === selectedPropertyId || s.contractor_access_links?.property_id === selectedPropertyId)
+    : [];
   const filtered = scoped.filter((s: any) => s.status === tab);
   const pendingCount = scoped.filter((s: any) => s.status === "pending").length;
 
@@ -255,7 +255,7 @@ const ContractorSubmissions = () => {
 
 
 
-      <PropertyFilterBar />
+      
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>

@@ -136,7 +136,7 @@ const HomeContacts = () => {
 
   const openAddDialog = () => {
     setEditingId(null);
-    const pref = selectedPropertyId !== "all" ? selectedPropertyId : properties[0]?.id ?? "";
+    const pref = selectedPropertyId || properties[0]?.id || "";
     setForm({ ...emptyForm, property_id: pref });
     setDialogOpen(true);
   };

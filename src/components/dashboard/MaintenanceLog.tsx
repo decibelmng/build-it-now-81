@@ -166,7 +166,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     setTimeout(() => {
       setForm((f) => ({
         ...f,
-        property_id: selectedPropertyId !== "all" ? selectedPropertyId : "",
+        property_id: selectedPropertyId || "",
       }));
     }, 0);
     setOpen(true);
@@ -292,16 +292,15 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["maintenance_logs", user?.id, selectedPropertyId],
     queryFn: async () => {
-      let q = supabase
+      const { data, error } = await supabase
         .from("maintenance_logs")
         .select("*, properties(name), home_contacts(name, company)")
+        .eq("property_id", selectedPropertyId)
         .order("created_at", { ascending: false });
-      if (selectedPropertyId !== "all") q = q.eq("property_id", selectedPropertyId);
-      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && !!selectedPropertyId,
   });
 
   const logIds = logs.map((l: any) => l.id);
@@ -640,7 +639,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         </div>
       </div>
 
-      <PropertyFilterBar />
+      
 
       {/* Add/Edit dialog */}
       <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); setOpen(v); }}>

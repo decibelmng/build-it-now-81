@@ -1,12 +1,10 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Copy, ExternalLink, Home } from "lucide-react";
+import { Copy, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
 import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
-import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 interface Property {
   id: string;
@@ -15,7 +13,7 @@ interface Property {
 
 interface ServiceLinkPopoverProps {
   properties: Property[];
-  selectedPropertyId: string | "all";
+  selectedPropertyId: string;
   onNavigateToLinks: () => void;
 }
 
@@ -26,7 +24,6 @@ const LinkPanel = ({
 }: { propertyId: string; propertyName: string; onNavigateToLinks: () => void }) => {
   const { toast } = useToast();
   const { linkUrl, ensureDefault, defaultLink } = useDefaultContractorLink(propertyId);
-  // Lazy create when opened
   if (!defaultLink) ensureDefault();
 
   const copyLink = () => {
@@ -65,49 +62,27 @@ const LinkPanel = ({
 };
 
 const ServiceLinkPopover = ({ properties, selectedPropertyId, onNavigateToLinks }: ServiceLinkPopoverProps) => {
-  const [pickedId, setPickedId] = useState<string | null>(null);
-
-  if (properties.length === 0) return null;
-
-  const showPicker = selectedPropertyId === "all" && properties.length > 1;
-  const activeId = showPicker ? pickedId : (selectedPropertyId !== "all" ? selectedPropertyId : properties[0].id);
-  const activeName = properties.find((p) => p.id === activeId)?.name || "";
+  if (properties.length === 0 || !selectedPropertyId) return null;
+  const active = properties.find((p) => p.id === selectedPropertyId);
+  if (!active) return null;
 
   return (
-    <Popover onOpenChange={(o) => { if (!o) setPickedId(null); }}>
+    <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="font-body">
           <ExternalLink className="mr-2 h-4 w-4" />Share Service Link
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
-        {showPicker && !pickedId ? (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Which property?</p>
-            <p className="text-xs text-muted-foreground">Pick the home you're sharing a service link for.</p>
-            <div className="space-y-1 pt-1">
-              {properties.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setPickedId(p.id)}
-                  className="flex w-full items-center gap-2 rounded-md border border-border px-3 py-2 text-left text-sm hover:bg-secondary/60"
-                >
-                  <Home className="h-4 w-4 text-accent shrink-0" />
-                  <span className="truncate">{getPropertyDisplayName(p)}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : activeId ? (
-          <LinkPanel
-            propertyId={activeId}
-            propertyName={activeName}
-            onNavigateToLinks={onNavigateToLinks}
-          />
-        ) : null}
+        <LinkPanel
+          propertyId={active.id}
+          propertyName={active.name}
+          onNavigateToLinks={onNavigateToLinks}
+        />
       </PopoverContent>
     </Popover>
   );
 };
 
 export default ServiceLinkPopover;
+

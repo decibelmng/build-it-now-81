@@ -69,10 +69,9 @@ const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
     enabled: !!user && activeTab === "personal_item",
   });
 
-  const effectivePropertyIds = selectedPropertyId === "all"
-    ? properties.map((p) => p.id)
-    : properties.some((p) => p.id === selectedPropertyId) ? [selectedPropertyId] : [];
-  const singlePropertyId = effectivePropertyIds.length === 1 ? effectivePropertyIds[0] : "";
+  const singlePropertyId = selectedPropertyId && properties.some((p) => p.id === selectedPropertyId)
+    ? selectedPropertyId
+    : "";
 
   return (
     <div>
@@ -118,19 +117,8 @@ const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
           </TabsList>
 
           <TabsContent value="home_component">
-            {selectedPropertyId === "all" && effectivePropertyIds.length > 1 ? (
-              <div className="space-y-8">
-                {properties.map((p) => (
-                  <div key={p.id}>
-                    <h3 className="font-display text-lg font-semibold mb-3">{getPropertyDisplayName(p)}</h3>
-                    <HomeInventory propertyId={p.id} itemType="home_component" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              singlePropertyId && (
-                <HomeInventory propertyId={singlePropertyId} itemType="home_component" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
-              )
+            {singlePropertyId && (
+              <HomeInventory propertyId={singlePropertyId} itemType="home_component" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
             )}
           </TabsContent>
 
@@ -149,19 +137,8 @@ const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
                 </button>
               </div>
             )}
-            {selectedPropertyId === "all" && effectivePropertyIds.length > 1 ? (
-              <div className="space-y-8">
-                {properties.map((p) => (
-                  <div key={p.id}>
-                    <h3 className="font-display text-lg font-semibold mb-3">{getPropertyDisplayName(p)}</h3>
-                    <HomeInventory propertyId={p.id} itemType="personal_item" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              singlePropertyId && (
-                <HomeInventory propertyId={singlePropertyId} itemType="personal_item" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
-              )
+            {singlePropertyId && (
+              <HomeInventory propertyId={singlePropertyId} itemType="personal_item" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
             )}
 
             {/* Archived personal items from transferred properties */}

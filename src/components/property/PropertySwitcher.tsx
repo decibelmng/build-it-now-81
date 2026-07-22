@@ -14,20 +14,13 @@ import {
 import { Input } from "@/components/ui/input";
 
 interface PropertySwitcherProps {
-  allowAll?: boolean; // reserved; global allowAll comes from context
   className?: string;
 }
 
 const PropertySwitcher = ({ className }: PropertySwitcherProps) => {
-  const { properties, activePropertyId, setActivePropertyId, allowAll } = usePropertyFilter();
+  const { properties, activePropertyId, setActivePropertyId, activeProperty, isLoading } = usePropertyFilter();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
-
-  const isAllScope = activePropertyId === null;
-  const activeProperty = useMemo(
-    () => (isAllScope ? null : properties.find((p) => p.id === activePropertyId) ?? null),
-    [properties, activePropertyId, isAllScope]
-  );
 
   const filtered = useMemo(() => {
     if (!filter.trim()) return properties;
@@ -35,9 +28,11 @@ const PropertySwitcher = ({ className }: PropertySwitcherProps) => {
     return properties.filter((p) => getPropertyDisplayName(p).toLowerCase().includes(q));
   }, [properties, filter]);
 
-  const label = isAllScope
-    ? (allowAll ? "All properties" : "Select property")
-    : getPropertyShortName(activeProperty, 22);
+  const label = activeProperty
+    ? getPropertyShortName(activeProperty, 22)
+    : isLoading
+      ? "Loading…"
+      : "Add a property";
 
   const goAddProperty = () => {
     setOpen(false);
@@ -77,20 +72,10 @@ const PropertySwitcher = ({ className }: PropertySwitcherProps) => {
             </div>
           </div>
         )}
-        {allowAll && (
-          <>
-            <DropdownMenuItem
-              onSelect={() => setActivePropertyId(null)}
-              className="font-body text-sm"
-            >
-              <Check className={cn("mr-2 h-4 w-4", isAllScope ? "opacity-100" : "opacity-0")} />
-              All properties
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </>
-        )}
         {filtered.length === 0 && (
-          <div className="px-3 py-2 font-body text-xs text-muted-foreground">No matches</div>
+          <div className="px-3 py-2 font-body text-xs text-muted-foreground">
+            {properties.length === 0 ? "No properties yet" : "No matches"}
+          </div>
         )}
         {filtered.map((p) => {
           const active = p.id === activePropertyId;

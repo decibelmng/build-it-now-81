@@ -46,9 +46,7 @@ const DocumentsHub = () => {
     enabled: !!user,
   });
 
-  const defaultUploadPropertyId = selectedPropertyId !== "all"
-    ? selectedPropertyId
-    : (properties.length > 0 ? properties[0].id : null);
+  const defaultUploadPropertyId = selectedPropertyId || (properties.length > 0 ? properties[0].id : null);
 
   // Build query with server-side filters
   const buildQuery = useCallback(
@@ -126,7 +124,7 @@ const DocumentsHub = () => {
         if (filters.dateTo) q = q.lte(dateCol, filters.dateTo);
       }
 
-      if (selectedPropertyId !== "all") q = q.eq("property_id", selectedPropertyId);
+      if (selectedPropertyId) q = q.eq("property_id", selectedPropertyId);
 
       return q.order("created_at", { ascending: false });
     },
@@ -141,7 +139,7 @@ const DocumentsHub = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user,
+    enabled: !!user && !!selectedPropertyId,
   });
 
   // Main documents query with pagination
@@ -155,7 +153,7 @@ const DocumentsHub = () => {
       if (error) throw error;
       return { data: data || [], count: count || 0 };
     },
-    enabled: !!user,
+    enabled: !!user && !!selectedPropertyId,
   });
 
   const documents = docsResult?.data || [];
@@ -312,7 +310,7 @@ const DocumentsHub = () => {
           )}
       </div>
 
-      <PropertyFilterBar />
+      
       </div>
 
       {/* Important Documents */}
