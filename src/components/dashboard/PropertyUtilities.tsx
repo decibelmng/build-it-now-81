@@ -26,6 +26,8 @@ import { format, differenceInDays, startOfMonth, parseISO, subMonths } from "dat
 import { cn } from "@/lib/utils";
 import { validateForm, utilityAccountSchema } from "@/lib/schemas";
 import { useAccessRole } from "@/hooks/useAccessRole";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 
 // ── Service type config ──
 type ServiceType = {
