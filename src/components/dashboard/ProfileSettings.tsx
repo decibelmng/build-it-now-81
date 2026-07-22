@@ -309,6 +309,30 @@ const ProfileSettings = () => {
           </CardContent>
         </Card>
 
+        {/* Community */}
+        <Card className="border-border/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="font-display text-base font-semibold flex items-center gap-2">
+              <Users2 className="h-4 w-4" /> Community
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="pr-2">
+                <p className="font-body text-sm font-medium">Share business contacts with other homeowners</p>
+                <p className="font-body text-xs text-muted-foreground">
+                  Helps neighbors find trusted local pros. We only share business names, trades, phone numbers and city — never your name, notes, or what you paid. Turning this off removes your contributions from the directory.
+                </p>
+              </div>
+              <Switch
+                checked={(profile as any)?.share_contacts_to_directory ?? true}
+                disabled={toggleDirectorySharing.isPending}
+                onCheckedChange={(v) => toggleDirectorySharing.mutate(v)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Your Data */}
         <YourDataSection />
       </div>
