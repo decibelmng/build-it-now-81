@@ -129,6 +129,17 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
     propertyId: string;
   } | null>(null);
 
+  // Post-save replacement dialog state
+  const [replaceDialog, setReplaceDialog] = useState<{
+    existing: any;
+    logId: string;
+    logDate: string;
+    logCost: string;
+    logCategory: string;
+    logTitle: string;
+    propertyId: string;
+  } | null>(null);
+
   const resetForm = () => {
     setForm({ ...emptyForm });
     setEditingId(null);
