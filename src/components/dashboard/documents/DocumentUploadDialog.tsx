@@ -15,8 +15,8 @@ import { CATEGORY_GROUPS, CATEGORY_LABELS } from "./constants";
 import { UNIVERSAL_FILE_ACCEPT, isImageFile, fileTypeLabel } from "@/lib/fileUploadConstants";
 import FilePicker from "@/components/ui/file-picker";
 import { SYSTEMS_CATALOG } from "@/lib/homeSystemsRegistry";
-import {
 import { getPropertyDisplayName } from "@/lib/propertyDisplay";
+import {
   documentSchema, validateForm, validateFiles,
   appraisalSchema, mortgageUpdateSchema, taxAssessmentSchema,
 } from "@/lib/schemas";
