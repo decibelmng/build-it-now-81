@@ -35,6 +35,26 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType }>
 const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
   const { data: costBasis } = useCostBasisAggregated();
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | "all">("all");
+
+  const { data: propertiesList = [] } = useQuery({
+    queryKey: ["savings_tracking_properties", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("properties")
+        .select("id, name")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as { id: string; name: string }[];
+    },
+    enabled: !!user,
+  });
+
+  const scopedPropertyId =
+    selectedPropertyId === "all"
+      ? (propertiesList.length === 1 ? propertiesList[0].id : null)
+      : selectedPropertyId;
+  const savings = useHomeSavings(scopedPropertyId ?? undefined);
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["maintenance_logs_savings", user?.id],
