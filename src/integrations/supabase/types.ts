@@ -1231,6 +1231,51 @@ export type Database = {
           },
         ]
       }
+      service_provider_directory: {
+        Row: {
+          city: string | null
+          display_name: string
+          first_seen_at: string
+          id: string
+          is_hidden: boolean
+          last_seen_at: string
+          normalized_name: string
+          phone_normalized: string | null
+          role: string | null
+          source_contact_ids: string[]
+          state: string | null
+          times_saved: number
+        }
+        Insert: {
+          city?: string | null
+          display_name: string
+          first_seen_at?: string
+          id?: string
+          is_hidden?: boolean
+          last_seen_at?: string
+          normalized_name: string
+          phone_normalized?: string | null
+          role?: string | null
+          source_contact_ids?: string[]
+          state?: string | null
+          times_saved?: number
+        }
+        Update: {
+          city?: string | null
+          display_name?: string
+          first_seen_at?: string
+          id?: string
+          is_hidden?: boolean
+          last_seen_at?: string
+          normalized_name?: string
+          phone_normalized?: string | null
+          role?: string | null
+          source_contact_ids?: string[]
+          state?: string | null
+          times_saved?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1364,6 +1409,26 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      normalize_company_name: { Args: { p_name: string }; Returns: string }
+      normalize_phone: { Args: { p_phone: string }; Returns: string }
+      suggest_providers: {
+        Args: {
+          p_city?: string
+          p_limit?: number
+          p_role?: string
+          p_state?: string
+        }
+        Returns: {
+          city: string
+          display_name: string
+          id: string
+          match_rank: number
+          phone_normalized: string
+          role: string
+          state: string
+          times_saved: number
+        }[]
       }
       trade_code: { Args: { category: string }; Returns: string }
     }
