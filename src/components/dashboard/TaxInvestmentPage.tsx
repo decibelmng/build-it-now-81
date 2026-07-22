@@ -18,6 +18,8 @@ import TaxReportDialog from "@/components/dashboard/TaxReportDialog";
 import HomeValuationSection from "@/components/dashboard/HomeValuationSection";
 import TaxPackageSection from "@/components/dashboard/TaxPackageSection";
 import type { Tables } from "@/integrations/supabase/types";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 
 const fmtCurrency = (n: number | null | undefined) =>
   n != null ? `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$—";
@@ -43,7 +45,10 @@ const TaxInvestmentPage = () => {
     },
     enabled: !!user,
   });
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
+  const { selectedPropertyId: globalId } = usePropertyFilter();
+  const [localPropertyId, setLocalPropertyId] = useState<string>("");
+  const selectedPropertyId = localPropertyId || (globalId !== "all" ? globalId : "");
+  const setSelectedPropertyId = setLocalPropertyId;
 
   // Aggregate across all properties
   const agg = useMemo(() => {
