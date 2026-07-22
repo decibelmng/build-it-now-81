@@ -94,7 +94,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
   const itemsRef = useRef<any[]>([]);
   const pendingConsumed = useRef(false);
 
-  const { data: items = [], isLoading: itemsLoading } = useQuery({
+  const { data: allItemsRaw = [], isLoading: itemsLoading } = useQuery({
     queryKey: ["home_items", propertyId, itemType, warrantyFilter],
     queryFn: async () => {
       let query = supabase
@@ -116,6 +116,10 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     },
     enabled: !!user && !!propertyId,
   });
+
+  const [showHistory, setShowHistory] = useState(false);
+  const items = (allItemsRaw as any[]).filter((i) => ((i as any).status ?? "active") === "active");
+  const historyItems = (allItemsRaw as any[]).filter((i) => ((i as any).status ?? "active") !== "active");
 
   // Fetch registry data for this property
   const { data: propertyRegistry } = useQuery({
