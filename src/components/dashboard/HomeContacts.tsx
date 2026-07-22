@@ -250,6 +250,7 @@ const HomeContacts = () => {
     const q = search.trim().toLowerCase();
     return contacts.filter((c: any) => {
       if (!!c.is_archived !== showArchived) return false;
+      if (selectedPropertyId !== "all" && c.property_id !== selectedPropertyId) return false;
       if (!q) return true;
       return (
         c.name?.toLowerCase().includes(q) ||
@@ -259,7 +260,7 @@ const HomeContacts = () => {
         c.phone?.toLowerCase().includes(q)
       );
     });
-  }, [contacts, search, showArchived]);
+  }, [contacts, search, showArchived, selectedPropertyId]);
 
   const archivedCount = contacts.filter((c: any) => c.is_archived).length;
 
