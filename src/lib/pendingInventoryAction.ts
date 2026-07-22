@@ -6,6 +6,13 @@ export interface PendingAction {
   category: string;
   mode: "add" | "edit";
   timestamp: number;
+  prefill?: {
+    name?: string;
+    system_key?: string;
+    install_date?: string;
+    purchase_price?: string;
+  };
+  retirement_log_id?: string;
 }
 
 let pending: PendingAction | null = null;
