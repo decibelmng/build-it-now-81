@@ -252,6 +252,10 @@ const Admin = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="beta">
+            <BetaCodesCard />
+          </TabsContent>
         </Tabs>
       </main>
     </div>
