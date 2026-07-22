@@ -94,6 +94,9 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
   const isPro = tier === "pro";
   const dialogFileInputRef = useRef<HTMLInputElement>(null);
   const [fileDragOver, setFileDragOver] = useState(false);
+  const canEditAny = useCanEditAnyProperty();
+  const { canEdit: canEditProperty } = useAccessRole(propertyId ?? null);
+  const canEdit = propertyId ? canEditProperty : canEditAny;
 
   const itemsRef = useRef<any[]>([]);
   const pendingConsumed = useRef(false);
