@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
