@@ -101,7 +101,7 @@ const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
         )}
       </div>
 
-      <PropertyFilterBar />
+      <PropertyFilterBar allowAll={false} />
 
       {properties.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">

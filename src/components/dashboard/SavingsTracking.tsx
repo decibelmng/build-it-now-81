@@ -148,7 +148,7 @@ const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => voi
         <h2 className="font-display text-2xl font-bold">Savings & Spending</h2>
         <p className="font-body text-sm text-muted-foreground">Forecast future costs and track your maintenance spending</p>
       </div>
-      <PropertyFilterBar />
+      <PropertyFilterBar allowAll={false} />
 
       {/* Predictive Forecast Section */}
       <SavingsForecast onNavigate={onNavigate} />
