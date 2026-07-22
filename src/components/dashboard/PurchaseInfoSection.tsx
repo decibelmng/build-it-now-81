@@ -67,6 +67,7 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
       sale_closing_costs: property.sale_closing_costs != null ? String(property.sale_closing_costs) : "",
       agent_commissions: property.agent_commissions != null ? String(property.agent_commissions) : "",
     });
+    setMonthlyDeposit((property as any).monthly_deposit != null ? String((property as any).monthly_deposit) : "");
     if (property.sale_price != null) setSaleOpen(true);
   }, [property]);
 
