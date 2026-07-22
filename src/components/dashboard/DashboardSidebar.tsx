@@ -38,7 +38,7 @@ const navGroups = [
     items: [
       { id: "savings" as Section, label: "Savings Forecast", icon: Shield },
       { id: "tax-investment" as Section, label: "Tax & Investment", icon: Receipt },
-      { id: "utilities" as Section, label: "Utilities", icon: Zap },
+      { id: "utilities" as Section, label: "Accounts & Utilities", icon: Zap },
     ],
   },
   {
