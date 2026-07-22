@@ -11,6 +11,7 @@ import { useSubscription, SUBSCRIPTION_CONFIG } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import BetaCodeRedeem from "@/components/dashboard/BetaCodeRedeem";
 
 interface UpgradeModalProps {
   open: boolean;
