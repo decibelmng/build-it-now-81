@@ -173,7 +173,7 @@ const ProfileSettings = () => {
     }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: friendlyPasswordError(error as any), variant: "destructive" });
     } else {
       toast({ title: "Password updated!" });
       setNewPassword("");
