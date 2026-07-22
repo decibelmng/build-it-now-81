@@ -998,7 +998,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         <div className="space-y-3">
           {[1, 2, 3].map((i) => <Card key={i} className="animate-pulse border-border/50"><CardContent className="p-4"><div className="h-16 rounded bg-muted" /></CardContent></Card>)}
         </div>
-      ) : (() => { const filteredLogs = scopeByProperty(logs as any[]); return filteredLogs.length === 0 ? (
+      ) : logs.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Wrench className="mb-4 h-12 w-12 text-muted-foreground/40" />
