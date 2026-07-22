@@ -274,8 +274,9 @@ const PropertySharing = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-body text-xs capitalize">{share.permission ?? "viewer"}</Badge>
                     {statusBadge(share.status)}
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => removeShare.mutate(share.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => removeShare.mutate(share.id)} title="Revoke access">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
