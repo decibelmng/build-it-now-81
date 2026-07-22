@@ -904,6 +904,7 @@ export type Database = {
           purchase_date: string | null
           purchase_price: number | null
           registry_completed: boolean
+          residency_type: string
           sale_closing_costs: number | null
           sale_date: string | null
           sale_price: number | null
@@ -944,6 +945,7 @@ export type Database = {
           purchase_date?: string | null
           purchase_price?: number | null
           registry_completed?: boolean
+          residency_type?: string
           sale_closing_costs?: number | null
           sale_date?: string | null
           sale_price?: number | null
@@ -984,6 +986,7 @@ export type Database = {
           purchase_date?: string | null
           purchase_price?: number | null
           registry_completed?: boolean
+          residency_type?: string
           sale_closing_costs?: number | null
           sale_date?: string | null
           sale_price?: number | null
