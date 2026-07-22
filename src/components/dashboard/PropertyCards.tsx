@@ -457,7 +457,12 @@ const PropertyDetailsPanel = ({ property, onNavigate }: { property: Property; on
           <div className="font-body text-sm text-muted-foreground">
             Permanently delete this property and every record, file, and photo tied to it.
           </div>
-          <Button variant="destructive" onClick={() => setDeleteOpen(true)} className="font-body">
+          <Button
+            variant="destructive"
+            onClick={() => setDeleteOpen(true)}
+            className="font-body"
+            aria-label={`Delete ${property.name}`}
+          >
             Delete this property
           </Button>
         </CardContent>
