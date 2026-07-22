@@ -3,11 +3,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Info, X, ClipboardList, Shield } from "lucide-react";
 import HomeInventory from "@/components/dashboard/HomeInventory";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Property = Tables<"properties">;
@@ -18,8 +19,8 @@ interface HomeInventoryPageProps {
 
 const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
   const { user } = useAuth();
+  const { selectedPropertyId } = usePropertyFilter();
   const [activeTab, setActiveTab] = useState<"home_component" | "personal_item">("home_component");
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
   const [showPersonalBanner, setShowPersonalBanner] = useState(true);
   const [showExpiringSoon, setShowExpiringSoon] = useState(false);
 
@@ -50,13 +51,6 @@ const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
     enabled: !!user,
   });
 
-  // Auto-select first property
-  useEffect(() => {
-    if (properties.length > 0 && !selectedPropertyId) {
-      setSelectedPropertyId(properties[0].id);
-    }
-  }, [properties, selectedPropertyId]);
-
   // Query archived personal items (property_id is null)
   const { data: archivedItems = [] } = useQuery({
     queryKey: ["archived_personal_items", user?.id],
@@ -74,6 +68,11 @@ const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
     enabled: !!user && activeTab === "personal_item",
   });
 
+  const effectivePropertyIds = selectedPropertyId === "all"
+    ? properties.map((p) => p.id)
+    : properties.some((p) => p.id === selectedPropertyId) ? [selectedPropertyId] : [];
+  const singlePropertyId = effectivePropertyIds.length === 1 ? effectivePropertyIds[0] : "";
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
@@ -85,18 +84,6 @@ const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
             Track every component, system, and personal item in your home.
           </p>
         </div>
-        {properties.length > 1 && (
-          <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-            <SelectTrigger className="w-56 font-body">
-              <SelectValue placeholder="Select property" />
-            </SelectTrigger>
-            <SelectContent>
-              {properties.map((p) => (
-                <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
         {expiringCount > 0 && (
           <button
             onClick={() => setShowExpiringSoon(!showExpiringSoon)}
@@ -112,6 +99,8 @@ const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
           </button>
         )}
       </div>
+
+      <PropertyFilterBar />
 
       {properties.length === 0 ? (
         <Card className="border-dashed border-2 border-border/50">
