@@ -66,7 +66,7 @@ const sectionLabels: Record<string, string> = {
   savings: "Savings Forecast",
   "tax-investment": "Tax & Investment",
   contacts: "Contacts",
-  utilities: "Utilities",
+  utilities: "Accounts & Utilities",
   timeline: "Timeline",
   recurring: "Recurring",
   sharing: "Sharing",
