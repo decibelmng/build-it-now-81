@@ -74,11 +74,11 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
   const scopedDocuments = scopeFilter(documents as any[]);
   const scopedContacts = scopeFilter(contacts as any[]);
 
-  const totalSpent = logs.reduce((sum, l) => sum + (Number(l.cost) || 0), 0);
-  const pendingCount = logs.filter((l) => l.status === "pending").length;
-  const inProgressCount = logs.filter((l) => l.status === "in_progress").length;
-  const completedCount = logs.filter((l) => l.status === "completed").length;
-  const recentLogs = logs.slice(0, 5);
+  const totalSpent = scopedLogs.reduce((sum, l) => sum + (Number(l.cost) || 0), 0);
+  const pendingCount = scopedLogs.filter((l) => l.status === "pending").length;
+  const inProgressCount = scopedLogs.filter((l) => l.status === "in_progress").length;
+  const completedCount = scopedLogs.filter((l) => l.status === "completed").length;
+  const recentLogs = scopedLogs.slice(0, 5);
 
   const fmtCurrency = (n: number) =>
     `$${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
