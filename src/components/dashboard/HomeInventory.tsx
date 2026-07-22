@@ -1311,6 +1311,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
           onNo={() => setPendingReplace(null)}
         />
       )}
+    </div>
   );
 };
 
