@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
+import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Property = Tables<"properties">;
 
@@ -189,7 +190,7 @@ const PropertyTimeline = () => {
         id: `construction-${prop.id}`,
         type: "construction",
         date: `${prop.year_built}-01-01`,
-        title: `${prop.name} — Built`,
+        title: `${getPropertyDisplayName(prop)} — Built`,
         description: `${prop.address}${prop.city ? `, ${prop.city}` : ""}`,
         category: "construction",
         cost: null,
@@ -203,7 +204,7 @@ const PropertyTimeline = () => {
         id: `purchase-${prop.id}`,
         type: "financial",
         date: prop.purchase_date,
-        title: `${prop.name} — Purchased`,
+        title: `${getPropertyDisplayName(prop)} — Purchased`,
         description: `Purchase price: ${fmtCurrency(Number(prop.purchase_price))}`,
         category: "financial",
         cost: null,
