@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, Clock, Eye, UserPlus, Download } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Eye, UserPlus, Download, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { indexContractorSubmissionFiles } from "@/lib/documentIndexing";
@@ -283,12 +283,15 @@ const ContractorSubmissions = () => {
                   <CardContent className="flex items-center gap-4 py-4">
                     <Icon className="h-5 w-5 text-muted-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <p className="font-medium truncate">{sub.contractor_company_name}</p>
                         <Badge variant={cfg.variant} className="text-xs">{sub.service_category}</Badge>
+                        <Badge variant="outline" className="text-xs border-accent/50 bg-accent/10 text-accent-foreground">
+                          <Home className="mr-1 h-3 w-3" />{getPropertyName(sub.property_id)}
+                        </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
-                        {sub.contractor_contact_name} · {getPropertyName(sub.property_id)} · {format(new Date(sub.service_date), "MMM d, yyyy")}
+                        {sub.contractor_contact_name} · {format(new Date(sub.service_date), "MMM d, yyyy")}
                         {sub.cost && ` · $${Number(sub.cost).toFixed(2)}`}
                       </p>
                     </div>
