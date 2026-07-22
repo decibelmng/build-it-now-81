@@ -95,6 +95,7 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
 
   const itemsRef = useRef<any[]>([]);
   const pendingConsumed = useRef(false);
+  const pendingRetirementLogRef = useRef<string | null>(null);
 
   const { data: allItemsRaw = [], isLoading: itemsLoading } = useQuery({
     queryKey: ["home_items", propertyId, itemType, warrantyFilter],
