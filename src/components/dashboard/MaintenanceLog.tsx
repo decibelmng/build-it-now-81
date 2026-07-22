@@ -1013,7 +1013,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
               <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" onClick={openCreate}>
                 <Plus className="mr-2 h-4 w-4" /> Log First Entry
               </Button>
-              {defaultLinkUrl && (
+              {propertySummaries.length > 0 && (
                 <Button variant="outline" className="rounded-full font-body" onClick={() => onNavigate?.("contractor-links")}>
                   <Users className="mr-2 h-4 w-4" /> Share Link with Contractor
                 </Button>
