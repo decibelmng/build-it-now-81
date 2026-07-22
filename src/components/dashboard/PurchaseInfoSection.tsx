@@ -215,6 +215,20 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
             />
           </div>
 
+          {/* Monthly home budget deposit */}
+          <div className="space-y-2 rounded-lg border border-border/50 bg-secondary/30 p-3">
+            <Label className="font-body" htmlFor="monthly-deposit">Monthly home budget deposit</Label>
+            <CurrencyInput
+              id="monthly-deposit"
+              value={monthlyDeposit}
+              onChange={setMonthlyDeposit}
+            />
+            <p className="font-body text-xs text-muted-foreground">
+              How much you set aside for this home each month. We track how much of it you actually keep.
+            </p>
+          </div>
+
+
           {/* Sale Information - Collapsible */}
           <Collapsible open={saleOpen} onOpenChange={setSaleOpen}>
             <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors font-body w-full">
