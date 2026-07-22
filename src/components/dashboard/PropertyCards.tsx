@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,7 @@ import PurchaseInfoSection from "@/components/dashboard/PurchaseInfoSection";
 import CostBasisSummarySection from "@/components/dashboard/CostBasisSummarySection";
 import HomeSystemsSettings from "@/components/dashboard/HomeSystemsSettings";
 import LeaseDetailsCard from "@/components/dashboard/LeaseDetailsCard";
+import DeletePropertyDialog from "@/components/dashboard/DeletePropertyDialog";
 import { RESIDENCY_OPTIONS, useResidencyFeatures, type ResidencyType } from "@/hooks/useResidencyFeatures";
 
 type Property = Tables<"properties">;
@@ -431,6 +432,7 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
 
 const PropertyDetailsPanel = ({ property, onNavigate }: { property: Property; onNavigate?: (s: string) => void }) => {
   const feat = useResidencyFeatures(property);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   return (
     <div className="mt-6 space-y-6">
       {feat.showLeaseDetails && <LeaseDetailsCard property={property} />}
@@ -445,6 +447,27 @@ const PropertyDetailsPanel = ({ property, onNavigate }: { property: Property; on
         residencyType={(property as any).residency_type}
       />
       {feat.showCostBasis && <CostBasisSummarySection propertyId={property.id} />}
+
+      {/* Danger zone */}
+      <Card className="border-destructive/40">
+        <CardHeader className="pb-3">
+          <CardTitle className="font-display text-base font-semibold text-destructive">Danger zone</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="font-body text-sm text-muted-foreground">
+            Permanently delete this property and every record, file, and photo tied to it.
+          </div>
+          <Button variant="destructive" onClick={() => setDeleteOpen(true)} className="font-body">
+            Delete this property
+          </Button>
+        </CardContent>
+      </Card>
+
+      <DeletePropertyDialog
+        property={property}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+      />
     </div>
   );
 };
