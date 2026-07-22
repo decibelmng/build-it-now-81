@@ -16,6 +16,7 @@ export function useProperty() {
     isLoading: c.isLoading,
     activePropertyId: c.activePropertyId,
     activeProperty: c.activeProperty,
+    isAllScope: c.activePropertyId === null,
     setActivePropertyId: c.setActivePropertyId,
   };
 }
