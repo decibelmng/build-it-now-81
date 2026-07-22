@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator";
 import { Home, ArrowRight, Mail, Lock, User, ShieldCheck, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { friendlyPasswordError } from "@/lib/authErrors";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -195,7 +196,7 @@ const Auth = () => {
     } else {
       const { error } = await signUp(email, password, displayName);
       if (error) {
-        toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
+        toast({ title: "Sign up failed", description: friendlyPasswordError(error as any), variant: "destructive" });
       } else {
         navigate("/dashboard");
       }

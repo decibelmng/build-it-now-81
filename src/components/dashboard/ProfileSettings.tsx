@@ -16,6 +16,7 @@ import YourDataSection from "@/components/dashboard/YourDataSection";
 import BetaCodeRedeem from "@/components/dashboard/BetaCodeRedeem";
 import { useSubscription } from "@/hooks/useSubscription";
 import { profileUpdateSchema, validateForm, transferEmailSchema } from "@/lib/schemas";
+import { friendlyPasswordError } from "@/lib/authErrors";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -172,7 +173,7 @@ const ProfileSettings = () => {
     }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: friendlyPasswordError(error as any), variant: "destructive" });
     } else {
       toast({ title: "Password updated!" });
       setNewPassword("");
