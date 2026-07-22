@@ -28,6 +28,7 @@ import { SYSTEMS_CATALOG, getEnabledComponents, avgReplacementCost, migrateOldRe
 import { homeItemSchema, validateForm, validateFiles } from "@/lib/schemas";
 import ReplacementConfirmDialog from "./ReplacementConfirmDialog";
 import { differenceInYears } from "date-fns";
+import { useSignedUrl } from "@/hooks/useSignedUrl";
 
 const homeComponentCategories = [
   { value: "roofing", label: "Roofing", icon: Package },
