@@ -40,13 +40,11 @@ const ContractorLinks = () => {
     enabled: !!user,
   });
 
-  const firstPropertyId = properties.length > 0 ? properties[0].id : undefined;
-  const { defaultLink, ensureDefault, linkUrl: defaultLinkUrl } = useDefaultContractorLink(firstPropertyId);
+  // Which properties need a QuickShareCard rendered
+  const visibleProperties = selectedPropertyId === "all"
+    ? properties
+    : properties.filter((p) => p.id === selectedPropertyId);
 
-  // Auto-create default link on load
-  useEffect(() => {
-    ensureDefault();
-  }, [firstPropertyId, defaultLink]);
 
 
   const { data: links = [] } = useQuery({
@@ -214,8 +212,19 @@ const ContractorLinks = () => {
       <PropertyFilterBar />
 
 
-      {/* Quick Share Card */}
-      {defaultLinkUrl && <QuickShareCard linkUrl={defaultLinkUrl} />}
+      {/* Per-property Quick Share Cards */}
+      {visibleProperties.length > 0 && (
+        <div className={visibleProperties.length > 1 ? "grid gap-3 md:grid-cols-2" : ""}>
+          {visibleProperties.map((p) => (
+            <PropertyQuickShareCard
+              key={p.id}
+              propertyId={p.id}
+              propertyName={p.name}
+              compact={visibleProperties.length > 1}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Custom Links Section */}
       <div className="flex items-center gap-2 pt-2">
