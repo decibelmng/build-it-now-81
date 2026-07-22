@@ -47,7 +47,7 @@ const TaxInvestmentPage = () => {
   });
   const { selectedPropertyId: globalId } = usePropertyFilter();
   const [localPropertyId, setLocalPropertyId] = useState<string>("");
-  const selectedPropertyId = localPropertyId || (globalId !== "all" ? globalId : "");
+  const selectedPropertyId = localPropertyId || globalId || "";
   const setSelectedPropertyId = setLocalPropertyId;
 
   // Aggregate across all properties
