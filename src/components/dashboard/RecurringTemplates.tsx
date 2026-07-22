@@ -262,7 +262,12 @@ const RecurringTemplates = () => {
             Automated templates that create maintenance logs on schedule
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(o) => {
+          setOpen(o);
+          if (o && selectedPropertyId !== "all" && !form.property_id) {
+            setForm((f) => ({ ...f, property_id: selectedPropertyId }));
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0}>
               <Plus className="mr-2 h-4 w-4" /> Add Template
