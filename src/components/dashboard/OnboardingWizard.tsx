@@ -12,12 +12,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useAddressAutocomplete } from "@/hooks/useAddressAutocomplete";
 import SystemToggleGrid from "./SystemToggleGrid";
 import { getDefaultRegistry, syncRegistryToInventory, type HomeSystemsRegistry } from "@/lib/homeSystemsRegistry";
+import { RESIDENCY_OPTIONS, type ResidencyType } from "@/hooks/useResidencyFeatures";
 
 const propertyTypes = [
   { value: "single_family", label: "Single Family" },
   { value: "condo", label: "Condo" },
   { value: "townhouse", label: "Townhouse" },
   { value: "multi_family", label: "Multi Family" },
+  { value: "apartment", label: "Apartment" },
   { value: "other", label: "Other" },
 ];
 
@@ -33,6 +35,7 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
   const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "", address: "", city: "", state: "", zip: "",
+    residency_type: "owned" as ResidencyType,
     property_type: "single_family", bedrooms: "", bathrooms: "", sqft: "", year_built: "",
     latitude: null as number | null, longitude: null as number | null,
   });
@@ -55,6 +58,7 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
         state: form.state || null,
         zip: form.zip || null,
         property_type: form.property_type,
+        residency_type: form.residency_type,
         bedrooms: form.bedrooms ? parseInt(form.bedrooms) : null,
         bathrooms: form.bathrooms ? parseFloat(form.bathrooms) : null,
         sqft: form.sqft ? parseInt(form.sqft) : null,
@@ -68,7 +72,7 @@ const OnboardingWizard = ({ onComplete }: OnboardingWizardProps) => {
     onSuccess: (propertyId: string) => {
       setCreatedPropertyId(propertyId);
       queryClient.invalidateQueries({ queryKey: ["properties"] });
-      setSystemsRegistry(getDefaultRegistry(form.property_type, bathroomCount));
+      setSystemsRegistry(getDefaultRegistry(form.property_type, bathroomCount, form.residency_type));
       setStep(2);
     },
     onError: (err: Error) => {
