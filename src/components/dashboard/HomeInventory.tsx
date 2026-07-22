@@ -28,6 +28,7 @@ import { SYSTEMS_CATALOG, getEnabledComponents, avgReplacementCost, migrateOldRe
 import { homeItemSchema, validateForm, validateFiles } from "@/lib/schemas";
 import ReplacementConfirmDialog from "./ReplacementConfirmDialog";
 import { differenceInYears } from "date-fns";
+import { useSignedUrl } from "@/hooks/useSignedUrl";
 
 const homeComponentCategories = [
   { value: "roofing", label: "Roofing", icon: Package },
@@ -452,18 +453,9 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
     e.target.value = "";
   };
 
-  const getAttachmentUrl = async (path: string): Promise<string> => {
-    const { data, error } = await supabase.storage.from("home-item-attachments").createSignedUrl(path, 3600);
-    if (error || !data?.signedUrl) return "";
-    return data.signedUrl;
-  };
-
   const AttachmentItem = ({ att }: { att: any }) => {
-    const [url, setUrl] = useState<string>("");
-    useEffect(() => {
-      getAttachmentUrl(att.file_path).then(setUrl);
-    }, [att.file_path]);
-    if (!url) return <div className="h-20 w-20 rounded-lg bg-muted animate-pulse" />;
+    const { url, loading } = useSignedUrl("home-item-attachments", att.file_path);
+    if (loading || !url) return <div className="h-20 w-20 rounded-lg bg-muted animate-pulse" />;
     return (
       <div className="group relative rounded-lg border border-border/50 overflow-hidden">
         {isImageType(att.file_type) ? (

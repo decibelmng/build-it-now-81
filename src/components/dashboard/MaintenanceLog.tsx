@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { SYSTEMS_CATALOG, type HomeSystemsRegistry, migrateOldRegistry } from "@/lib/homeSystemsRegistry";
 import ReplacementConfirmDialog from "@/components/dashboard/ReplacementConfirmDialog";
 import { setPendingInventoryAction } from "@/lib/pendingInventoryAction";
+import { SignedImage } from "@/components/dashboard/SignedImage";
 
 type Property = Tables<"properties">;
 
@@ -338,8 +339,8 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         }
         const firstImage = uploadedPaths.find((u) => u.file.type.startsWith("image/"));
         if (firstImage) {
-          const { data: urlData } = await supabase.storage.from("maintenance-photos").createSignedUrl(firstImage.path, 31536000);
-          image_url = urlData?.signedUrl || null;
+          // Store just the storage path; the app signs a short-lived URL on read.
+          image_url = firstImage.path;
         }
       }
 
@@ -418,8 +419,10 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
         if (uploadedPaths.length > 0) {
           const { data: oldLog } = await supabase.from("maintenance_logs").select("image_url").eq("id", editingId).single();
           if (oldLog?.image_url) {
+            // Handle both bare paths (new) and legacy signed URLs
             const oldPathMatch = oldLog.image_url.match(/maintenance-photos\/([^?]+)/);
-            if (oldPathMatch) await removeDocumentIndex(oldPathMatch[1]);
+            const oldPath = oldPathMatch ? oldPathMatch[1] : oldLog.image_url;
+            await removeDocumentIndex(oldPath);
           }
         }
         const { error } = await supabase.from("maintenance_logs").update(payload).eq("id", editingId);
@@ -877,7 +880,12 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
               <Label className="font-body">Attachments (optional)</Label>
               {existingImageUrl && attachedFiles.length === 0 && (
                 <div className="mb-2">
-                  <img src={existingImageUrl} alt="Existing" className="h-24 rounded-lg object-cover" />
+                  <SignedImage
+                    bucket="maintenance-photos"
+                    storedValue={existingImageUrl}
+                    alt="Existing"
+                    className="h-24 rounded-lg object-cover"
+                  />
                   <p className="font-body text-[10px] text-muted-foreground mt-1">Current photo — add new files below to replace</p>
                 </div>
               )}
@@ -933,7 +941,14 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
       {/* Photo preview dialog */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
         <DialogContent className="max-w-2xl p-2">
-          {previewImage && <img src={previewImage} alt="Maintenance photo" className="w-full rounded-lg" />}
+          {previewImage && (
+            <SignedImage
+              bucket="maintenance-photos"
+              storedValue={previewImage}
+              alt="Maintenance photo"
+              className="w-full rounded-lg"
+            />
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1000,8 +1015,9 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
                   <div className="flex items-center justify-between">
                     <div className="flex items-start gap-4">
                       {log.image_url ? (
-                        <img
-                          src={log.image_url}
+                        <SignedImage
+                          bucket="maintenance-photos"
+                          storedValue={log.image_url}
                           alt={log.title}
                           className="h-10 w-10 shrink-0 rounded-xl object-cover cursor-pointer hover:opacity-80 transition-opacity"
                           onClick={() => setPreviewImage(log.image_url)}

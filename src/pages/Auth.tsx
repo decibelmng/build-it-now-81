@@ -39,7 +39,40 @@ const Auth = () => {
     if (hash && (hash.includes("access_token") || hash.includes("refresh_token"))) {
       setOauthProcessing(true);
     }
-  }, []);
+
+    // Surface OAuth / redirect errors so they aren't silent.
+    // Providers put errors in either the hash (implicit flow) or query string.
+    const parseErrorFrom = (src: string) => {
+      const p = new URLSearchParams(src.startsWith("#") ? src.slice(1) : src);
+      const code =
+        p.get("error") ||
+        p.get("error_code") ||
+        p.get("auth_error") ||
+        null;
+      const desc =
+        p.get("error_description") ||
+        p.get("auth_error_description") ||
+        null;
+      return code || desc ? { code, desc } : null;
+    };
+    const err =
+      parseErrorFrom(window.location.hash || "") ||
+      parseErrorFrom(window.location.search || "");
+    if (err) {
+      const message = err.desc
+        ? decodeURIComponent(err.desc.replace(/\+/g, " "))
+        : err.code || "Sign-in failed";
+      console.error("[Auth] OAuth/redirect error", err);
+      toast({
+        title: "Sign-in failed",
+        description: message,
+        variant: "destructive",
+      });
+      // Scrub the error from the URL so it doesn't re-fire on refresh
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, "", cleanUrl);
+    }
+  }, [toast]);
 
   // If already logged in (and no MFA pending), redirect to dashboard
   useEffect(() => {
@@ -78,7 +111,12 @@ const Auth = () => {
         if (error) throw error;
       }
     } catch (error: any) {
-      toast({ title: "Google sign-in failed", description: error.message, variant: "destructive" });
+      console.error("[Auth] Google sign-in failed", error);
+      toast({
+        title: "Google sign-in failed",
+        description: error?.message || error?.error_description || "Unknown provider error",
+        variant: "destructive",
+      });
       setGoogleLoading(false);
     }
   };
