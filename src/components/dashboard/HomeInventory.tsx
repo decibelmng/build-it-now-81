@@ -186,7 +186,17 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
       }
     }
     setEditingItem(null);
-    setItemForm({ ...emptyItemForm, category: pending.category || "general", item_type: "home_component" });
+    setItemForm({
+      ...emptyItemForm,
+      category: pending.category || "general",
+      item_type: "home_component",
+      name: pending.prefill?.name || "",
+      system_key: pending.prefill?.system_key || "",
+      install_date: pending.prefill?.install_date || "",
+    });
+    if (pending.retirement_log_id) {
+      pendingRetirementLogRef.current = pending.retirement_log_id;
+    }
     setItemOpen(true);
   }, [items, itemType]);
 
