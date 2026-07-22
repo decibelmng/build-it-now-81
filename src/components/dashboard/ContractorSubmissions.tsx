@@ -16,6 +16,8 @@ import ExpenseTypeField from "@/components/dashboard/ExpenseTypeField";
 import { matchLogToComponent } from "@/lib/componentMatcher";
 import { SERVICE_CATEGORY_TO_SYSTEM } from "@/lib/homeSystemsRegistry";
 import ComponentUpdateSheet from "@/components/dashboard/ComponentUpdateSheet";
+import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "destructive" }> = {
   pending: { label: "Pending", icon: Clock, variant: "secondary" },
@@ -31,6 +33,7 @@ const ContractorSubmissions = () => {
   const [tab, setTab] = useState("pending");
   const [overrideExpenseType, setOverrideExpenseType] = useState<string | null>(null);
   const [componentUpdateData, setComponentUpdateData] = useState<any>(null);
+  const { selectedPropertyId } = usePropertyFilter();
 
   const { data: submissions = [] } = useQuery({
     queryKey: ["contractor_submissions", user?.id],
@@ -229,8 +232,11 @@ const ContractorSubmissions = () => {
   });
 
   const getPropertyName = (pid: string) => properties.find((p) => p.id === pid)?.name || "Unknown";
-  const filtered = submissions.filter((s: any) => s.status === tab);
-  const pendingCount = submissions.filter((s: any) => s.status === "pending").length;
+  const scoped = selectedPropertyId === "all"
+    ? submissions
+    : submissions.filter((s: any) => s.property_id === selectedPropertyId || s.contractor_access_links?.property_id === selectedPropertyId);
+  const filtered = scoped.filter((s: any) => s.status === tab);
+  const pendingCount = scoped.filter((s: any) => s.status === "pending").length;
 
   const getSignedUrl = async (path: string) => {
     const { data } = await supabase.storage.from("contractor-uploads").createSignedUrl(path, 3600);
@@ -246,6 +252,10 @@ const ContractorSubmissions = () => {
           {pendingCount > 0 && <Badge variant="secondary" className="ml-2">{pendingCount} pending</Badge>}
         </p>
       </div>
+
+      </div>
+
+      <PropertyFilterBar />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
