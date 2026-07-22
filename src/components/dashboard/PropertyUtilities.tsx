@@ -157,8 +157,8 @@ const PropertyUtilities = () => {
       if (e2) throw e2;
       const seen = new Set<string>();
       const merged: any[] = [];
-      for (const row of [...(owned ?? []), ...(shared ?? [])]) {
-        if (seen.has(row.id)) continue;
+      for (const row of [...(owned ?? []), ...(shared ?? [])] as any[]) {
+        if (!row?.id || seen.has(row.id)) continue;
         seen.add(row.id);
         merged.push(row);
       }
