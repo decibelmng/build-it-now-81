@@ -147,6 +147,7 @@ const Admin = () => {
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="properties">Properties</TabsTrigger>
             <TabsTrigger value="shares">Shared Access</TabsTrigger>
+            <TabsTrigger value="beta"><Sparkles className="mr-1 h-3 w-3" /> Beta Codes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
