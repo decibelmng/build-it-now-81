@@ -147,13 +147,14 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
       ]
     : null;
 
+  const scopedProperties = selectedPropertyId === "all" ? properties : properties.filter((p: any) => p.id === selectedPropertyId);
   const defaultCards = [
-    { label: "Properties", value: properties.length.toString(), icon: Home, color: "text-accent" },
+    { label: "Properties", value: scopedProperties.length.toString(), icon: Home, color: "text-accent" },
     { label: "Total Spent", value: fmtCurrency(totalSpent), icon: DollarSign, color: "text-accent" },
     { label: "Pending Tasks", value: (pendingCount + inProgressCount).toString(), icon: Clock, color: "text-destructive" },
     { label: "Completed", value: completedCount.toString(), icon: CheckCircle2, color: "text-sage" },
-    { label: "Documents", value: documents.length.toString(), icon: FileText, color: "text-muted-foreground" },
-    { label: "Contacts", value: contacts.length.toString(), icon: Users, color: "text-muted-foreground" },
+    { label: "Documents", value: scopedDocuments.length.toString(), icon: FileText, color: "text-muted-foreground" },
+    { label: "Contacts", value: scopedContacts.length.toString(), icon: Users, color: "text-muted-foreground" },
   ];
 
   const statCards = financialCards || defaultCards;
