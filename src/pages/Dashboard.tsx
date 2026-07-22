@@ -157,6 +157,7 @@ const Dashboard = () => {
   }
 
   return (
+    <PropertyFilterProvider>
     <div className="flex h-screen bg-background">
       <DashboardSidebar
         activeSection={activeSection}
