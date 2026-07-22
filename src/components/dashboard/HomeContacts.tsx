@@ -339,13 +339,15 @@ const HomeContacts = () => {
           <h2 className="font-display text-2xl font-bold">Home Contacts</h2>
           <p className="font-body text-sm text-muted-foreground">Your contractors, vendors, and service providers</p>
         </div>
-        <Button
-          onClick={openAddDialog}
-          className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body"
-          disabled={properties.length === 0}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Contact
-        </Button>
+        {canEditAny && (
+          <Button
+            onClick={openAddDialog}
+            className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body"
+            disabled={properties.length === 0}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Contact
+          </Button>
+        )}
       </div>
 
       {properties.length > 0 && contacts.length > 0 && (
