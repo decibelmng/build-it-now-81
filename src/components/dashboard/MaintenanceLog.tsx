@@ -618,9 +618,11 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
           {defaultLinkUrl && (
             <ServiceLinkPopover linkUrl={defaultLinkUrl} onNavigateToLinks={() => onNavigate?.("contractor-links")} />
           )}
-          <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0} onClick={openCreate}>
-            <Plus className="mr-2 h-4 w-4" /> Add Entry
-          </Button>
+          {canEditAny && (
+            <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body" disabled={properties.length === 0} onClick={openCreate}>
+              <Plus className="mr-2 h-4 w-4" /> Add Entry
+            </Button>
+          )}
         </div>
       </div>
 
