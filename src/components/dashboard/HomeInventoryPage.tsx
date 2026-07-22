@@ -117,8 +117,19 @@ const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
           </TabsList>
 
           <TabsContent value="home_component">
-            {selectedPropertyId && (
-              <HomeInventory propertyId={selectedPropertyId} itemType="home_component" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
+            {selectedPropertyId === "all" && effectivePropertyIds.length > 1 ? (
+              <div className="space-y-8">
+                {properties.map((p) => (
+                  <div key={p.id}>
+                    <h3 className="font-display text-lg font-semibold mb-3">{p.name}</h3>
+                    <HomeInventory propertyId={p.id} itemType="home_component" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              singlePropertyId && (
+                <HomeInventory propertyId={singlePropertyId} itemType="home_component" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
+              )
             )}
           </TabsContent>
 
@@ -137,8 +148,19 @@ const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
                 </button>
               </div>
             )}
-            {selectedPropertyId && (
-              <HomeInventory propertyId={selectedPropertyId} itemType="personal_item" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
+            {selectedPropertyId === "all" && effectivePropertyIds.length > 1 ? (
+              <div className="space-y-8">
+                {properties.map((p) => (
+                  <div key={p.id}>
+                    <h3 className="font-display text-lg font-semibold mb-3">{p.name}</h3>
+                    <HomeInventory propertyId={p.id} itemType="personal_item" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              singlePropertyId && (
+                <HomeInventory propertyId={singlePropertyId} itemType="personal_item" warrantyFilter={showExpiringSoon} onNavigate={onNavigate} />
+              )
             )}
 
             {/* Archived personal items from transferred properties */}
