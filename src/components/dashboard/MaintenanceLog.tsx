@@ -101,6 +101,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const canEditAny = useCanEditAnyProperty();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
