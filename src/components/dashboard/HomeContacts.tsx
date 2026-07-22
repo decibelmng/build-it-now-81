@@ -52,6 +52,7 @@ const HomeContacts = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const canEditAny = useCanEditAnyProperty();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ContactForm>(emptyForm);
