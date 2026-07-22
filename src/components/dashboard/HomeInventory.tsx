@@ -29,6 +29,7 @@ import { homeItemSchema, validateForm, validateFiles } from "@/lib/schemas";
 import ReplacementConfirmDialog from "./ReplacementConfirmDialog";
 import { differenceInYears } from "date-fns";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
+import { useCanEditAnyProperty, useAccessRole } from "@/hooks/useAccessRole";
 
 const homeComponentCategories = [
   { value: "roofing", label: "Roofing", icon: Package },
