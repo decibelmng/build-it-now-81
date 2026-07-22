@@ -409,9 +409,36 @@ const HomeContacts = () => {
                 </Select>
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <Label className="font-body">Company</Label>
               <Input placeholder="ABC Plumbing" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="font-body" />
+              {isSharableRole && companySuggestions.length > 0 && !editingId && (
+                <div className="rounded-lg border border-border/60 bg-background shadow-sm divide-y divide-border/40 overflow-hidden">
+                  <div className="px-3 py-1.5 bg-muted/40 flex items-center gap-1.5">
+                    <Sparkles className="h-3 w-3 text-accent" />
+                    <span className="font-body text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                      Suggested from other homeowners{propState ? ` near ${propCity ?? propState}` : ""}
+                    </span>
+                  </div>
+                  {companySuggestions.map((s: any) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => prefillFromDirectory(s)}
+                      className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-body text-sm font-medium truncate">{s.display_name}</p>
+                        <p className="font-body text-xs text-muted-foreground">
+                          Saved by {s.times_saved} homeowner{s.times_saved !== 1 ? "s" : ""}
+                          {s.city ? ` nearby` : ""}
+                        </p>
+                      </div>
+                      {s.role && <Badge variant="secondary" className="font-body text-[10px] shrink-0">{roles.find(r => r.value === s.role)?.label ?? s.role}</Badge>}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
