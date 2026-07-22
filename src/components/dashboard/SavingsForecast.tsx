@@ -5,13 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  DollarSign, TrendingUp, Shield, Lightbulb, AlertTriangle, ChevronRight,
+  DollarSign, TrendingUp, Shield, Lightbulb, AlertTriangle, ChevronRight, ArrowUp, ArrowDown, Check,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from "recharts";
 import { calculateForecast } from "@/lib/savingsForecast";
 import type { HomeItem, PropertyInfo } from "@/lib/savingsForecast";
 import { SYSTEM_PROFILES } from "@/lib/savingsForecast";
 import { setPendingInventoryAction } from "@/lib/pendingInventoryAction";
+import { useHomeSavings } from "@/hooks/useHomeSavings";
 
 interface SavingsForecastProps {
   onNavigate?: (section: string) => void;
@@ -19,6 +20,7 @@ interface SavingsForecastProps {
 
 const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
   const { user } = useAuth();
+  const { depositTotal } = useHomeSavings();
 
   const { data: properties = [] } = useQuery({
     queryKey: ["properties_forecast", user?.id],
@@ -122,10 +124,43 @@ const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
               <div>
                 <p className="font-body text-xs text-muted-foreground">Recommended Monthly Savings</p>
                 <p className="font-display text-2xl font-bold">${forecast.recommendedMonthlySavings.toLocaleString()}<span className="font-body text-sm font-normal text-muted-foreground">/mo</span></p>
+                {(() => {
+                  const rec = forecast.recommendedMonthlySavings;
+                  if (depositTotal == null) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => onNavigate?.("properties")}
+                        className="mt-1 inline-flex items-center gap-1 font-body text-xs text-accent hover:underline"
+                      >
+                        Set your monthly deposit <ChevronRight className="h-3 w-3" />
+                      </button>
+                    );
+                  }
+                  const diff = depositTotal - rec;
+                  const onTrack = diff >= 0;
+                  const Icon = onTrack ? Check : (diff < 0 ? ArrowUp : ArrowDown);
+                  return (
+                    <div className="mt-1 flex items-center gap-1.5 font-body text-xs text-muted-foreground">
+                      <Icon className={`h-3 w-3 ${onTrack ? "text-sage" : "text-accent"}`} />
+                      <span>
+                        Recommended: ${rec.toLocaleString()} / Your current deposit: ${depositTotal.toLocaleString()}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onNavigate?.("properties")}
+                        className="text-accent hover:underline"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </CardContent>
         </Card>
+
 
         <Card className="border-border/50">
           <CardContent className="p-4">

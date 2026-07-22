@@ -46,6 +46,8 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
     purchase_closing_costs: "",
   });
 
+  const [monthlyDeposit, setMonthlyDeposit] = useState("");
+
   const [sale, setSale] = useState({
     sale_price: "",
     sale_date: "",
@@ -65,6 +67,7 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
       sale_closing_costs: property.sale_closing_costs != null ? String(property.sale_closing_costs) : "",
       agent_commissions: property.agent_commissions != null ? String(property.agent_commissions) : "",
     });
+    setMonthlyDeposit((property as any).monthly_deposit != null ? String((property as any).monthly_deposit) : "");
     if (property.sale_price != null) setSaleOpen(true);
   }, [property]);
 
@@ -82,6 +85,7 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
           sale_date: sale.sale_date || null,
           sale_closing_costs: sale.sale_closing_costs ? parseFloat(sale.sale_closing_costs) : null,
           agent_commissions: sale.agent_commissions ? parseFloat(sale.agent_commissions) : null,
+          monthly_deposit: monthlyDeposit ? parseFloat(monthlyDeposit) : null,
         })
         .eq("id", property.id);
       if (error) throw error;
@@ -141,6 +145,7 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
       queryClient.invalidateQueries({ queryKey: ["properties"] });
       queryClient.invalidateQueries({ queryKey: ["property_valuations"] });
       queryClient.invalidateQueries({ queryKey: ["property_equity_summary"] });
+      queryClient.invalidateQueries({ queryKey: ["home_savings_properties"] });
       toast({ title: "Purchase information saved!" });
     },
     onError: (err: Error) => {
@@ -209,6 +214,20 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
               onChange={(v) => setPurchase({ ...purchase, purchase_closing_costs: v })}
             />
           </div>
+
+          {/* Monthly home budget deposit */}
+          <div className="space-y-2 rounded-lg border border-border/50 bg-secondary/30 p-3">
+            <Label className="font-body" htmlFor="monthly-deposit">Monthly home budget deposit</Label>
+            <CurrencyInput
+              id="monthly-deposit"
+              value={monthlyDeposit}
+              onChange={setMonthlyDeposit}
+            />
+            <p className="font-body text-xs text-muted-foreground">
+              How much you set aside for this home each month. We track how much of it you actually keep.
+            </p>
+          </div>
+
 
           {/* Sale Information - Collapsible */}
           <Collapsible open={saleOpen} onOpenChange={setSaleOpen}>

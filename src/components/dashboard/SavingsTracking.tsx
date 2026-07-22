@@ -6,14 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  DollarSign, TrendingUp, Wrench, CheckCircle2,
+  DollarSign, TrendingUp, Wrench, CheckCircle2, PiggyBank, ShieldCheck, ArrowRight,
   Droplets, Zap, Wind, Hammer, TreePine, Cog, Gem, Package, PlugZap,
 } from "lucide-react";
 import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useHomeSavings } from "@/hooks/useHomeSavings";
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
 import { format, parseISO, startOfMonth } from "date-fns";
 import SavingsForecast from "./SavingsForecast";
+
 
 const categoryConfig: Record<string, { label: string; icon: React.ElementType }> = {
   plumbing: { label: "Plumbing", icon: Droplets },
@@ -32,6 +35,26 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType }>
 const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
   const { data: costBasis } = useCostBasisAggregated();
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | "all">("all");
+
+  const { data: propertiesList = [] } = useQuery({
+    queryKey: ["savings_tracking_properties", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("properties")
+        .select("id, name")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as { id: string; name: string }[];
+    },
+    enabled: !!user,
+  });
+
+  const scopedPropertyId =
+    selectedPropertyId === "all"
+      ? (propertiesList.length === 1 ? propertiesList[0].id : null)
+      : selectedPropertyId;
+  const savings = useHomeSavings(scopedPropertyId ?? undefined);
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["maintenance_logs_savings", user?.id],
@@ -126,6 +149,133 @@ const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => voi
 
       {/* Predictive Forecast Section */}
       <SavingsForecast onNavigate={onNavigate} />
+
+      {/* Real savings tracking */}
+      <div className="mb-8 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h3 className="font-display text-xl font-bold flex items-center gap-2">
+              <PiggyBank className="h-5 w-5 text-accent" />
+              Real Savings
+            </h3>
+            <p className="font-body text-sm text-muted-foreground">
+              Your monthly deposit minus what you actually spent
+            </p>
+          </div>
+          {propertiesList.length > 1 && (
+            <Tabs value={selectedPropertyId} onValueChange={(v) => setSelectedPropertyId(v as any)}>
+              <TabsList>
+                <TabsTrigger value="all" className="font-body text-xs">All homes</TabsTrigger>
+                {propertiesList.map((p) => (
+                  <TabsTrigger key={p.id} value={p.id} className="font-body text-xs">{p.name}</TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          )}
+        </div>
+
+        {!savings.hasDeposit ? (
+          <Card className="border-dashed border-2 border-border/50">
+            <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+              <PiggyBank className="mb-3 h-10 w-10 text-muted-foreground/40" />
+              <p className="font-body text-sm text-muted-foreground max-w-md mb-4">
+                Set a monthly deposit to see how much you're really saving.
+              </p>
+              <Button
+                variant="outline"
+                className="rounded-full font-body"
+                onClick={() => onNavigate?.("properties")}
+              >
+                Set monthly deposit <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {/* This month */}
+              <Card className="border-border/50">
+                <CardContent className="p-4">
+                  <p className="font-body text-xs text-muted-foreground mb-1">This month</p>
+                  <div className="flex items-baseline justify-between">
+                    <p className="font-body text-xs text-muted-foreground">Deposit</p>
+                    <p className="font-display text-sm font-semibold">${(savings.current?.deposit ?? 0).toLocaleString()}</p>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <p className="font-body text-xs text-muted-foreground">Actual spend</p>
+                    <p className="font-display text-sm font-semibold">${(savings.current?.net_spend ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                  </div>
+                  <div className="mt-2 flex items-baseline justify-between border-t border-border/50 pt-2">
+                    <p className="font-body text-xs font-medium">Accrual</p>
+                    <p className={`font-display text-lg font-bold ${((savings.current?.accrual ?? 0) >= 0) ? "text-sage" : "text-destructive"}`}>
+                      {(savings.current?.accrual ?? 0) >= 0 ? "+" : ""}${(savings.current?.accrual ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Cumulative saved */}
+              <Card className="border-accent/30 bg-accent/5">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/15">
+                    <TrendingUp className="h-5 w-5 text-accent" />
+                  </div>
+                  <div>
+                    <p className="font-body text-xs text-muted-foreground">12-month saved</p>
+                    <p className={`font-display text-2xl font-bold ${savings.cumulativeSaved >= 0 ? "text-foreground" : "text-destructive"}`}>
+                      {savings.cumulativeSaved >= 0 ? "" : "-"}${Math.abs(Math.round(savings.cumulativeSaved)).toLocaleString()}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Coverage */}
+              <Card className="border-border/50">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                    <ShieldCheck className="h-5 w-5 text-sage" />
+                  </div>
+                  <div>
+                    <p className="font-body text-xs text-muted-foreground">Coverage</p>
+                    <p className="font-display text-lg font-bold">{savings.coverageCount} of 12</p>
+                    <p className="font-body text-xs text-muted-foreground">Your deposit covered your costs {savings.coverageCount} of the last 12 months</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Monthly bar chart */}
+            <Card className="border-border/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="font-display text-base font-semibold">Monthly spend vs. deposit</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={savings.months.map((m) => ({ label: m.label, spend: Number(m.net_spend.toFixed(2)), deposit: m.deposit ?? 0 }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fontFamily: "DM Sans" }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 11, fontFamily: "DM Sans" }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `$${v}`} />
+                    <Tooltip
+                      contentStyle={{ borderRadius: "0.75rem", border: "1px solid hsl(var(--border))", fontFamily: "DM Sans", fontSize: 13 }}
+                      formatter={(value: number, name: string) => [`$${Number(value).toLocaleString()}`, name === "spend" ? "Net spend" : "Deposit"]}
+                    />
+                    {savings.depositTotal != null && (
+                      <ReferenceLine y={savings.depositTotal} stroke="hsl(var(--sage))" strokeDasharray="4 4" label={{ value: `Deposit $${savings.depositTotal.toLocaleString()}`, position: "insideTopRight", fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                    )}
+                    <Bar dataKey="spend" radius={[6, 6, 0, 0]}>
+                      {savings.months.map((m, i) => (
+                        <Cell key={i} fill={m.deposit != null && m.net_spend > m.deposit ? "hsl(var(--destructive))" : "hsl(var(--accent))"} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
+
+
 
       {/* Cost basis callout */}
       {costBasis && costBasis.totalImprovements > 0 && (
