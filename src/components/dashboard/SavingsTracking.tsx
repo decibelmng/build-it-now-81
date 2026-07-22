@@ -59,12 +59,14 @@ const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => voi
   const savings = useHomeSavings(scopedPropertyId ?? undefined);
 
   const { data: logs = [], isLoading } = useQuery({
-    queryKey: ["maintenance_logs_savings", user?.id],
+    queryKey: ["maintenance_logs_savings", user?.id, scopedPropertyId ?? "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("maintenance_logs")
-        .select("cost, category, status, created_at, completed_date, scheduled_date")
+        .select("cost, category, status, created_at, completed_date, scheduled_date, property_id")
         .order("scheduled_date", { ascending: true, nullsFirst: false });
+      if (scopedPropertyId) q = q.eq("property_id", scopedPropertyId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
