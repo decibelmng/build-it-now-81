@@ -120,8 +120,10 @@ const ContractorLinks = () => {
   const getPropertyName = (propertyId: string) =>
     properties.find((p) => p.id === propertyId)?.name || "Unknown";
 
-  // Filter out the default link from the custom links list
-  const customLinks = links.filter((l: any) => !l.is_default);
+  // Filter out the default link from the custom links list, then by selected property
+  const customLinks = links
+    .filter((l: any) => !l.is_default)
+    .filter((l: any) => selectedPropertyId === "all" || l.property_id === selectedPropertyId);
 
   return (
     <div className="space-y-6">
@@ -130,7 +132,13 @@ const ContractorLinks = () => {
           <h2 className="font-display text-2xl font-bold">Contractor Links</h2>
           <p className="text-sm text-muted-foreground">Generate shareable links for contractors to log their service visits.</p>
         </div>
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setCreatedLink(null); setForm({ property_id: "", label: "", expiry: "none" }); } }}>
+        <Dialog open={open} onOpenChange={(o) => {
+          setOpen(o);
+          if (!o) { setCreatedLink(null); setForm({ property_id: "", label: "", expiry: "none" }); }
+          else if (selectedPropertyId !== "all" && !form.property_id) {
+            setForm((f) => ({ ...f, property_id: selectedPropertyId }));
+          }
+        }}>
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" />Generate Link</Button>
           </DialogTrigger>
