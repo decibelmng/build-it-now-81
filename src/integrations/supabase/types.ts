@@ -787,6 +787,7 @@ export type Database = {
           latitude: number | null
           loan_term_months: number | null
           longitude: number | null
+          monthly_deposit: number | null
           mortgage_balance: number | null
           mortgage_document_id: string | null
           mortgage_last_updated: string | null
@@ -825,6 +826,7 @@ export type Database = {
           latitude?: number | null
           loan_term_months?: number | null
           longitude?: number | null
+          monthly_deposit?: number | null
           mortgage_balance?: number | null
           mortgage_document_id?: string | null
           mortgage_last_updated?: string | null
@@ -863,6 +865,7 @@ export type Database = {
           latitude?: number | null
           loan_term_months?: number | null
           longitude?: number | null
+          monthly_deposit?: number | null
           mortgage_balance?: number | null
           mortgage_document_id?: string | null
           mortgage_last_updated?: string | null
@@ -1012,51 +1015,105 @@ export type Database = {
       }
       property_utilities: {
         Row: {
+          account_group: string
           account_number: string | null
+          balance_as_of: string | null
+          budget_amount: number | null
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
+          contract_end_date: string | null
           created_at: string
+          current_balance: number | null
+          due_day_of_month: number | null
+          email_on_account: string | null
           id: string
+          include_in_transfer: boolean | null
+          is_autopay: boolean | null
+          is_income: boolean | null
+          login_url: string | null
           monthly_cost: number | null
           notes: string | null
+          paid_via: string | null
+          password_hint: string | null
+          policy_number: string | null
           property_id: string
           provider_name: string
           service_type: string
+          status: string | null
+          status_date: string | null
+          status_note: string | null
           updated_at: string
           user_id: string
+          username: string | null
           vendor_url: string | null
         }
         Insert: {
+          account_group?: string
           account_number?: string | null
+          balance_as_of?: string | null
+          budget_amount?: number | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
+          contract_end_date?: string | null
           created_at?: string
+          current_balance?: number | null
+          due_day_of_month?: number | null
+          email_on_account?: string | null
           id?: string
+          include_in_transfer?: boolean | null
+          is_autopay?: boolean | null
+          is_income?: boolean | null
+          login_url?: string | null
           monthly_cost?: number | null
           notes?: string | null
+          paid_via?: string | null
+          password_hint?: string | null
+          policy_number?: string | null
           property_id: string
           provider_name: string
           service_type?: string
+          status?: string | null
+          status_date?: string | null
+          status_note?: string | null
           updated_at?: string
           user_id: string
+          username?: string | null
           vendor_url?: string | null
         }
         Update: {
+          account_group?: string
           account_number?: string | null
+          balance_as_of?: string | null
+          budget_amount?: number | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
+          contract_end_date?: string | null
           created_at?: string
+          current_balance?: number | null
+          due_day_of_month?: number | null
+          email_on_account?: string | null
           id?: string
+          include_in_transfer?: boolean | null
+          is_autopay?: boolean | null
+          is_income?: boolean | null
+          login_url?: string | null
           monthly_cost?: number | null
           notes?: string | null
+          paid_via?: string | null
+          password_hint?: string | null
+          policy_number?: string | null
           property_id?: string
           provider_name?: string
           service_type?: string
+          status?: string | null
+          status_date?: string | null
+          status_note?: string | null
           updated_at?: string
           user_id?: string
+          username?: string | null
           vendor_url?: string | null
         }
         Relationships: [
@@ -1300,6 +1357,75 @@ export type Database = {
         }
         Relationships: []
       }
+      utility_payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          note: string | null
+          payment_month: string
+          property_id: string
+          user_id: string
+          utility_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          payment_month: string
+          property_id: string
+          user_id: string
+          utility_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          note?: string | null
+          payment_month?: string
+          property_id?: string
+          user_id?: string
+          utility_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "utility_payments_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "utility_payments_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utility_payments_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "utility_payments_utility_id_fkey"
+            columns: ["utility_id"]
+            isOneToOne: false
+            referencedRelation: "property_utilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "utility_payments_utility_id_fkey"
+            columns: ["utility_id"]
+            isOneToOne: false
+            referencedRelation: "property_utilities_shared"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       cost_basis_summary: {
@@ -1393,6 +1519,124 @@ export type Database = {
           value_last_updated?: string | null
         }
         Relationships: []
+      }
+      property_utilities_shared: {
+        Row: {
+          account_group: string | null
+          account_number_masked: string | null
+          balance_as_of: string | null
+          budget_amount: number | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          contract_end_date: string | null
+          created_at: string | null
+          current_balance: number | null
+          due_day_of_month: number | null
+          has_policy_number: boolean | null
+          id: string | null
+          include_in_transfer: boolean | null
+          is_autopay: boolean | null
+          is_income: boolean | null
+          login_url: string | null
+          monthly_cost: number | null
+          notes: string | null
+          paid_via: string | null
+          property_id: string | null
+          provider_name: string | null
+          service_type: string | null
+          status: string | null
+          status_date: string | null
+          status_note: string | null
+          updated_at: string | null
+          user_id: string | null
+          vendor_url: string | null
+        }
+        Insert: {
+          account_group?: string | null
+          account_number_masked?: never
+          balance_as_of?: string | null
+          budget_amount?: number | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          contract_end_date?: string | null
+          created_at?: string | null
+          current_balance?: number | null
+          due_day_of_month?: number | null
+          has_policy_number?: never
+          id?: string | null
+          include_in_transfer?: boolean | null
+          is_autopay?: boolean | null
+          is_income?: boolean | null
+          login_url?: string | null
+          monthly_cost?: number | null
+          notes?: string | null
+          paid_via?: string | null
+          property_id?: string | null
+          provider_name?: string | null
+          service_type?: string | null
+          status?: string | null
+          status_date?: string | null
+          status_note?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vendor_url?: string | null
+        }
+        Update: {
+          account_group?: string | null
+          account_number_masked?: never
+          balance_as_of?: string | null
+          budget_amount?: number | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          contract_end_date?: string | null
+          created_at?: string | null
+          current_balance?: number | null
+          due_day_of_month?: number | null
+          has_policy_number?: never
+          id?: string | null
+          include_in_transfer?: boolean | null
+          is_autopay?: boolean | null
+          is_income?: boolean | null
+          login_url?: string | null
+          monthly_cost?: number | null
+          notes?: string | null
+          paid_via?: string | null
+          property_id?: string | null
+          provider_name?: string | null
+          service_type?: string | null
+          status?: string | null
+          status_date?: string | null
+          status_note?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          vendor_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_utilities_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "cost_basis_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "property_utilities_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_utilities_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_equity_summary"
+            referencedColumns: ["property_id"]
+          },
+        ]
       }
     }
     Functions: {
