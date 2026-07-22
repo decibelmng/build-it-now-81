@@ -80,7 +80,7 @@ serve(async (req) => {
     if (subscriptions.data.length === 0) {
       logStep("No active subscription");
       return new Response(
-        JSON.stringify({ subscribed: false, tier: "free" }),
+        JSON.stringify({ subscribed: false, tier: "free", plan: "free" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
@@ -94,6 +94,7 @@ serve(async (req) => {
       JSON.stringify({
         subscribed: true,
         tier: "pro",
+        plan: "pro",
         product_id: productId,
         subscription_end: subscriptionEnd,
       }),
