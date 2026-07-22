@@ -17,6 +17,7 @@ import {
   getActiveFilterCount,
   CATEGORY_GROUPS, CATEGORY_LABELS,
 } from "./constants";
+import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
 
 const PAGE_SIZE = 24;
 
