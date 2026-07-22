@@ -251,7 +251,7 @@ const HomeContacts = () => {
     const q = search.trim().toLowerCase();
     return contacts.filter((c: any) => {
       if (!!c.is_archived !== showArchived) return false;
-      if (selectedPropertyId !== "all" && c.property_id !== selectedPropertyId) return false;
+      if (!selectedPropertyId || c.property_id !== selectedPropertyId) return false;
       if (!q) return true;
       return (
         c.name?.toLowerCase().includes(q) ||
