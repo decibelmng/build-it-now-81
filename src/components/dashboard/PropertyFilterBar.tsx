@@ -1,8 +1,14 @@
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getPropertyDisplayName, getPropertyShortName } from "@/lib/propertyDisplay";
+import { useEffect } from "react";
+import { useAllowAllProperty, usePropertyFilter } from "@/hooks/usePropertyFilter";
 
+/**
+ * DEPRECATED as a visible UI element. The global <PropertySwitcher /> in the
+ * app chrome now shows the property picker. This component remains as a
+ * headless controller so per-page call sites can keep their existing render
+ * position: it registers the route's `allowAll` preference and, when a page
+ * passes an explicit value/onChange (legacy pattern), keeps them in sync with
+ * the global active property.
+ */
 interface PropertyFilterBarProps {
   allowAll?: boolean;
   value?: string;
@@ -10,48 +16,18 @@ interface PropertyFilterBarProps {
   className?: string;
 }
 
-const PropertyFilterBar = ({ allowAll = true, value, onChange, className }: PropertyFilterBarProps) => {
-  const { selectedPropertyId, setSelectedPropertyId, properties } = usePropertyFilter();
-  if (properties.length < 2) return null;
+const PropertyFilterBar = ({ allowAll = true, value, onChange }: PropertyFilterBarProps) => {
+  useAllowAllProperty(allowAll);
+  const { activePropertyId, properties } = usePropertyFilter();
 
-  const current = value ?? (allowAll ? selectedPropertyId : selectedPropertyId === "all" ? properties[0].id : selectedPropertyId);
-  const change = (v: string) => {
-    if (onChange) onChange(v);
-    else setSelectedPropertyId(v as string | "all");
-  };
+  // Legacy sync: mirror the global active id into the caller's local state.
+  useEffect(() => {
+    if (!onChange) return;
+    const target = activePropertyId ?? (allowAll ? "all" : properties[0]?.id ?? "");
+    if (target && target !== value) onChange(target);
+  }, [activePropertyId, allowAll, properties, onChange, value]);
 
-  const wrapperCls = `mb-6 w-full ${className ?? ""}`;
-
-  if (properties.length <= 4) {
-    return (
-      <div className={wrapperCls}>
-        <Tabs value={current} onValueChange={change}>
-          <TabsList className="w-full justify-start overflow-x-auto">
-            {allowAll && <TabsTrigger value="all" className="font-body">All</TabsTrigger>}
-            {properties.map((p) => (
-              <TabsTrigger key={p.id} value={p.id} className="font-body">{getPropertyShortName(p, 18)}</TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-      </div>
-    );
-  }
-
-  return (
-    <div className={wrapperCls}>
-      <Select value={current} onValueChange={change}>
-        <SelectTrigger className="w-64 font-body">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {allowAll && <SelectItem value="all" className="font-body">All properties</SelectItem>}
-          {properties.map((p) => (
-            <SelectItem key={p.id} value={p.id} className="font-body">{p.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
+  return null;
 };
 
 export default PropertyFilterBar;
