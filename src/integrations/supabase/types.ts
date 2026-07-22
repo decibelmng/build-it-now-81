@@ -304,39 +304,51 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          is_archived: boolean
+          is_preferred: boolean
           name: string
           notes: string | null
           phone: string | null
           property_id: string
           role: string
+          share_to_directory: boolean
           updated_at: string
           user_id: string
+          website_url: string | null
         }
         Insert: {
           company?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          is_archived?: boolean
+          is_preferred?: boolean
           name: string
           notes?: string | null
           phone?: string | null
           property_id: string
           role?: string
+          share_to_directory?: boolean
           updated_at?: string
           user_id: string
+          website_url?: string | null
         }
         Update: {
           company?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          is_archived?: boolean
+          is_preferred?: boolean
           name?: string
           notes?: string | null
           phone?: string | null
           property_id?: string
           role?: string
+          share_to_directory?: boolean
           updated_at?: string
           user_id?: string
+          website_url?: string | null
         }
         Relationships: [
           {
@@ -612,6 +624,7 @@ export type Database = {
           component_update_skipped: boolean
           component_updated: boolean
           contact_id: string | null
+          contact_name_snapshot: string | null
           cost: number | null
           created_at: string
           description: string | null
@@ -638,6 +651,7 @@ export type Database = {
           component_update_skipped?: boolean
           component_updated?: boolean
           contact_id?: string | null
+          contact_name_snapshot?: string | null
           cost?: number | null
           created_at?: string
           description?: string | null
@@ -664,6 +678,7 @@ export type Database = {
           component_update_skipped?: boolean
           component_updated?: boolean
           contact_id?: string | null
+          contact_name_snapshot?: string | null
           cost?: number | null
           created_at?: string
           description?: string | null
