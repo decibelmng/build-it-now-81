@@ -374,6 +374,8 @@ const PropertyUtilities = () => {
   };
 
   const activeProperty = propertyFilter !== "all" ? propertyFilter : properties[0]?.id;
+  const { role: activeRole, canEdit: canEditActive } = useAccessRole(activeProperty ?? null);
+  const isViewerOnly = propertyFilter !== "all" && activeRole === "viewer";
 
   return (
     <div>
