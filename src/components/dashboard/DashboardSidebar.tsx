@@ -1,14 +1,18 @@
-import { Home, Wrench, FileText, TrendingUp, Users, LogOut, Menu, Clock, Settings, Search, LayoutDashboard, RefreshCw, BarChart3, Zap, Lock, Link2, ClipboardList, Receipt, Plus, Shield, ShieldCheck } from "lucide-react";
+import { Home, Wrench, FileText, Users, LogOut, Settings, Search, LayoutDashboard, ClipboardList, Receipt, Shield, Lock, Link2, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSubscription, isProFeature } from "@/hooks/useSubscription";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import PropertySwitcher from "@/components/property/PropertySwitcher";
 
-type Section = "overview" | "properties" | "home-inventory" | "maintenance" | "documents" | "savings" | "tax-investment" | "contacts" | "utilities" | "timeline" | "recurring" | "sharing" | "export" | "analytics" | "settings" | "search" | "contractor-links" | "contractor-submissions";
+type Section =
+  | "overview" | "properties" | "home-inventory" | "home-systems" | "contacts"
+  | "maintenance" | "timeline" | "contractor-links"
+  | "savings" | "equity" | "basis" | "tax-investment" | "bills"
+  | "documents" | "sharing" | "settings" | "search";
 
 interface DashboardSidebarProps {
   activeSection: Section;
@@ -27,59 +31,61 @@ const navGroups = [
     ],
   },
   {
-    label: "Property",
+    label: "Home",
     items: [
-      { id: "properties" as Section, label: "My Home", icon: Home },
-      { id: "home-inventory" as Section, label: "Home Inventory", icon: ClipboardList },
-      { id: "maintenance" as Section, label: "Maintenance", icon: Wrench },
-      { id: "documents" as Section, label: "Documents", icon: FileText },
-      { id: "timeline" as Section, label: "Timeline", icon: Clock },
-    ],
-  },
-  {
-    label: "Financial",
-    items: [
-      { id: "savings" as Section, label: "Savings Forecast", icon: Shield },
-      { id: "tax-investment" as Section, label: "Tax & Investment", icon: Receipt },
-      { id: "utilities" as Section, label: "Accounts & Utilities", icon: Zap },
-    ],
-  },
-  {
-    label: "People",
-    items: [
+      { id: "properties" as Section, label: "Details", icon: Home },
+      { id: "home-systems" as Section, label: "Systems", icon: Wrench },
+      { id: "home-inventory" as Section, label: "Inventory", icon: ClipboardList },
       { id: "contacts" as Section, label: "Contacts", icon: Users },
+    ],
+  },
+  {
+    label: "Activity",
+    items: [
+      { id: "maintenance" as Section, label: "Log", icon: Wrench },
+      { id: "timeline" as Section, label: "Timeline", icon: FileText },
       { id: "contractor-links" as Section, label: "Contractors", icon: Link2 },
     ],
   },
   {
-    label: "Tools",
+    label: "Money",
     items: [
-      { id: "recurring" as Section, label: "Recurring", icon: RefreshCw },
-      { id: "analytics" as Section, label: "Analytics", icon: BarChart3 },
+      { id: "savings" as Section, label: "Forecast", icon: Shield },
+      { id: "equity" as Section, label: "Equity", icon: Receipt },
+      { id: "basis" as Section, label: "Cost Basis", icon: Receipt },
+      { id: "tax-investment" as Section, label: "Tax", icon: Receipt },
+      { id: "bills" as Section, label: "Bills", icon: Receipt },
+    ],
+  },
+  {
+    label: "More",
+    items: [
+      { id: "documents" as Section, label: "Documents", icon: FileText },
+      { id: "sharing" as Section, label: "Sharing", icon: Users },
     ],
   },
 ];
 
 const sectionLabels: Record<string, string> = {
   overview: "Overview",
-  properties: "My Home",
-  "home-inventory": "Home Inventory",
-  maintenance: "Maintenance",
-  documents: "Documents",
-  savings: "Savings Forecast",
-  "tax-investment": "Tax & Investment",
+  properties: "Details",
+  "home-inventory": "Inventory",
+  "home-systems": "Systems",
   contacts: "Contacts",
-  utilities: "Accounts & Utilities",
+  maintenance: "Activity log",
   timeline: "Timeline",
-  recurring: "Recurring",
-  sharing: "Sharing",
-  export: "Export",
-  analytics: "Analytics",
-  settings: "Settings",
-  search: "Search",
   "contractor-links": "Contractors",
-  "contractor-submissions": "Contractor Reviews",
+  savings: "Savings Forecast",
+  equity: "Home Value & Equity",
+  basis: "Cost Basis",
+  "tax-investment": "Tax Package",
+  bills: "Bills",
+  documents: "Documents",
+  sharing: "Sharing",
+  settings: "Account",
+  search: "Search",
 };
+
 
 const SidebarNav = ({
   activeSection,
