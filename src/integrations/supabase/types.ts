@@ -908,6 +908,7 @@ export type Database = {
           sale_closing_costs: number | null
           sale_date: string | null
           sale_price: number | null
+          slug: string
           sqft: number | null
           state: string | null
           updated_at: string
@@ -949,6 +950,7 @@ export type Database = {
           sale_closing_costs?: number | null
           sale_date?: string | null
           sale_price?: number | null
+          slug: string
           sqft?: number | null
           state?: string | null
           updated_at?: string
@@ -990,6 +992,7 @@ export type Database = {
           sale_closing_costs?: number | null
           sale_date?: string | null
           sale_price?: number | null
+          slug?: string
           sqft?: number | null
           state?: string | null
           updated_at?: string
@@ -1932,6 +1935,10 @@ export type Database = {
       }
       delete_user_account: { Args: never; Returns: undefined }
       extract_house_number: { Args: { addr: string }; Returns: string }
+      generate_property_slug: {
+        Args: { p_address: string; p_city: string; p_property_id: string }
+        Returns: string
+      }
       has_beta_access: { Args: { _user_id: string }; Returns: boolean }
       has_property_access: {
         Args: { p_property_id: string; p_user_id: string }
@@ -1955,6 +1962,7 @@ export type Database = {
         Args: { p_enabled: boolean }
         Returns: undefined
       }
+      slugify_property_text: { Args: { p_text: string }; Returns: string }
       suggest_providers: {
         Args: {
           p_city?: string
