@@ -110,7 +110,7 @@ const PropertyCards = ({ onNavigate }: PropertyCardsProps = {}) => {
         year_built: form.year_built ? parseInt(form.year_built) : null,
         latitude: form.latitude,
         longitude: form.longitude,
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
