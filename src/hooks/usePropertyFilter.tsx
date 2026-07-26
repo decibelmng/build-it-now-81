@@ -1,26 +1,20 @@
-import { createContext, useContext, useEffect, useMemo, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useCallback, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { getPropertyDisplayName } from "@/lib/propertyDisplay";
+import { LAST_SLUG_KEY, replaceSlugInPath } from "@/lib/propertyRoutes";
 
-const STORAGE_KEY = "homelog:activePropertyId";
-const URL_PARAM = "property";
-
-export type PropertyLite = { id: string; name: string; created_at?: string | null };
+export type PropertyLite = { id: string; name: string; slug?: string | null; created_at?: string | null };
 
 type Ctx = {
   properties: PropertyLite[];
   isLoading: boolean;
-  activePropertyId: string | null; // null only while loading or when user has zero properties
+  activePropertyId: string | null;
   activeProperty: PropertyLite | null;
-  setActivePropertyId: (id: string) => void;
-
-  // Legacy API retained for existing consumers. `selectedPropertyId` is now
-  // always the same as activePropertyId (or "" while loading/zero properties);
-  // it never returns the literal "all".
+  setActivePropertyId: (id: string) => void; // navigates; kept for legacy call sites
   selectedPropertyId: string;
   setSelectedPropertyId: (id: string) => void;
   propertyNameById: (id?: string | null) => string;
@@ -30,78 +24,39 @@ type Ctx = {
 
 const PropertyFilterContext = createContext<Ctx | null>(null);
 
-export const PropertyFilterProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
-  const [searchParams] = useSearchParams();
+type ProviderProps = {
+  children: ReactNode;
+  property: PropertyLite;
+  properties: PropertyLite[];
+  isLoading?: boolean;
+};
 
-  const { data: properties = [], isLoading } = useQuery({
-    queryKey: ["property_filter_list", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("properties")
-        .select("id, name, created_at")
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as PropertyLite[];
+/**
+ * Provider is mounted by PropertyLayout after the slug in the URL has resolved to
+ * a real property the current user can reach. The provider is READ-ONLY:
+ * switching property is done by navigation, never by mutating context.
+ */
+export const PropertyFilterProvider = ({ children, property, properties, isLoading }: ProviderProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Persist last-visited slug for the root redirect on next boot.
+  useEffect(() => {
+    if (property?.slug) {
+      try { localStorage.setItem(LAST_SLUG_KEY, property.slug); } catch {}
+    }
+  }, [property?.slug]);
+
+  const setActivePropertyId = useCallback(
+    (id: string) => {
+      const target = properties.find((p) => p.id === id);
+      if (!target?.slug || target.id === property.id) return;
+      navigate(replaceSlugInPath(location.pathname, target.slug));
     },
-    enabled: !!user,
-  });
-
-  const [activePropertyId, setActive] = useState<string | null>(null);
-  const [restored, setRestored] = useState(false);
-
-  const writeUrlLS = useCallback((id: string) => {
-    try { localStorage.setItem(STORAGE_KEY, id); } catch {}
-    const url = new URL(window.location.href);
-    url.searchParams.set(URL_PARAM, id);
-    window.history.replaceState(window.history.state, "", url.toString());
-  }, []);
-
-  // Initial resolution: URL > localStorage > first property
-  useEffect(() => {
-    if (restored || isLoading) return;
-    if (properties.length === 0) {
-      setRestored(true);
-      return;
-    }
-    const urlId = searchParams.get(URL_PARAM);
-    let stored: string | null = null;
-    try { stored = localStorage.getItem(STORAGE_KEY); } catch {}
-
-    let resolved: string;
-    if (urlId && urlId !== "all" && properties.some((p) => p.id === urlId)) {
-      resolved = urlId;
-    } else if (stored && stored !== "all" && properties.some((p) => p.id === stored)) {
-      resolved = stored;
-    } else {
-      resolved = properties[0].id;
-    }
-    setActive(resolved);
-    // Overwrite any stale "all" or unknown value in URL/LS with the resolved uuid.
-    writeUrlLS(resolved);
-    setRestored(true);
-  }, [properties, isLoading, restored, searchParams, writeUrlLS]);
-
-  // Guard against stale/deleted id
-  useEffect(() => {
-    if (!restored || properties.length === 0) return;
-    if (activePropertyId && !properties.some((p) => p.id === activePropertyId)) {
-      const first = properties[0].id;
-      setActive(first);
-      writeUrlLS(first);
-    }
-  }, [activePropertyId, properties, restored, writeUrlLS]);
-
-  const setActivePropertyId = useCallback((id: string) => {
-    setActive(id);
-    writeUrlLS(id);
-  }, [writeUrlLS]);
-
-  const selectedPropertyId: string = activePropertyId ?? "";
-  const setSelectedPropertyId = useCallback(
-    (id: string) => { if (id) setActivePropertyId(id); },
-    [setActivePropertyId]
+    [properties, property.id, navigate, location.pathname]
   );
+
+  const setSelectedPropertyId = setActivePropertyId;
 
   const propertyNameById = useCallback(
     (id?: string | null) => (id ? getPropertyDisplayName(properties.find((p) => p.id === id)) : ""),
@@ -110,41 +65,39 @@ export const PropertyFilterProvider = ({ children }: { children: ReactNode }) =>
 
   const scope = useCallback(
     <T extends { property_id?: string | null }>(rows: T[]) =>
-      activePropertyId ? rows.filter((r) => r.property_id === activePropertyId) : rows,
-    [activePropertyId]
-  );
-
-  const activeProperty = useMemo(
-    () => (activePropertyId ? properties.find((p) => p.id === activePropertyId) ?? null : null),
-    [activePropertyId, properties]
+      rows.filter((r) => r.property_id === property.id),
+    [property.id]
   );
 
   const notifyIfDifferent = useCallback(
     (newPropertyId?: string | null) => {
-      if (!newPropertyId || !activePropertyId) return;
-      if (newPropertyId === activePropertyId) return;
-      const name = getPropertyDisplayName(properties.find((p) => p.id === newPropertyId)) || "another property";
+      if (!newPropertyId || newPropertyId === property.id) return;
+      const target = properties.find((p) => p.id === newPropertyId);
+      const name = getPropertyDisplayName(target) || "another property";
       toast(`Saved to ${name}`, {
-        action: { label: "View", onClick: () => setActivePropertyId(newPropertyId) },
+        action: {
+          label: "View",
+          onClick: () => target?.slug && navigate(replaceSlugInPath(location.pathname, target.slug)),
+        },
       });
     },
-    [activePropertyId, properties, setActivePropertyId]
+    [property.id, properties, navigate, location.pathname]
   );
 
   const value = useMemo<Ctx>(
     () => ({
       properties,
-      isLoading,
-      activePropertyId,
-      activeProperty,
+      isLoading: !!isLoading,
+      activePropertyId: property.id,
+      activeProperty: property,
       setActivePropertyId,
-      selectedPropertyId,
+      selectedPropertyId: property.id,
       setSelectedPropertyId,
       propertyNameById,
       scope,
       notifyIfDifferent,
     }),
-    [properties, isLoading, activePropertyId, activeProperty, setActivePropertyId, selectedPropertyId, setSelectedPropertyId, propertyNameById, scope, notifyIfDifferent]
+    [properties, isLoading, property, setActivePropertyId, setSelectedPropertyId, propertyNameById, scope, notifyIfDifferent]
   );
 
   return <PropertyFilterContext.Provider value={value}>{children}</PropertyFilterContext.Provider>;
@@ -153,6 +106,8 @@ export const PropertyFilterProvider = ({ children }: { children: ReactNode }) =>
 export const usePropertyFilter = (): Ctx => {
   const ctx = useContext(PropertyFilterContext);
   if (!ctx) {
+    // Safe empty state so cross-property pages (portfolio, account) don't crash if
+    // a rogue import path pulls in the hook.
     return {
       properties: [],
       isLoading: false,
@@ -168,3 +123,21 @@ export const usePropertyFilter = (): Ctx => {
   }
   return ctx;
 };
+
+/** Lightweight query used by RootRedirect / LegacyRedirect / PropertySwitcher search — reachable = owned OR shared-accepted. */
+export function useReachableProperties() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["reachable_properties", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      // RLS already restricts to reachable rows (owner + accepted share policies exist).
+      const { data, error } = await supabase
+        .from("properties")
+        .select("id, name, slug, created_at")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as PropertyLite[];
+    },
+  });
+}
