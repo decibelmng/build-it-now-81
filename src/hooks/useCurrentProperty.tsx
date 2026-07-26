@@ -14,15 +14,18 @@ type Ctx = {
   isLoading: boolean;
   activePropertyId: string | null;
   activeProperty: PropertyLite | null;
-  setActivePropertyId: (id: string) => void; // navigates; kept for legacy call sites
+  /** Navigates the app to a different property, preserving the current sub-path. */
+  navigateToProperty: (id: string) => void;
+  // Read-only aliases kept for existing call sites that only read the id.
   selectedPropertyId: string;
+  /** Deprecated alias — same as navigateToProperty. */
   setSelectedPropertyId: (id: string) => void;
   propertyNameById: (id?: string | null) => string;
   scope: <T extends { property_id?: string | null }>(rows: T[]) => T[];
   notifyIfDifferent: (newPropertyId?: string | null) => void;
 };
 
-const PropertyFilterContext = createContext<Ctx | null>(null);
+const CurrentPropertyContext = createContext<Ctx | null>(null);
 
 type ProviderProps = {
   children: ReactNode;
@@ -32,22 +35,20 @@ type ProviderProps = {
 };
 
 /**
- * Provider is mounted by PropertyLayout after the slug in the URL has resolved to
- * a real property the current user can reach. The provider is READ-ONLY:
- * switching property is done by navigation, never by mutating context.
+ * Mounted by PropertyLayout once the URL slug has resolved to a real property the
+ * signed-in user can reach. Read-only: switching property is done by navigation.
  */
-export const PropertyFilterProvider = ({ children, property, properties, isLoading }: ProviderProps) => {
+export const CurrentPropertyProvider = ({ children, property, properties, isLoading }: ProviderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Persist last-visited slug for the root redirect on next boot.
   useEffect(() => {
     if (property?.slug) {
       try { localStorage.setItem(LAST_SLUG_KEY, property.slug); } catch {}
     }
   }, [property?.slug]);
 
-  const setActivePropertyId = useCallback(
+  const navigateToProperty = useCallback(
     (id: string) => {
       const target = properties.find((p) => p.id === id);
       if (!target?.slug || target.id === property.id) return;
@@ -55,8 +56,6 @@ export const PropertyFilterProvider = ({ children, property, properties, isLoadi
     },
     [properties, property.id, navigate, location.pathname]
   );
-
-  const setSelectedPropertyId = setActivePropertyId;
 
   const propertyNameById = useCallback(
     (id?: string | null) => (id ? getPropertyDisplayName(properties.find((p) => p.id === id)) : ""),
@@ -90,30 +89,28 @@ export const PropertyFilterProvider = ({ children, property, properties, isLoadi
       isLoading: !!isLoading,
       activePropertyId: property.id,
       activeProperty: property,
-      setActivePropertyId,
+      navigateToProperty,
       selectedPropertyId: property.id,
-      setSelectedPropertyId,
+      setSelectedPropertyId: navigateToProperty,
       propertyNameById,
       scope,
       notifyIfDifferent,
     }),
-    [properties, isLoading, property, setActivePropertyId, setSelectedPropertyId, propertyNameById, scope, notifyIfDifferent]
+    [properties, isLoading, property, navigateToProperty, propertyNameById, scope, notifyIfDifferent]
   );
 
-  return <PropertyFilterContext.Provider value={value}>{children}</PropertyFilterContext.Provider>;
+  return <CurrentPropertyContext.Provider value={value}>{children}</CurrentPropertyContext.Provider>;
 };
 
-export const usePropertyFilter = (): Ctx => {
-  const ctx = useContext(PropertyFilterContext);
+export const useCurrentProperty = (): Ctx => {
+  const ctx = useContext(CurrentPropertyContext);
   if (!ctx) {
-    // Safe empty state so cross-property pages (portfolio, account) don't crash if
-    // a rogue import path pulls in the hook.
     return {
       properties: [],
       isLoading: false,
       activePropertyId: null,
       activeProperty: null,
-      setActivePropertyId: () => {},
+      navigateToProperty: () => {},
       selectedPropertyId: "",
       setSelectedPropertyId: () => {},
       propertyNameById: () => "",
@@ -124,14 +121,13 @@ export const usePropertyFilter = (): Ctx => {
   return ctx;
 };
 
-/** Lightweight query used by RootRedirect / LegacyRedirect / PropertySwitcher search — reachable = owned OR shared-accepted. */
+/** Reachable = owned OR shared-accepted (enforced by RLS). */
 export function useReachableProperties() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ["reachable_properties", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      // RLS already restricts to reachable rows (owner + accepted share policies exist).
       const { data, error } = await supabase
         .from("properties")
         .select("id, name, slug, created_at")

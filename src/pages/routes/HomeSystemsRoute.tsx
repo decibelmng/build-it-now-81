@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import HomeSystemsSettings from "@/components/dashboard/HomeSystemsSettings";
 
 /**
@@ -8,7 +8,7 @@ import HomeSystemsSettings from "@/components/dashboard/HomeSystemsSettings";
  * from the database, then hands them to the existing HomeSystemsSettings component.
  */
 const HomeSystemsRoute = () => {
-  const { activeProperty } = usePropertyFilter();
+  const { activeProperty } = useCurrentProperty();
   const propertyId = activeProperty?.id ?? "";
 
   const { data, isLoading } = useQuery({

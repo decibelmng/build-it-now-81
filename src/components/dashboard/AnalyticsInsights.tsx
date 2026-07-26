@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, LineCh
 import { format, parseISO, startOfMonth, addMonths, isBefore, isAfter } from "date-fns";
 import { CalendarDays, TrendingUp, PieChart as PieIcon, BarChart3, AlertCircle } from "lucide-react";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import { getPropertyShortName } from "@/lib/propertyDisplay";
 
 const COLORS = [
@@ -24,7 +24,7 @@ const COLORS = [
 const AnalyticsInsights = () => {
   const { user } = useAuth();
 
-  const { selectedPropertyId } = usePropertyFilter();
+  const { selectedPropertyId } = useCurrentProperty();
 
   const { data: logsRaw = [] } = useQuery({
     queryKey: ["analytics_logs", user?.id, selectedPropertyId],
@@ -52,17 +52,18 @@ const AnalyticsInsights = () => {
   });
 
   const { data: templates = [] } = useQuery({
-    queryKey: ["analytics_templates", user?.id],
+    queryKey: ["analytics_templates", user?.id, selectedPropertyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("recurring_templates")
         .select("*")
         .eq("active", true)
+        .eq("property_id", selectedPropertyId!)
         .order("next_due_date", { ascending: true });
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && !!selectedPropertyId,
   });
 
   // Spending over time (last 12 months)
@@ -96,13 +97,6 @@ const AnalyticsInsights = () => {
       .sort((a, b) => b.value - a.value);
   })();
 
-  // Property comparison
-  const propertyComparison = properties.map((p) => {
-    const total = logs
-      .filter((l) => l.property_id === p.id && l.cost)
-      .reduce((sum, l) => sum + (l.cost || 0), 0);
-    return { name: getPropertyShortName(p, 15), total };
-  });
 
   // Upcoming schedule (next 60 days)
   const now = new Date();
@@ -204,30 +198,8 @@ const AnalyticsInsights = () => {
           </CardContent>
         </Card>
 
-        {/* Property comparison */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <BarChart3 className="h-4 w-4 text-sage" /> Property Comparison
-            </CardTitle>
-            <CardDescription>Side-by-side cost comparison</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {propertyComparison.length === 0 ? (
-              <p className="py-12 text-center text-muted-foreground">Add properties to compare</p>
-            ) : (
-              <ChartContainer config={comparisonConfig} className="h-[250px] w-full">
-                <BarChart data={propertyComparison} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis type="number" tickFormatter={(v) => `$${v}`} className="text-xs" />
-                  <YAxis dataKey="name" type="category" width={100} className="text-xs" />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="total" fill="hsl(150, 20%, 45%)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ChartContainer>
-            )}
-          </CardContent>
-        </Card>
+        {/* Property comparison removed — single-property scope */}
+
 
         {/* Upcoming schedule */}
         <Card>

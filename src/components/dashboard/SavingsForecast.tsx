@@ -13,7 +13,7 @@ import type { HomeItem, PropertyInfo } from "@/lib/savingsForecast";
 import { SYSTEM_PROFILES } from "@/lib/savingsForecast";
 import { setPendingInventoryAction } from "@/lib/pendingInventoryAction";
 import { useHomeSavings } from "@/hooks/useHomeSavings";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 
 interface SavingsForecastProps {
   onNavigate?: (section: string) => void;
@@ -21,7 +21,7 @@ interface SavingsForecastProps {
 
 const SavingsForecast = ({ onNavigate }: SavingsForecastProps) => {
   const { user } = useAuth();
-  const { activePropertyId } = usePropertyFilter();
+  const { activePropertyId } = useCurrentProperty();
   const { depositTotal } = useHomeSavings(activePropertyId);
 
   const { data: properties = [] } = useQuery({

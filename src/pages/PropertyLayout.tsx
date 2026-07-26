@@ -3,7 +3,7 @@ import { Outlet, useParams, Link, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { PropertyFilterProvider, useReachableProperties, type PropertyLite } from "@/hooks/usePropertyFilter";
+import { CurrentPropertyProvider, useReachableProperties, type PropertyLite } from "@/hooks/useCurrentProperty";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import SecurityFooter from "@/components/layout/SecurityFooter";
 import { Home, ArrowRight } from "lucide-react";
@@ -116,7 +116,7 @@ const PropertyLayout = () => {
   const { property, properties } = resolution;
 
   return (
-    <PropertyFilterProvider property={property} properties={properties}>
+    <CurrentPropertyProvider property={property} properties={properties}>
       <div className="flex h-screen bg-background">
         <DashboardSidebar
           activeSection={activeSection as any}
@@ -158,7 +158,7 @@ const PropertyLayout = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </PropertyFilterProvider>
+    </CurrentPropertyProvider>
   );
 };
 

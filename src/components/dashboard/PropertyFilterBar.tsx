@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 
 /**
  * DEPRECATED as a visible UI element. The global <PropertySwitcher /> in the
@@ -15,7 +15,7 @@ interface PropertyFilterBarProps {
 }
 
 const PropertyFilterBar = ({ value, onChange }: PropertyFilterBarProps) => {
-  const { activePropertyId } = usePropertyFilter();
+  const { activePropertyId } = useCurrentProperty();
 
   useEffect(() => {
     if (!onChange || !activePropertyId) return;

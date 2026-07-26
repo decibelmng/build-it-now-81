@@ -17,7 +17,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useDefaultContractorLink } from "@/hooks/useDefaultContractorLink";
 import QuickShareCard from "@/components/dashboard/QuickShareCard";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 const ContractorLinks = () => {
@@ -28,7 +28,7 @@ const ContractorLinks = () => {
   const [qrToken, setQrToken] = useState<string | null>(null);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
   const [form, setForm] = useState({ property_id: "", label: "", expiry: "none" });
-  const { selectedPropertyId, notifyIfDifferent } = usePropertyFilter();
+  const { selectedPropertyId, notifyIfDifferent } = useCurrentProperty();
 
   // Get first property for default link
   const { data: properties = [] } = useQuery({

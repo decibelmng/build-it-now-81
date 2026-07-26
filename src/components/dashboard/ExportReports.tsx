@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -35,7 +35,7 @@ const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
 const ExportReports = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { selectedPropertyId: selectedProperty } = usePropertyFilter();
+  const { selectedPropertyId: selectedProperty } = useCurrentProperty();
   const [exporting, setExporting] = useState<string | null>(null);
 
   const { data: properties = [] } = useQuery({

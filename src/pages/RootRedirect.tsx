@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useReachableProperties } from "@/hooks/usePropertyFilter";
+import { useReachableProperties } from "@/hooks/useCurrentProperty";
 import { LAST_SLUG_KEY } from "@/lib/propertyRoutes";
 
 /**

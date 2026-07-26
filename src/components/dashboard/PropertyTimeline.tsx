@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -76,7 +76,7 @@ const fmtCurrency = (n: number) =>
 
 const PropertyTimeline = () => {
   const { user } = useAuth();
-  const { selectedPropertyId: selectedProperty } = usePropertyFilter();
+  const { selectedPropertyId: selectedProperty } = useCurrentProperty();
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
   const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(["construction", "maintenance", "major_repair", "improvement", "inventory", "utility", "transfer", "document", "financial"]));
 

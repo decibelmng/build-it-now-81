@@ -30,7 +30,7 @@ import { useCostBasisAggregated } from "@/hooks/useCostBasisSummary";
 import { matchLogToComponent } from "@/lib/componentMatcher";
 import ComponentUpdateSheet from "@/components/dashboard/ComponentUpdateSheet";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import { cn } from "@/lib/utils";
 import { SYSTEMS_CATALOG, type HomeSystemsRegistry, migrateOldRegistry } from "@/lib/homeSystemsRegistry";
 import ReplacementConfirmDialog from "@/components/dashboard/ReplacementConfirmDialog";
@@ -106,7 +106,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const canEditAny = useCanEditAnyProperty();
-  const { selectedPropertyId, scope: scopeByProperty, notifyIfDifferent } = usePropertyFilter();
+  const { selectedPropertyId, scope: scopeByProperty, notifyIfDifferent } = useCurrentProperty();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);

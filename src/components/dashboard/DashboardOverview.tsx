@@ -13,10 +13,9 @@ import QuickLogCard from "./QuickLogCard";
 import WarrantyAlerts from "./WarrantyAlerts";
 import ComponentBackfillCard from "./ComponentBackfillCard";
 import RegistryMigrationCard from "./RegistryMigrationCard";
-import PortfolioRollup from "./PortfolioRollup";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
-import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import AnalyticsInsights from "./AnalyticsInsights";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
+
 
 const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
@@ -68,7 +67,7 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
     enabled: !!user,
   });
 
-  const { selectedPropertyId } = usePropertyFilter();
+  const { selectedPropertyId } = useCurrentProperty();
   const scopeFilter = <T extends { property_id?: string | null }>(rows: T[]) =>
     selectedPropertyId ? rows.filter((r) => r.property_id === selectedPropertyId) : [];
 
@@ -183,15 +182,8 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
       {/* Quick Start Checklist */}
       <QuickStartChecklist onNavigate={(s) => onNavigate?.(s)} />
 
-      {/* Portfolio rollup (multi-property only) */}
-      {properties.length >= 2 && (
-        <PortfolioRollup
-          properties={properties}
-          onSelectProperty={() => onNavigate?.("properties")}
-        />
-      )}
+      {/* No PortfolioRollup here — a single-property page never iterates properties. */}
 
-      <PropertyFilterBar />
 
       {/* Onboarding banner — missing purchase price */}
       {showOnboardingBanner && (
@@ -340,6 +332,11 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
           )}
         </CardContent>
       </Card>
+
+      {/* Analytics (folded in from the retired /analytics route) */}
+      <div className="mt-8">
+        <AnalyticsInsights />
+      </div>
     </div>
   );
 };
