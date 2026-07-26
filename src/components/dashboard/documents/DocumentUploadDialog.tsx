@@ -9,13 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { Upload, X, FileText, Image as ImageIcon, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CATEGORY_GROUPS, CATEGORY_LABELS } from "./constants";
 import { UNIVERSAL_FILE_ACCEPT, isImageFile, fileTypeLabel } from "@/lib/fileUploadConstants";
 import FilePicker from "@/components/ui/file-picker";
 import { SYSTEMS_CATALOG } from "@/lib/homeSystemsRegistry";
 import { getPropertyDisplayName } from "@/lib/propertyDisplay";
+import { DateField, toDbDate } from "@/components/ui/date-field";
 import {
   documentSchema, validateForm, validateFiles,
   appraisalSchema, mortgageUpdateSchema, taxAssessmentSchema,
@@ -33,14 +34,14 @@ interface Props {
 
 type Step = "upload" | "appraisal" | "mortgage" | "tax_assessment";
 
+// ── Module-scope helpers ──
 const CurrencyInput = ({ value, onChange, id, placeholder }: { value: string; onChange: (v: string) => void; id?: string; placeholder?: string }) => (
   <div className="relative">
     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
     <Input
       id={id}
-      type="number"
-      step="0.01"
-      min="0"
+      type="text"
+      inputMode="decimal"
       className="pl-7 font-body"
       placeholder={placeholder || "0.00"}
       value={value}
@@ -48,6 +49,350 @@ const CurrencyInput = ({ value, onChange, id, placeholder }: { value: string; on
     />
   </div>
 );
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+// ── APPRAISAL STEP (module scope) ──
+function AppraisalStep({ propertyId, userId, uploadedDocId, currentProperty, closeDialog, defaultDate, onSaved }: {
+  propertyId: string;
+  userId: string;
+  uploadedDocId: string;
+  currentProperty: any;
+  defaultDate: string;
+  closeDialog: () => void;
+  onSaved: () => void;
+}) {
+  const { toast } = useToast();
+  const [appValue, setAppValue] = useState("");
+  const [appDate, setAppDate] = useState(defaultDate || today());
+  const [appType, setAppType] = useState("professional_appraisal");
+  const [appSource, setAppSource] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    const val = parseFloat(appValue);
+    const v = appraisalSchema.safeParse({
+      value: val, valuation_date: appDate, valuation_type: appType, source: appSource || undefined,
+    });
+    if (!v.success) {
+      toast({ title: v.error.errors[0]?.message || "Validation failed", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("property_valuations" as any).insert({
+        property_id: propertyId,
+        user_id: userId,
+        valuation_type: appType,
+        valuation_date: appDate,
+        value: val,
+        source: appSource || null,
+        document_id: uploadedDocId || null,
+      });
+      if (error) throw error;
+      if (currentProperty) {
+        const shouldUpdate = !currentProperty.value_last_updated || appDate >= currentProperty.value_last_updated;
+        if (shouldUpdate) {
+          await supabase.from("properties").update({
+            current_estimated_value: val, value_last_updated: appDate,
+          }).eq("id", propertyId);
+        }
+      }
+      onSaved();
+      toast({ title: "Appraisal value recorded" });
+      closeDialog();
+    } catch (err: any) {
+      toast({ title: "Error saving appraisal", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <DialogHeader>
+        <DialogTitle className="font-display">Add appraisal details</DialogTitle>
+        <DialogDescription className="font-body">
+          We noticed this is an appraisal. Record the appraised value to track your home's worth over time.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label className="font-body">Appraised value *</Label>
+          <CurrencyInput value={appValue} onChange={setAppValue} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="font-body">Appraisal date *</Label>
+            <DateField value={appDate} onChange={setAppDate} max={today()} className="font-body" />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-body">Appraisal type</Label>
+            <Select value={appType} onValueChange={setAppType}>
+              <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="professional_appraisal" className="font-body">Professional Appraisal</SelectItem>
+                <SelectItem value="refinance_appraisal" className="font-body">Refinance Appraisal</SelectItem>
+                <SelectItem value="comparative_market_analysis" className="font-body">Comparative Market Analysis</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="font-body">Appraiser / source</Label>
+          <Input value={appSource} onChange={(e) => setAppSource(e.target.value)} placeholder="e.g., Bank of America" className="font-body" />
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <Button onClick={handleSave} disabled={saving} className="flex-1 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold">
+            {saving ? "Saving..." : "Save to value history"}
+          </Button>
+          <Button variant="outline" onClick={closeDialog} className="rounded-full font-body">Skip for now</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MORTGAGE STEP (module scope) ──
+function MortgageStep({ propertyId, uploadedDocId, currentProperty, defaultDate, closeDialog, onSaved }: {
+  propertyId: string;
+  uploadedDocId: string;
+  currentProperty: any;
+  defaultDate: string;
+  closeDialog: () => void;
+  onSaved: () => void;
+}) {
+  const { toast } = useToast();
+  const prop = currentProperty;
+  const [balance, setBalance] = useState(prop?.mortgage_balance != null ? String(prop.mortgage_balance) : "");
+  const [origAmount, setOrigAmount] = useState(prop?.original_loan_amount != null ? String(prop.original_loan_amount) : "");
+  const [rate, setRate] = useState(prop?.mortgage_rate != null ? String(prop.mortgage_rate) : "");
+  const [payment, setPayment] = useState(prop?.mortgage_payment != null ? String(prop.mortgage_payment) : "");
+  const [stmtDate, setStmtDate] = useState(defaultDate || today());
+  const [loanTerm, setLoanTerm] = useState(prop?.loan_term_months != null ? String(prop.loan_term_months) : "");
+  const [customTerm, setCustomTerm] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const showOrigAmount = prop?.original_loan_amount == null;
+  const showLoanTerm = prop?.loan_term_months == null;
+
+  const handleSave = async () => {
+    const updates: Record<string, any> = {
+      mortgage_last_updated: toDbDate(stmtDate),
+      mortgage_document_id: uploadedDocId || null,
+    };
+    if (balance) updates.mortgage_balance = parseFloat(balance);
+    if (rate) updates.mortgage_rate = parseFloat(rate);
+    if (payment) updates.mortgage_payment = parseFloat(payment);
+    if (showOrigAmount && origAmount) updates.original_loan_amount = parseFloat(origAmount);
+    const termValue = loanTerm === "other" ? (customTerm ? parseInt(customTerm) : undefined) : (loanTerm ? parseInt(loanTerm) : undefined);
+    if (showLoanTerm && termValue) updates.loan_term_months = termValue;
+
+    const v = mortgageUpdateSchema.safeParse({
+      mortgage_balance: updates.mortgage_balance,
+      original_loan_amount: updates.original_loan_amount,
+      mortgage_rate: updates.mortgage_rate,
+      mortgage_payment: updates.mortgage_payment,
+      loan_term_months: updates.loan_term_months,
+    });
+    if (!v.success) {
+      toast({ title: v.error.errors[0]?.message || "Validation failed", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("properties").update(updates).eq("id", propertyId);
+      if (error) throw error;
+      onSaved();
+      toast({ title: "Mortgage details updated" });
+      closeDialog();
+    } catch (err: any) {
+      toast({ title: "Error saving mortgage details", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <DialogHeader>
+        <DialogTitle className="font-display">Update your mortgage details</DialogTitle>
+        <DialogDescription className="font-body">
+          We noticed this is a mortgage statement. Pull a few numbers from it to keep your equity calculation up to date.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="rounded-lg bg-accent/5 border border-accent/20 p-3 flex items-start gap-2.5">
+        <Info className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+        <p className="font-body text-xs text-muted-foreground">
+          These numbers are usually on the first page of your statement. Look for "Principal Balance" or "Remaining Balance", "Interest Rate", and "Monthly Payment Due."
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="font-body">Remaining balance</Label>
+            <CurrencyInput value={balance} onChange={setBalance} />
+            <p className="font-body text-[11px] text-muted-foreground">The principal balance on your statement</p>
+          </div>
+
+          {showOrigAmount ? (
+            <div className="space-y-2">
+              <Label className="font-body">Original loan amount</Label>
+              <CurrencyInput value={origAmount} onChange={setOrigAmount} />
+              <p className="font-body text-[11px] text-muted-foreground">The total amount borrowed at closing</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label className="font-body text-muted-foreground">Original loan amount</Label>
+              <p className="font-body text-sm">${Number(prop?.original_loan_amount).toLocaleString()}</p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label className="font-body">Interest rate</Label>
+            <div className="relative">
+              <Input
+                type="text" inputMode="decimal"
+                className="pr-7 font-body" placeholder="6.250"
+                value={rate} onChange={(e) => setRate(e.target.value)}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+            </div>
+            <p className="font-body text-[11px] text-muted-foreground">Your current annual rate</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-body">Monthly payment</Label>
+            <CurrencyInput value={payment} onChange={setPayment} />
+            <p className="font-body text-[11px] text-muted-foreground">Principal + interest (before escrow)</p>
+          </div>
+        </div>
+
+        <div className={`grid gap-3 ${showLoanTerm ? "grid-cols-1 sm:grid-cols-2" : ""}`}>
+          <div className="space-y-2">
+            <Label className="font-body">Statement date</Label>
+            <DateField value={stmtDate} onChange={setStmtDate} max={today()} className="font-body" />
+          </div>
+
+          {showLoanTerm && (
+            <div className="space-y-2">
+              <Label className="font-body">Loan term</Label>
+              <Select value={loanTerm} onValueChange={setLoanTerm}>
+                <SelectTrigger className="font-body"><SelectValue placeholder="Select term" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="360" className="font-body">30 years</SelectItem>
+                  <SelectItem value="240" className="font-body">20 years</SelectItem>
+                  <SelectItem value="180" className="font-body">15 years</SelectItem>
+                  <SelectItem value="120" className="font-body">10 years</SelectItem>
+                  <SelectItem value="other" className="font-body">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              {loanTerm === "other" && (
+                <Input type="text" inputMode="numeric" placeholder="Months" value={customTerm} onChange={(e) => setCustomTerm(e.target.value)} className="font-body mt-2" />
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <Button onClick={handleSave} disabled={saving} className="flex-1 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold">
+            {saving ? "Saving..." : "Save mortgage details"}
+          </Button>
+          <Button variant="outline" onClick={closeDialog} className="rounded-full font-body">Skip for now</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TAX ASSESSMENT STEP (module scope) ──
+function TaxAssessmentStep({ propertyId, userId, uploadedDocId, closeDialog, onSaved }: {
+  propertyId: string;
+  userId: string;
+  uploadedDocId: string;
+  closeDialog: () => void;
+  onSaved: () => void;
+}) {
+  const { toast } = useToast();
+  const [assessedValue, setAssessedValue] = useState("");
+  const [assessYear, setAssessYear] = useState(new Date().getFullYear().toString());
+  const [jurisdiction, setJurisdiction] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    const val = parseFloat(assessedValue);
+    const v = taxAssessmentSchema.safeParse({
+      value: val, valuation_date: `${assessYear}-01-01`, source: jurisdiction || undefined,
+    });
+    if (!v.success) {
+      toast({ title: v.error.errors[0]?.message || "Validation failed", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("property_valuations" as any).insert({
+        property_id: propertyId,
+        user_id: userId,
+        valuation_type: "tax_assessment",
+        valuation_date: `${assessYear}-01-01`,
+        value: val,
+        source: jurisdiction || null,
+        document_id: uploadedDocId || null,
+      });
+      if (error) throw error;
+      onSaved();
+      toast({ title: "Tax assessment value recorded" });
+      closeDialog();
+    } catch (err: any) {
+      toast({ title: "Error saving assessment", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <DialogHeader>
+        <DialogTitle className="font-display">Record tax assessment value?</DialogTitle>
+        <DialogDescription className="font-body">
+          If this includes your property's assessed value, add it to your value history.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label className="font-body">Assessed value *</Label>
+          <CurrencyInput value={assessedValue} onChange={setAssessedValue} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="font-body">Assessment year *</Label>
+            <Input type="text" inputMode="numeric" value={assessYear} onChange={(e) => setAssessYear(e.target.value)} className="font-body" />
+          </div>
+          <div className="space-y-2">
+            <Label className="font-body">County / jurisdiction</Label>
+            <Input value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)} placeholder="e.g., Maricopa County" className="font-body" />
+          </div>
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <Button onClick={handleSave} disabled={saving} className="flex-1 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold">
+            {saving ? "Saving..." : "Add to value history"}
+          </Button>
+          <Button variant="outline" onClick={closeDialog} className="rounded-full font-body">Skip</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defaultLinkKey, defaultLinkValue, defaultCategory }: Props) => {
   const { user } = useAuth();
@@ -71,22 +416,16 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // Fetch current property for pre-populating mortgage fields
   const { data: currentProperty } = useQuery({
     queryKey: ["property_for_upload", form.property_id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("properties")
-        .select("*")
-        .eq("id", form.property_id)
-        .single();
+      const { data, error } = await supabase.from("properties").select("*").eq("id", form.property_id).single();
       if (error) throw error;
       return data;
     },
     enabled: !!user && !!form.property_id && step !== "upload",
   });
 
-  // Reset step when dialog closes
   useEffect(() => {
     if (!open) {
       setStep("upload");
@@ -94,15 +433,10 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
     }
   }, [open]);
 
-  // Maintenance logs for linking
   const { data: maintenanceLogs = [] } = useQuery({
     queryKey: ["maintenance_for_upload", user?.id, form.property_id],
     queryFn: async () => {
-      let q = supabase
-        .from("maintenance_logs")
-        .select("id, title, scheduled_date")
-        .order("created_at", { ascending: false })
-        .limit(50);
+      let q = supabase.from("maintenance_logs").select("id, title, scheduled_date").order("created_at", { ascending: false }).limit(50);
       if (form.property_id) q = q.eq("property_id", form.property_id);
       const { data, error } = await q;
       if (error) throw error;
@@ -111,15 +445,10 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
     enabled: !!user && !!form.property_id,
   });
 
-  // Inventory items for linking
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ["inventory_for_upload", user?.id, form.property_id],
     queryFn: async () => {
-      let q = supabase
-        .from("home_items")
-        .select("id, name")
-        .order("name")
-        .limit(100);
+      let q = supabase.from("home_items").select("id, name").order("name").limit(100);
       if (form.property_id) q = q.eq("property_id", form.property_id);
       const { data, error } = await q;
       if (error) throw error;
@@ -128,15 +457,10 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
     enabled: !!user && !!form.property_id,
   });
 
-  // Contacts for linking
   const { data: contacts = [] } = useQuery({
     queryKey: ["contacts_for_upload", user?.id, form.property_id],
     queryFn: async () => {
-      let q = supabase
-        .from("home_contacts")
-        .select("id, name, company")
-        .order("name")
-        .limit(100);
+      let q = supabase.from("home_contacts").select("id, name, company").order("name").limit(100);
       if (form.property_id) q = q.eq("property_id", form.property_id);
       const { data, error } = await q;
       if (error) throw error;
@@ -145,7 +469,6 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
     enabled: !!user && !!form.property_id,
   });
 
-  // Auto-populate system_key when home_item or maintenance_log is selected
   const selectedItem = inventoryItems.find((i: any) => i.id === form.home_item_id);
   const selectedLog = maintenanceLogs.find((l: any) => l.id === form.maintenance_log_id);
 
@@ -155,6 +478,7 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
     } else if (form.maintenance_log_id && selectedLog && (selectedLog as any).system_key) {
       setForm(prev => ({ ...prev, system_key: (selectedLog as any).system_key || "" }));
     }
+     
   }, [form.home_item_id, form.maintenance_log_id]);
 
   const closeDialog = () => {
@@ -200,9 +524,7 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
         const file = files[i];
         const filePath = `${user.id}/${form.property_id}/${Date.now()}_${file.name}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("property-documents")
-          .upload(filePath, file);
+        const { error: uploadError } = await supabase.storage.from("property-documents").upload(filePath, file);
         if (uploadError) throw uploadError;
 
         const title = form.title || file.name.replace(/\.[^/.]+$/, "");
@@ -220,7 +542,7 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
           description: form.description || null,
           category: form.category,
           display_type: isImageFile(file) ? "photo" : file.type === "application/pdf" ? "receipt" : "other",
-          document_date: form.document_date || null,
+          document_date: toDbDate(form.document_date),
           tags,
           maintenance_log_id: form.maintenance_log_id || null,
           home_item_id: form.home_item_id || null,
@@ -236,19 +558,11 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
       toast({ title: `${files.length} document${files.length > 1 ? "s" : ""} uploaded!` });
       onComplete();
 
-      // Check if we should show a post-upload step
       if (files.length === 1 && lastDocId) {
         setUploadedDocId(lastDocId);
-        if (form.category === "appraisal") {
-          setStep("appraisal");
-          return;
-        } else if (form.category === "mortgage_statement") {
-          setStep("mortgage");
-          return;
-        } else if (form.category === "tax_records") {
-          setStep("tax_assessment");
-          return;
-        }
+        if (form.category === "appraisal") { setStep("appraisal"); return; }
+        if (form.category === "mortgage_statement") { setStep("mortgage"); return; }
+        if (form.category === "tax_records") { setStep("tax_assessment"); return; }
       }
 
       closeDialog();
@@ -260,343 +574,18 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
     }
   };
 
-  // ── APPRAISAL STEP ──
-  const AppraisalStep = () => {
-    const [appValue, setAppValue] = useState("");
-    const [appDate, setAppDate] = useState(form.document_date || new Date().toISOString().split("T")[0]);
-    const [appType, setAppType] = useState("professional_appraisal");
-    const [appSource, setAppSource] = useState("");
-    const [saving, setSaving] = useState(false);
-
-    const handleSave = async () => {
-      const val = parseFloat(appValue);
-      const v = appraisalSchema.safeParse({
-        value: val, valuation_date: appDate, valuation_type: appType, source: appSource || undefined,
-      });
-      if (!v.success) {
-        toast({ title: v.error.errors[0]?.message || "Validation failed", variant: "destructive" });
-        return;
-      }
-      setSaving(true);
-      try {
-        const { error } = await supabase.from("property_valuations" as any).insert({
-          property_id: form.property_id,
-          user_id: user!.id,
-          valuation_type: appType,
-          valuation_date: appDate,
-          value: val,
-          source: appSource || null,
-          document_id: uploadedDocId || null,
-        });
-        if (error) throw error;
-
-        // Update property estimated value if this is newer
-        if (currentProperty) {
-          const shouldUpdate = !currentProperty.value_last_updated || appDate >= currentProperty.value_last_updated;
-          if (shouldUpdate) {
-            await supabase.from("properties").update({
-              current_estimated_value: val,
-              value_last_updated: appDate,
-            }).eq("id", form.property_id);
-          }
-        }
-
-        queryClient.invalidateQueries({ queryKey: ["properties"] });
-        queryClient.invalidateQueries({ queryKey: ["property_for_upload"] });
-        toast({ title: "Appraisal value recorded" });
-        closeDialog();
-      } catch (err: any) {
-        toast({ title: "Error saving appraisal", description: err.message, variant: "destructive" });
-      } finally {
-        setSaving(false);
-      }
-    };
-
-    return (
-      <div className="space-y-4">
-        <DialogHeader>
-          <DialogTitle className="font-display">Add appraisal details</DialogTitle>
-          <DialogDescription className="font-body">
-            We noticed this is an appraisal. Record the appraised value to track your home's worth over time.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label className="font-body">Appraised value *</Label>
-            <CurrencyInput value={appValue} onChange={setAppValue} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="font-body">Appraisal date *</Label>
-              <Input type="date" value={appDate} onChange={(e) => setAppDate(e.target.value)} className="font-body" />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-body">Appraisal type</Label>
-              <Select value={appType} onValueChange={setAppType}>
-                <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="professional_appraisal" className="font-body">Professional Appraisal</SelectItem>
-                  <SelectItem value="refinance_appraisal" className="font-body">Refinance Appraisal</SelectItem>
-                  <SelectItem value="comparative_market_analysis" className="font-body">Comparative Market Analysis</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="font-body">Appraiser / source</Label>
-            <Input value={appSource} onChange={(e) => setAppSource(e.target.value)} placeholder="e.g., Bank of America" className="font-body" />
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <Button onClick={handleSave} disabled={saving} className="flex-1 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold">
-              {saving ? "Saving..." : "Save to value history"}
-            </Button>
-            <Button variant="outline" onClick={closeDialog} className="rounded-full font-body">Skip for now</Button>
-          </div>
-        </div>
-      </div>
-    );
+  const onSaved = () => {
+    queryClient.invalidateQueries({ queryKey: ["properties"] });
+    queryClient.invalidateQueries({ queryKey: ["property_for_upload"] });
   };
 
-  // ── MORTGAGE STEP ──
-  const MortgageStep = () => {
-    const prop = currentProperty;
-    const [balance, setBalance] = useState(prop?.mortgage_balance != null ? String(prop.mortgage_balance) : "");
-    const [origAmount, setOrigAmount] = useState(prop?.original_loan_amount != null ? String(prop.original_loan_amount) : "");
-    const [rate, setRate] = useState(prop?.mortgage_rate != null ? String(prop.mortgage_rate) : "");
-    const [payment, setPayment] = useState(prop?.mortgage_payment != null ? String(prop.mortgage_payment) : "");
-    const [stmtDate, setStmtDate] = useState(form.document_date || new Date().toISOString().split("T")[0]);
-    const [loanTerm, setLoanTerm] = useState(prop?.loan_term_months != null ? String(prop.loan_term_months) : "");
-    const [customTerm, setCustomTerm] = useState("");
-    const [saving, setSaving] = useState(false);
-
-    const showOrigAmount = prop?.original_loan_amount == null;
-    const showLoanTerm = prop?.loan_term_months == null;
-
-    const handleSave = async () => {
-      const updates: Record<string, any> = {
-        mortgage_last_updated: stmtDate,
-        mortgage_document_id: uploadedDocId || null,
-      };
-
-      if (balance) updates.mortgage_balance = parseFloat(balance);
-      if (rate) updates.mortgage_rate = parseFloat(rate);
-      if (payment) updates.mortgage_payment = parseFloat(payment);
-      if (showOrigAmount && origAmount) updates.original_loan_amount = parseFloat(origAmount);
-      
-      const termValue = loanTerm === "other" ? (customTerm ? parseInt(customTerm) : undefined) : (loanTerm ? parseInt(loanTerm) : undefined);
-      if (showLoanTerm && termValue) updates.loan_term_months = termValue;
-
-      // Validate numeric fields
-      const v = mortgageUpdateSchema.safeParse({
-        mortgage_balance: updates.mortgage_balance,
-        original_loan_amount: updates.original_loan_amount,
-        mortgage_rate: updates.mortgage_rate,
-        mortgage_payment: updates.mortgage_payment,
-        loan_term_months: updates.loan_term_months,
-      });
-      if (!v.success) {
-        toast({ title: v.error.errors[0]?.message || "Validation failed", variant: "destructive" });
-        return;
-      }
-
-      setSaving(true);
-      try {
-        const { error } = await supabase.from("properties").update(updates).eq("id", form.property_id);
-        if (error) throw error;
-
-        queryClient.invalidateQueries({ queryKey: ["properties"] });
-        queryClient.invalidateQueries({ queryKey: ["property_for_upload"] });
-        toast({ title: "Mortgage details updated" });
-        closeDialog();
-      } catch (err: any) {
-        toast({ title: "Error saving mortgage details", description: err.message, variant: "destructive" });
-      } finally {
-        setSaving(false);
-      }
-    };
-
-    return (
-      <div className="space-y-4">
-        <DialogHeader>
-          <DialogTitle className="font-display">Update your mortgage details</DialogTitle>
-          <DialogDescription className="font-body">
-            We noticed this is a mortgage statement. Pull a few numbers from it to keep your equity calculation up to date.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="rounded-lg bg-accent/5 border border-accent/20 p-3 flex items-start gap-2.5">
-          <Info className="h-4 w-4 text-accent shrink-0 mt-0.5" />
-          <p className="font-body text-xs text-muted-foreground">
-            These numbers are usually on the first page of your statement. Look for "Principal Balance" or "Remaining Balance", "Interest Rate", and "Monthly Payment Due."
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="font-body">Remaining balance</Label>
-              <CurrencyInput value={balance} onChange={setBalance} />
-              <p className="font-body text-[11px] text-muted-foreground">The principal balance on your statement</p>
-            </div>
-
-            {showOrigAmount ? (
-              <div className="space-y-2">
-                <Label className="font-body">Original loan amount</Label>
-                <CurrencyInput value={origAmount} onChange={setOrigAmount} />
-                <p className="font-body text-[11px] text-muted-foreground">The total amount borrowed at closing</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label className="font-body text-muted-foreground">Original loan amount</Label>
-                <p className="font-body text-sm">${Number(prop?.original_loan_amount).toLocaleString()}</p>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label className="font-body">Interest rate</Label>
-              <div className="relative">
-                <Input
-                  type="number" step="0.001" min="0" max="30"
-                  className="pr-7 font-body" placeholder="6.250"
-                  value={rate} onChange={(e) => setRate(e.target.value)}
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-              </div>
-              <p className="font-body text-[11px] text-muted-foreground">Your current annual rate</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="font-body">Monthly payment</Label>
-              <CurrencyInput value={payment} onChange={setPayment} />
-              <p className="font-body text-[11px] text-muted-foreground">Principal + interest (before escrow)</p>
-            </div>
-          </div>
-
-          <div className={`grid gap-3 ${showLoanTerm ? "grid-cols-1 sm:grid-cols-2" : ""}`}>
-            <div className="space-y-2">
-              <Label className="font-body">Statement date</Label>
-              <Input type="date" value={stmtDate} onChange={(e) => setStmtDate(e.target.value)} className="font-body" />
-            </div>
-
-            {showLoanTerm && (
-              <div className="space-y-2">
-                <Label className="font-body">Loan term</Label>
-                <Select value={loanTerm} onValueChange={setLoanTerm}>
-                  <SelectTrigger className="font-body"><SelectValue placeholder="Select term" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="360" className="font-body">30 years</SelectItem>
-                    <SelectItem value="240" className="font-body">20 years</SelectItem>
-                    <SelectItem value="180" className="font-body">15 years</SelectItem>
-                    <SelectItem value="120" className="font-body">10 years</SelectItem>
-                    <SelectItem value="other" className="font-body">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-                {loanTerm === "other" && (
-                  <Input type="number" min="12" max="600" placeholder="Months" value={customTerm} onChange={(e) => setCustomTerm(e.target.value)} className="font-body mt-2" />
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <Button onClick={handleSave} disabled={saving} className="flex-1 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold">
-              {saving ? "Saving..." : "Save mortgage details"}
-            </Button>
-            <Button variant="outline" onClick={closeDialog} className="rounded-full font-body">Skip for now</Button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ── TAX ASSESSMENT STEP ──
-  const TaxAssessmentStep = () => {
-    const [assessedValue, setAssessedValue] = useState("");
-    const [assessYear, setAssessYear] = useState(new Date().getFullYear().toString());
-    const [jurisdiction, setJurisdiction] = useState("");
-    const [saving, setSaving] = useState(false);
-
-    const handleSave = async () => {
-      const val = parseFloat(assessedValue);
-      const v = taxAssessmentSchema.safeParse({
-        value: val, valuation_date: `${assessYear}-01-01`, source: jurisdiction || undefined,
-      });
-      if (!v.success) {
-        toast({ title: v.error.errors[0]?.message || "Validation failed", variant: "destructive" });
-        return;
-      }
-      setSaving(true);
-      try {
-        const { error } = await supabase.from("property_valuations" as any).insert({
-          property_id: form.property_id,
-          user_id: user!.id,
-          valuation_type: "tax_assessment",
-          valuation_date: `${assessYear}-01-01`,
-          value: val,
-          source: jurisdiction || null,
-          document_id: uploadedDocId || null,
-        });
-        if (error) throw error;
-
-        queryClient.invalidateQueries({ queryKey: ["properties"] });
-        toast({ title: "Tax assessment value recorded" });
-        closeDialog();
-      } catch (err: any) {
-        toast({ title: "Error saving assessment", description: err.message, variant: "destructive" });
-      } finally {
-        setSaving(false);
-      }
-    };
-
-    return (
-      <div className="space-y-4">
-        <DialogHeader>
-          <DialogTitle className="font-display">Record tax assessment value?</DialogTitle>
-          <DialogDescription className="font-body">
-            If this includes your property's assessed value, add it to your value history.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label className="font-body">Assessed value *</Label>
-            <CurrencyInput value={assessedValue} onChange={setAssessedValue} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="font-body">Assessment year *</Label>
-              <Input type="number" min="2000" max="2099" value={assessYear} onChange={(e) => setAssessYear(e.target.value)} className="font-body" />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-body">County / jurisdiction</Label>
-              <Input value={jurisdiction} onChange={(e) => setJurisdiction(e.target.value)} placeholder="e.g., Maricopa County" className="font-body" />
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <Button onClick={handleSave} disabled={saving} className="flex-1 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold">
-              {saving ? "Saving..." : "Add to value history"}
-            </Button>
-            <Button variant="outline" onClick={closeDialog} className="rounded-full font-body">Skip</Button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // ── UPLOAD STEP (original form) ──
-  const UploadStep = () => (
+  // Upload step JSX (inline function — no local hooks, safe as function call)
+  const renderUploadStep = () => (
     <div className="space-y-4">
       <DialogHeader>
         <DialogTitle className="font-display">Upload Documents</DialogTitle>
       </DialogHeader>
 
-      {/* Property */}
       {properties.length > 1 && (
         <div className="space-y-2">
           <Label className="font-body">Property *</Label>
@@ -611,13 +600,11 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
         </div>
       )}
 
-      {/* File Picker */}
       <div className="space-y-2">
         <Label className="font-body">Files *</Label>
         <FilePicker files={files} onChange={setFiles} maxFiles={20} label="Drop files here or click to browse" />
       </div>
 
-      {/* Category */}
       <div className="space-y-2">
         <Label className="font-body">Category *</Label>
         <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
@@ -635,7 +622,6 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
         </Select>
       </div>
 
-      {/* Title & Description */}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label className="font-body">Title</Label>
@@ -643,7 +629,7 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
         </div>
         <div className="space-y-2">
           <Label className="font-body">Document Date</Label>
-          <Input type="date" value={form.document_date} onChange={(e) => setForm({ ...form, document_date: e.target.value })} className="font-body" />
+          <DateField value={form.document_date} onChange={(v) => setForm({ ...form, document_date: v })} max={today()} className="font-body" />
         </div>
       </div>
 
@@ -657,7 +643,6 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
         <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="tag1, tag2, tag3" className="font-body" />
       </div>
 
-      {/* System */}
       <div className="space-y-2">
         <Label className="font-body">System (optional)</Label>
         <Select value={form.system_key || "none"} onValueChange={(v) => setForm({ ...form, system_key: v === "none" ? "" : v })}>
@@ -671,7 +656,6 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
         </Select>
       </div>
 
-      {/* Optional Linking */}
       <div className="space-y-3 pt-2 border-t border-border">
         <p className="font-body text-xs text-muted-foreground font-medium">Link to (optional)</p>
         <div className="grid grid-cols-1 gap-2">
@@ -713,7 +697,6 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
         </div>
       </div>
 
-      {/* Progress */}
       {uploading && (
         <div className="space-y-2">
           <Progress value={progress} className="h-2" />
@@ -734,10 +717,37 @@ const DocumentUploadDialog = ({ open, onOpenChange, properties, onComplete, defa
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) closeDialog(); else onOpenChange(v); }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        {step === "upload" && <UploadStep />}
-        {step === "appraisal" && <AppraisalStep />}
-        {step === "mortgage" && <MortgageStep />}
-        {step === "tax_assessment" && <TaxAssessmentStep />}
+        {step === "upload" && renderUploadStep()}
+        {step === "appraisal" && user && (
+          <AppraisalStep
+            propertyId={form.property_id}
+            userId={user.id}
+            uploadedDocId={uploadedDocId}
+            currentProperty={currentProperty}
+            defaultDate={form.document_date || today()}
+            closeDialog={closeDialog}
+            onSaved={onSaved}
+          />
+        )}
+        {step === "mortgage" && user && (
+          <MortgageStep
+            propertyId={form.property_id}
+            uploadedDocId={uploadedDocId}
+            currentProperty={currentProperty}
+            defaultDate={form.document_date || today()}
+            closeDialog={closeDialog}
+            onSaved={onSaved}
+          />
+        )}
+        {step === "tax_assessment" && user && (
+          <TaxAssessmentStep
+            propertyId={form.property_id}
+            userId={user.id}
+            uploadedDocId={uploadedDocId}
+            closeDialog={closeDialog}
+            onSaved={onSaved}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
