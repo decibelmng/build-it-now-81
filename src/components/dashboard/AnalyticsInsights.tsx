@@ -198,30 +198,8 @@ const AnalyticsInsights = () => {
           </CardContent>
         </Card>
 
-        {/* Property comparison */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <BarChart3 className="h-4 w-4 text-sage" /> Property Comparison
-            </CardTitle>
-            <CardDescription>Side-by-side cost comparison</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {propertyComparison.length === 0 ? (
-              <p className="py-12 text-center text-muted-foreground">Add properties to compare</p>
-            ) : (
-              <ChartContainer config={comparisonConfig} className="h-[250px] w-full">
-                <BarChart data={propertyComparison} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis type="number" tickFormatter={(v) => `$${v}`} className="text-xs" />
-                  <YAxis dataKey="name" type="category" width={100} className="text-xs" />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="total" fill="hsl(150, 20%, 45%)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ChartContainer>
-            )}
-          </CardContent>
-        </Card>
+        {/* Property comparison removed — single-property scope */}
+
 
         {/* Upcoming schedule */}
         <Card>
