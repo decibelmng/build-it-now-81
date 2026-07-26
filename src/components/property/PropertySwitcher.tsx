@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, Check, Home, Plus, Search } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { usePropertyFilter } from "@/hooks/usePropertyFilter";
 import { getPropertyDisplayName, getPropertyShortName } from "@/lib/propertyDisplay";
+import { replaceSlugInPath } from "@/lib/propertyRoutes";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +20,9 @@ interface PropertySwitcherProps {
 }
 
 const PropertySwitcher = ({ className }: PropertySwitcherProps) => {
-  const { properties, activePropertyId, setActivePropertyId, activeProperty, isLoading } = usePropertyFilter();
+  const { properties, activePropertyId, activeProperty, isLoading } = usePropertyFilter();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
 
@@ -36,7 +40,13 @@ const PropertySwitcher = ({ className }: PropertySwitcherProps) => {
 
   const goAddProperty = () => {
     setOpen(false);
-    window.dispatchEvent(new CustomEvent("navigate-section", { detail: "properties" }));
+    navigate("/portfolio");
+  };
+
+  const pickProperty = (slug: string | null | undefined) => {
+    if (!slug) return;
+    setOpen(false);
+    navigate(replaceSlugInPath(location.pathname, slug));
   };
 
   return (
@@ -82,7 +92,7 @@ const PropertySwitcher = ({ className }: PropertySwitcherProps) => {
           return (
             <DropdownMenuItem
               key={p.id}
-              onSelect={() => setActivePropertyId(p.id)}
+              onSelect={() => pickProperty((p as any).slug)}
               className="font-body text-sm"
             >
               <Check className={cn("mr-2 h-4 w-4", active ? "opacity-100" : "opacity-0")} />
