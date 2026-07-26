@@ -52,17 +52,18 @@ const AnalyticsInsights = () => {
   });
 
   const { data: templates = [] } = useQuery({
-    queryKey: ["analytics_templates", user?.id],
+    queryKey: ["analytics_templates", user?.id, selectedPropertyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("recurring_templates")
         .select("*")
         .eq("active", true)
+        .eq("property_id", selectedPropertyId!)
         .order("next_due_date", { ascending: true });
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && !!selectedPropertyId,
   });
 
   // Spending over time (last 12 months)
@@ -96,13 +97,6 @@ const AnalyticsInsights = () => {
       .sort((a, b) => b.value - a.value);
   })();
 
-  // Property comparison
-  const propertyComparison = properties.map((p) => {
-    const total = logs
-      .filter((l) => l.property_id === p.id && l.cost)
-      .reduce((sum, l) => sum + (l.cost || 0), 0);
-    return { name: getPropertyShortName(p, 15), total };
-  });
 
   // Upcoming schedule (next 60 days)
   const now = new Date();
