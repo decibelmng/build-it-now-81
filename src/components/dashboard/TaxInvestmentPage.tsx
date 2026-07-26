@@ -47,10 +47,8 @@ const TaxInvestmentPage = ({ view = "basis" }: { view?: MoneyView }) => {
     },
     enabled: !!user,
   });
-  const { selectedPropertyId: globalId } = useCurrentProperty();
-  const [localPropertyId, setLocalPropertyId] = useState<string>("");
-  const selectedPropertyId = localPropertyId || globalId || "";
-  const setSelectedPropertyId = setLocalPropertyId;
+  const { activePropertyId } = useCurrentProperty();
+  const selectedPropertyId = activePropertyId || "";
 
   // Aggregate across all properties
   const agg = useMemo(() => {
