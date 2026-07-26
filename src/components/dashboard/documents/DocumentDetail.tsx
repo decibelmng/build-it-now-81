@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -273,13 +274,7 @@ const DocumentDetail = ({ doc, open, onClose, onUpdated }: Props) => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label className="font-body text-xs text-muted-foreground">Document Date</Label>
-                <Input
-                  type="date"
-                  value={editDocDate}
-                  onChange={(e) => setEditDocDate(e.target.value)}
-                  className="font-body text-xs"
-                  onBlur={handleSave}
-                />
+                <DateField value={editDocDate} onChange={(v) => setEditDocDate(v)} className="font-body text-xs" onBlur={handleSave} />
               </div>
               <div className="space-y-2">
                 <Label className="font-body text-xs text-muted-foreground">Tags</Label>

@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -219,12 +220,7 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
             </div>
             <div className="space-y-2">
               <Label className="font-body">Purchase Date</Label>
-              <Input
-                type="date"
-                value={purchase.purchase_date}
-                onChange={(e) => setPurchase({ ...purchase, purchase_date: e.target.value })}
-                className="font-body"
-              />
+              <DateField value={purchase.purchase_date} onChange={(v) => setPurchase({ ...purchase, purchase_date: v })} className="font-body" />
             </div>
           </div>
           <div className="space-y-2">
@@ -280,12 +276,7 @@ const PurchaseInfoSection = ({ property }: PurchaseInfoSectionProps) => {
                 </div>
                 <div className="space-y-2">
                   <Label className="font-body">Sale Date</Label>
-                  <Input
-                    type="date"
-                    value={sale.sale_date}
-                    onChange={(e) => setSale({ ...sale, sale_date: e.target.value })}
-                    className="font-body"
-                  />
+                  <DateField value={sale.sale_date} onChange={(v) => setSale({ ...sale, sale_date: v })} className="font-body" />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">

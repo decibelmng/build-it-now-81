@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -418,7 +419,7 @@ const RecurringTemplates = () => {
               </div>
               <div className="space-y-2">
                 <Label className="font-body">Next Due Date *</Label>
-                <Input type="date" value={form.next_due_date} onChange={(e) => setForm({ ...form, next_due_date: e.target.value })} required className="font-body" />
+                <DateField value={form.next_due_date} onChange={(v) => setForm({ ...form, next_due_date: v })} required className="font-body" />
               </div>
               <Button type="submit" className="w-full rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body font-semibold" disabled={addTemplate.isPending || !form.property_id || !form.next_due_date || (showNewContact && !newContact.name.trim())}>
                 {addTemplate.isPending ? "Creating..." : "Create Template"}

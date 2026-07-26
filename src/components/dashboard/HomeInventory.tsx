@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -810,19 +811,19 @@ const HomeInventory = ({ propertyId, itemType = "home_component", warrantyFilter
                     </div>
                     <div className="space-y-2">
                       <Label className="font-body">Install / Purchase Date</Label>
-                      <Input type="date" value={itemForm.install_date} onChange={(e) => setItemForm({ ...itemForm, install_date: e.target.value })} className="font-body" />
+                      <DateField value={itemForm.install_date} onChange={(v) => setItemForm({ ...itemForm, install_date: v })} className="font-body" />
                     </div>
                     <div className="space-y-2">
                       <Label className="font-body">Last Maintained</Label>
-                      <Input type="date" value={itemForm.last_maintained} onChange={(e) => setItemForm({ ...itemForm, last_maintained: e.target.value })} className="font-body" />
+                      <DateField value={itemForm.last_maintained} onChange={(v) => setItemForm({ ...itemForm, last_maintained: v })} className="font-body" />
                     </div>
                     <div className="space-y-2">
                       <Label className="font-body">Expected Replacement</Label>
-                      <Input type="date" value={itemForm.expected_replacement} onChange={(e) => setItemForm({ ...itemForm, expected_replacement: e.target.value })} className="font-body" />
+                      <DateField value={itemForm.expected_replacement} onChange={(v) => setItemForm({ ...itemForm, expected_replacement: v })} className="font-body" />
                     </div>
                     <div className="space-y-2">
                       <Label className="font-body">Warranty Expiry</Label>
-                      <Input type="date" value={itemForm.warranty_expiry} onChange={(e) => setItemForm({ ...itemForm, warranty_expiry: e.target.value })} className="font-body" />
+                      <DateField value={itemForm.warranty_expiry} onChange={(v) => setItemForm({ ...itemForm, warranty_expiry: v })} className="font-body" />
                     </div>
                   </div>
                   <div className="space-y-2">

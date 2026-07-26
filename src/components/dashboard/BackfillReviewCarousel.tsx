@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -420,7 +421,7 @@ const BackfillReviewCarousel = ({ open, onOpenChange, items, onNavigate }: Backf
               </div>
               <div className="space-y-1">
                 <Label className="font-body text-xs">Next Service Date</Label>
-                <Input type="date" value={nextServiceDate} onChange={(e) => setNextServiceDate(e.target.value)} className="font-body h-8 text-sm" />
+                <DateField value={nextServiceDate} onChange={(v) => setNextServiceDate(v)} className="font-body h-8 text-sm" />
               </div>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -219,8 +220,7 @@ const ContractorServiceLog = () => {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="date">Service Date *</Label>
-                  <Input id="date" type="date" required value={form.service_date}
-                    onChange={(e) => setForm((f) => ({ ...f, service_date: e.target.value }))} />
+                  <DateField value={form.service_date} onChange={(v) => setForm((f) => ({ ...f, service_date: v }))} id="date" required />
                 </div>
                 <div>
                   <Label>Service Category *</Label>
