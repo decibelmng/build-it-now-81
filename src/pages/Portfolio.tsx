@@ -49,7 +49,7 @@ const Portfolio = () => {
               ))}
             </div>
             <Suspense fallback={<div className="h-64 rounded-lg bg-muted animate-pulse" />}>
-              <PortfolioRollup />
+              <PortfolioRollup properties={properties as any} onSelectProperty={() => {}} />
             </Suspense>
           </>
         )}
