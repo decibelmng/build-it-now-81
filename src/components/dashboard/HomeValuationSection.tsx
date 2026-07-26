@@ -379,7 +379,7 @@ function ValuationEditDialog({ open, onOpenChange, property, userId, editingValu
         const { data: existing } = await supabase.from("property_valuations").select("id").eq("property_id", property.id).eq("valuation_type", "purchase_price").maybeSingle();
         if (existing?.id) {
           await supabase.from("property_valuations").update({
-            value: val, valuation_date: cleanDate, source: vSource || null, notes: vNotes || null, document_id: vDocId || null,
+            value: val, valuation_date: cleanDate!, source: vSource || null, notes: vNotes || null, document_id: vDocId || null,
           }).eq("id", existing.id);
         } else {
           await supabase.from("property_valuations").insert({
@@ -390,7 +390,7 @@ function ValuationEditDialog({ open, onOpenChange, property, userId, editingValu
         await supabase.from("properties").update({ purchase_price: val, purchase_date: cleanDate }).eq("id", property.id);
         const { data: existingAppraisal } = await supabase.from("property_valuations").select("id").eq("property_id", property.id).eq("valuation_type", "purchase_appraisal").maybeSingle();
         if (existingAppraisal?.id) {
-          await supabase.from("property_valuations").update({ value: val, valuation_date: cleanDate }).eq("id", existingAppraisal.id);
+          await supabase.from("property_valuations").update({ value: val, valuation_date: cleanDate! }).eq("id", existingAppraisal.id);
         }
         queryClient.invalidateQueries({ queryKey: ["property_valuations"] });
         queryClient.invalidateQueries({ queryKey: ["properties"] });
