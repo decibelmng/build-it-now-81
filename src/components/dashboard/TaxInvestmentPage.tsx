@@ -262,6 +262,28 @@ const TaxInvestmentPage = ({ view = "basis" }: { view?: MoneyView }) => {
     </div>
   );
 
+  const currentProperty =
+    allProperties.find((p) => p.id === selectedPropertyId) || allProperties[0];
+
+  const showEquity = view === "equity";
+  const showBasis = view === "basis";
+  const showTax = view === "tax";
+
+  const headerCopy: Record<MoneyView, { title: string; blurb: string }> = {
+    equity: {
+      title: "Home Value & Equity",
+      blurb: "Track valuation, mortgage, and equity growth over time.",
+    },
+    basis: {
+      title: "Cost Basis & Improvements",
+      blurb: "Track capital improvements to reduce your capital gains tax when you sell.",
+    },
+    tax: {
+      title: "Tax Package",
+      blurb: "Documents and totals ready to hand to your accountant.",
+    },
+  };
+
   return (
     <div>
       {/* Header */}
@@ -269,157 +291,146 @@ const TaxInvestmentPage = ({ view = "basis" }: { view?: MoneyView }) => {
         <div className="flex items-start gap-3">
           <Receipt className="h-7 w-7 text-accent shrink-0 mt-0.5" />
           <div>
-            <h2 className="font-display text-2xl font-bold">Home Investment & Tax Tracker</h2>
-            <p className="font-body text-sm text-muted-foreground">Track capital improvements to reduce your capital gains tax when you sell.</p>
+            <h2 className="font-display text-2xl font-bold">{headerCopy[view].title}</h2>
+            <p className="font-body text-sm text-muted-foreground">{headerCopy[view].blurb}</p>
           </div>
         </div>
-        <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body shrink-0" onClick={() => setReportOpen(true)}>
-          <FileText className="h-4 w-4 mr-2" /> Generate Tax Report
-        </Button>
+        {showTax && (
+          <Button className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-body shrink-0" onClick={() => setReportOpen(true)}>
+            <FileText className="h-4 w-4 mr-2" /> Generate Tax Report
+          </Button>
+        )}
       </div>
 
-      {/* Global property filter (single-property page: no "All" option) */}
-      {allProperties.length > 1 && (
-        <PropertyFilterBar
-          allowAll={false}
-          value={selectedPropertyId || allProperties[0]?.id || ""}
-          onChange={setSelectedPropertyId}
-        />
-      )}
+      <MoneyTabs />
 
-      {/* Home Value + Mortgage & Equity Section */}
-      {allProperties.length > 0 && (
-        <div className="mb-6">
-          <HomeValuationSection
-            properties={allProperties}
-            selectedPropertyId={selectedPropertyId || allProperties[0]?.id || ""}
-          />
-        </div>
-      )}
-
-      {/* Appreciation Chart */}
-      {allProperties.length > 0 && (
-        <div className="mb-6">
-          <ValueAppreciationChart
-            property={allProperties.find((p) => p.id === (selectedPropertyId || allProperties[0]?.id)) || allProperties[0]}
-          />
-        </div>
-      )}
-
-      {/* Improvement ROI Correlation */}
-      {allProperties.length > 0 && (
-        <div className="mb-6">
-          <ImprovementROISection
-            property={allProperties.find((p) => p.id === (selectedPropertyId || allProperties[0]?.id)) || allProperties[0]}
-          />
-        </div>
-      )}
-
-      {/* Annual Tax Package (utilities grid + home office + 1098) */}
-      {allProperties.length > 0 && (
-        <div className="mb-6">
-          <TaxPackageSection
-            property={allProperties.find((p) => p.id === (selectedPropertyId || allProperties[0]?.id)) || allProperties[0]}
-          />
-        </div>
-      )}
-
-      {/* Summary Breakdown */}
-      <Card className="mb-6 border-border/50">
-        <CardContent className="p-5 font-mono text-sm">
-          <div className="space-y-1">
-            <Row label="Purchase Price" value={agg?.hasPurchase ? fmtCurrency(agg.purchasePrice) : "Not set"} />
-            <Row label="+ Purchase Closing Costs" value={agg?.hasPurchase ? fmtCurrency(agg.closingCosts) : "$—"} />
-            <Row label={`+ Capital Improvements (${agg?.improvementCount ?? 0})`} value={fmtCurrency(agg?.improvements)} />
-            <div className="border-t border-border my-2" />
-            <Row label="= Adjusted Cost Basis" value={fmtCurrency(agg?.adjustedBasis)} bold />
-            <div className="h-3" />
-            <Row label="Estimated Sale Price" value={agg?.hasSale ? fmtCurrency(agg.salePrice) : "$—"} />
-            <Row label="- Sale Costs & Commissions" value={agg?.hasSale ? fmtCurrency(agg.saleClosing + agg.agentComm) : "$—"} />
-            <Row label="- Adjusted Cost Basis" value={fmtCurrency(agg?.adjustedBasis)} />
-            <div className="border-t border-border my-2" />
-            <Row
-              label="= Estimated Taxable Gain"
-              value={agg?.hasSale ? fmtCurrency(agg.estimatedGain) : "Not yet calculated"}
-              bold
-              className={agg?.hasSale ? (agg.estimatedGain > 0 ? "text-destructive" : "text-sage") : ""}
+      {/* Equity view */}
+      {showEquity && currentProperty && (
+        <>
+          <div className="mb-6">
+            <HomeValuationSection
+              properties={allProperties}
+              selectedPropertyId={currentProperty.id}
             />
           </div>
-          <p className="mt-4 font-body text-xs text-muted-foreground italic">
-            Consult a tax professional for your specific situation. HomeLog provides documentation support, not tax advice.
-          </p>
-          <p className="font-body text-xs text-muted-foreground mt-1">
-            Total repairs & maintenance (not basis-eligible): {fmtCurrency(agg?.repairs)}
-          </p>
-        </CardContent>
-      </Card>
+          <div className="mb-6">
+            <ValueAppreciationChart property={currentProperty} />
+          </div>
+        </>
+      )}
 
-      {/* Capital Improvements */}
-      <Tabs defaultValue="all" className="mb-6">
-        <TabsList className="mb-4">
-          <TabsTrigger value="all" className="font-body text-xs">All Improvements</TabsTrigger>
-          <TabsTrigger value="by-year" className="font-body text-xs">By Year</TabsTrigger>
-        </TabsList>
+      {/* Cost Basis view */}
+      {showBasis && currentProperty && (
+        <>
+          <div className="mb-6">
+            <ImprovementROISection property={currentProperty} />
+          </div>
 
-        <FilterBar />
+          {/* Summary Breakdown */}
+          <Card className="mb-6 border-border/50">
+            <CardContent className="p-5 font-mono text-sm">
+              <div className="space-y-1">
+                <Row label="Purchase Price" value={agg?.hasPurchase ? fmtCurrency(agg.purchasePrice) : "Not set"} />
+                <Row label="+ Purchase Closing Costs" value={agg?.hasPurchase ? fmtCurrency(agg.closingCosts) : "$—"} />
+                <Row label={`+ Capital Improvements (${agg?.improvementCount ?? 0})`} value={fmtCurrency(agg?.improvements)} />
+                <div className="border-t border-border my-2" />
+                <Row label="= Adjusted Cost Basis" value={fmtCurrency(agg?.adjustedBasis)} bold />
+                <div className="h-3" />
+                <Row label="Estimated Sale Price" value={agg?.hasSale ? fmtCurrency(agg.salePrice) : "$—"} />
+                <Row label="- Sale Costs & Commissions" value={agg?.hasSale ? fmtCurrency(agg.saleClosing + agg.agentComm) : "$—"} />
+                <Row label="- Adjusted Cost Basis" value={fmtCurrency(agg?.adjustedBasis)} />
+                <div className="border-t border-border my-2" />
+                <Row
+                  label="= Estimated Taxable Gain"
+                  value={agg?.hasSale ? fmtCurrency(agg.estimatedGain) : "Not yet calculated"}
+                  bold
+                  className={agg?.hasSale ? (agg.estimatedGain > 0 ? "text-destructive" : "text-sage") : ""}
+                />
+              </div>
+              <p className="mt-4 font-body text-xs text-muted-foreground italic">
+                Consult a tax professional for your specific situation. HomeLog provides documentation support, not tax advice.
+              </p>
+              <p className="font-body text-xs text-muted-foreground mt-1">
+                Total repairs & maintenance (not basis-eligible): {fmtCurrency(agg?.repairs)}
+              </p>
+            </CardContent>
+          </Card>
 
-        <TabsContent value="all">
-          {filteredImprovements.length === 0 ? (
-            <p className="font-body text-sm text-muted-foreground text-center py-8">No capital improvements recorded yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {filteredImprovements.map((l: any) => <EntryRow key={l.id} log={l} />)}
-            </div>
-          )}
-          {filteredImprovements.length > 0 && (
-            <div className="mt-3 text-right font-display text-sm font-bold">
-              Total: {fmtCurrency(filteredTotal)}
-            </div>
-          )}
-        </TabsContent>
+          {/* Capital Improvements */}
+          <Tabs defaultValue="all" className="mb-6">
+            <TabsList className="mb-4">
+              <TabsTrigger value="all" className="font-body text-xs">All Improvements</TabsTrigger>
+              <TabsTrigger value="by-year" className="font-body text-xs">By Year</TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="by-year">
-          {byYear.length === 0 ? (
-            <p className="font-body text-sm text-muted-foreground text-center py-8">No capital improvements recorded yet.</p>
-          ) : (
-            <div className="space-y-6">
-              {byYear.map(([year, group]) => (
-                <div key={year}>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-display text-base font-bold">{year}</h4>
-                    <span className="font-display text-sm font-semibold text-accent">{fmtCurrency(group.total)}</span>
-                  </div>
-                  <div className="space-y-2">
-                    {group.items.map((l: any) => <EntryRow key={l.id} log={l} />)}
-                  </div>
+            <FilterBar />
+
+            <TabsContent value="all">
+              {filteredImprovements.length === 0 ? (
+                <p className="font-body text-sm text-muted-foreground text-center py-8">No capital improvements recorded yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {filteredImprovements.map((l: any) => <EntryRow key={l.id} log={l} />)}
                 </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+              )}
+              {filteredImprovements.length > 0 && (
+                <div className="mt-3 text-right font-display text-sm font-bold">
+                  Total: {fmtCurrency(filteredTotal)}
+                </div>
+              )}
+            </TabsContent>
 
-      {/* Repairs section */}
-      <Collapsible open={repairsOpen} onOpenChange={setRepairsOpen}>
-        <CollapsibleTrigger asChild>
-          <button className="flex w-full items-center justify-between rounded-lg bg-muted/50 px-4 py-3 font-body text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">
-            <span>Repairs & Maintenance ({repairLogs.length} entries, {fmtCurrency(agg?.repairs)} total)</span>
-            <ChevronDown className={`h-4 w-4 transition-transform ${repairsOpen ? "rotate-180" : ""}`} />
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="mt-2">
-          <p className="font-body text-xs text-muted-foreground mb-3 italic">
-            These entries maintain your home but generally do not qualify as capital improvements for tax purposes. However, keep records as some may qualify depending on your situation — consult your tax advisor.
-          </p>
-          {repairLogs.length === 0 ? (
-            <p className="font-body text-sm text-muted-foreground text-center py-4">No repair entries found.</p>
-          ) : (
-            <div className="space-y-2">
-              {repairLogs.map((l: any) => <EntryRow key={l.id} log={l} showReclassify />)}
-            </div>
-          )}
-        </CollapsibleContent>
-      </Collapsible>
+            <TabsContent value="by-year">
+              {byYear.length === 0 ? (
+                <p className="font-body text-sm text-muted-foreground text-center py-8">No capital improvements recorded yet.</p>
+              ) : (
+                <div className="space-y-6">
+                  {byYear.map(([year, group]) => (
+                    <div key={year}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-display text-base font-bold">{year}</h4>
+                        <span className="font-display text-sm font-semibold text-accent">{fmtCurrency(group.total)}</span>
+                      </div>
+                      <div className="space-y-2">
+                        {group.items.map((l: any) => <EntryRow key={l.id} log={l} />)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+
+          {/* Repairs section */}
+          <Collapsible open={repairsOpen} onOpenChange={setRepairsOpen}>
+            <CollapsibleTrigger asChild>
+              <button className="flex w-full items-center justify-between rounded-lg bg-muted/50 px-4 py-3 font-body text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">
+                <span>Repairs & Maintenance ({repairLogs.length} entries, {fmtCurrency(agg?.repairs)} total)</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${repairsOpen ? "rotate-180" : ""}`} />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <p className="font-body text-xs text-muted-foreground mb-3 italic">
+                These entries maintain your home but generally do not qualify as capital improvements for tax purposes. However, keep records as some may qualify depending on your situation — consult your tax advisor.
+              </p>
+              {repairLogs.length === 0 ? (
+                <p className="font-body text-sm text-muted-foreground text-center py-4">No repair entries found.</p>
+              ) : (
+                <div className="space-y-2">
+                  {repairLogs.map((l: any) => <EntryRow key={l.id} log={l} showReclassify />)}
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        </>
+      )}
+
+      {/* Tax Package view */}
+      {showTax && currentProperty && (
+        <div className="mb-6">
+          <TaxPackageSection property={currentProperty} />
+        </div>
+      )}
 
       <TaxReportDialog open={reportOpen} onOpenChange={setReportOpen} />
     </div>
