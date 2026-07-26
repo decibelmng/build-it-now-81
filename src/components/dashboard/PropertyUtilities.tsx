@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -819,7 +820,7 @@ const StatusDialog = ({ utility, onClose, onSubmit, submitting }: any) => {
               </SelectContent>
             </Select>
           </div>
-          <div><Label className="font-body">Effective date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="font-body" /></div>
+          <div><Label className="font-body">Effective date</Label><DateField value={date} onChange={(v) => setDate(v)} className="font-body" /></div>
           <div><Label className="font-body">Note</Label><Textarea value={note} onChange={(e) => setNote(e.target.value)} className="font-body" /></div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
@@ -905,7 +906,7 @@ const AccountFormSheet = ({ open, onOpenChange, editing, prefillType, defaultPro
                   <Input type="number" step="0.01" value={form.current_balance} onChange={(e) => set({ current_balance: e.target.value })} className="font-body" />
                 </div>
                 <div><Label className="font-body">Balance as of</Label>
-                  <Input type="date" value={form.balance_as_of} onChange={(e) => set({ balance_as_of: e.target.value })} className="font-body" />
+                  <DateField value={form.balance_as_of} onChange={(v) => set({ balance_as_of: v })} className="font-body" />
                 </div>
               </div>
             )}
@@ -953,7 +954,7 @@ const AccountFormSheet = ({ open, onOpenChange, editing, prefillType, defaultPro
 
           {/* Dates */}
           <Section title="Dates">
-            <div><Label className="font-body">Contract end date</Label><Input type="date" value={form.contract_end_date} onChange={(e) => set({ contract_end_date: e.target.value })} className="font-body" /></div>
+            <div><Label className="font-body">Contract end date</Label><DateField value={form.contract_end_date} onChange={(v) => set({ contract_end_date: v })} className="font-body" /></div>
           </Section>
 
           {/* Transfer */}

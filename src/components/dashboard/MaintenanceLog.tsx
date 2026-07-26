@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -682,7 +683,7 @@ const MaintenanceLogSection = ({ onNavigate }: { onNavigate?: (section: string) 
               </div>
               <div className="space-y-2">
                 <Label className="font-body">Scheduled</Label>
-                <Input type="date" value={form.scheduled_date} onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })} className="font-body" />
+                <DateField value={form.scheduled_date} onChange={(v) => setForm({ ...form, scheduled_date: v })} className="font-body" />
               </div>
             </div>
 

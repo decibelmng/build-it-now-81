@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { KeyRound, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -136,11 +137,11 @@ const LeaseDetailsCard = ({ property }: { property: Property }) => {
           </div>
           <div className="space-y-2">
             <Label className="font-body">Lease Start</Label>
-            <Input type="date" className="font-body" value={form.lease_start} onChange={(e) => setForm({ ...form, lease_start: e.target.value })} />
+            <DateField value={form.lease_start} onChange={(v) => setForm({ ...form, lease_start: v })} className="font-body" />
           </div>
           <div className="space-y-2">
             <Label className="font-body">Lease End</Label>
-            <Input type="date" className="font-body" value={form.lease_end} onChange={(e) => setForm({ ...form, lease_end: e.target.value })} />
+            <DateField value={form.lease_end} onChange={(v) => setForm({ ...form, lease_end: v })} className="font-body" />
           </div>
           <div className="space-y-2">
             <Label className="font-body">Landlord / Property Manager</Label>
@@ -152,7 +153,7 @@ const LeaseDetailsCard = ({ property }: { property: Property }) => {
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label className="font-body">Renewal Notice Date</Label>
-            <Input type="date" className="font-body" value={form.renewal_notice_date} onChange={(e) => setForm({ ...form, renewal_notice_date: e.target.value })} />
+            <DateField value={form.renewal_notice_date} onChange={(v) => setForm({ ...form, renewal_notice_date: v })} className="font-body" />
             <p className="font-body text-xs text-muted-foreground">The date you must notify the landlord if you're not renewing.</p>
           </div>
         </div>

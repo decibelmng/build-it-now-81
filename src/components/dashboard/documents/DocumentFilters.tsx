@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -131,22 +132,10 @@ const FilterControls = ({ filters, onChange, onClear, contacts }: Omit<Props, "a
         </Select>
 
         {/* Date From */}
-        <Input
-          type="date"
-          placeholder="From"
-          value={filters.dateFrom}
-          onChange={(e) => onChange({ ...filters, dateFrom: e.target.value })}
-          className="font-body text-xs h-9"
-        />
+        <DateField value={filters.dateFrom} onChange={(v) => onChange({ ...filters, dateFrom: v })} placeholder="From" className="font-body text-xs h-9" />
 
         {/* Date To */}
-        <Input
-          type="date"
-          placeholder="To"
-          value={filters.dateTo}
-          onChange={(e) => onChange({ ...filters, dateTo: e.target.value })}
-          className="font-body text-xs h-9"
-        />
+        <DateField value={filters.dateTo} onChange={(v) => onChange({ ...filters, dateTo: v })} placeholder="To" className="font-body text-xs h-9" />
       </div>
 
       {/* Contractor filter */}

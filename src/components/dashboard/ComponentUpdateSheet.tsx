@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -240,7 +241,7 @@ const ComponentUpdateSheet = ({
             </div>
             <div className="space-y-1">
               <Label className="font-body text-xs">Next Service Date</Label>
-              <Input type="date" value={nextServiceDate} onChange={(e) => setNextServiceDate(e.target.value)} className="font-body h-8 text-sm" />
+              <DateField value={nextServiceDate} onChange={(v) => setNextServiceDate(v)} className="font-body h-8 text-sm" />
             </div>
           </div>
 
