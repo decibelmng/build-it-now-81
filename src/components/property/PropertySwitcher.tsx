@@ -92,7 +92,7 @@ const PropertySwitcher = ({ className }: PropertySwitcherProps) => {
           return (
             <DropdownMenuItem
               key={p.id}
-              onSelect={() => setActivePropertyId(p.id)}
+              onSelect={() => pickProperty((p as any).slug)}
               className="font-body text-sm"
             >
               <Check className={cn("mr-2 h-4 w-4", active ? "opacity-100" : "opacity-0")} />
