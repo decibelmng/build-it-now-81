@@ -30,7 +30,7 @@ const PropertyLayout = lazy(() => import("./pages/PropertyLayout"));
 const DashboardOverview = lazy(() => import("@/components/dashboard/DashboardOverview"));
 const PropertyCards = lazy(() => import("@/components/dashboard/PropertyCards"));
 const HomeInventoryPage = lazy(() => import("@/components/dashboard/HomeInventoryPage"));
-const HomeSystemsSettings = lazy(() => import("@/components/dashboard/HomeSystemsSettings"));
+const HomeSystemsSettings = lazy(() => import("./pages/routes/HomeSystemsRoute"));
 const MaintenanceLog = lazy(() => import("@/components/dashboard/MaintenanceLog"));
 const PropertyTimeline = lazy(() => import("@/components/dashboard/PropertyTimeline"));
 const ContractorLinks = lazy(() => import("@/components/dashboard/ContractorLinks"));
