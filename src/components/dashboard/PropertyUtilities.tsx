@@ -27,7 +27,7 @@ import { format, differenceInDays, startOfMonth, parseISO, subMonths } from "dat
 import { cn } from "@/lib/utils";
 import { validateForm, utilityAccountSchema } from "@/lib/schemas";
 import { useAccessRole } from "@/hooks/useAccessRole";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
@@ -129,7 +129,7 @@ const emptyForm = (property_id: string, service_type = "electric"): any => ({
 const PropertyUtilities = () => {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const { selectedPropertyId: propertyFilter, setSelectedPropertyId: setPropertyFilter } = usePropertyFilter();
+  const { selectedPropertyId: propertyFilter, setSelectedPropertyId: setPropertyFilter } = useCurrentProperty();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [prefillType, setPrefillType] = useState<string | null>(null);

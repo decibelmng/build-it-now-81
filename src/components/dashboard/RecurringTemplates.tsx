@@ -18,7 +18,7 @@ import { format, addMonths } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 import { recurringTemplateSchema, contactSchema, validateForm } from "@/lib/schemas";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 type Property = Tables<"properties">;
@@ -106,7 +106,7 @@ const RecurringTemplates = () => {
     enabled: !!user,
   });
 
-  const { selectedPropertyId, notifyIfDifferent } = usePropertyFilter();
+  const { selectedPropertyId, notifyIfDifferent } = useCurrentProperty();
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ["recurring_templates", user?.id, selectedPropertyId],
     queryFn: async () => {

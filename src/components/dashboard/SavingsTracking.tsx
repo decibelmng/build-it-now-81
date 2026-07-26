@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -37,7 +37,7 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType }>
 const SavingsTracking = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const { user } = useAuth();
   const { data: costBasis } = useCostBasisAggregated();
-  const { selectedPropertyId } = usePropertyFilter();
+  const { selectedPropertyId } = useCurrentProperty();
 
   const { data: propertiesList = [] } = useQuery({
     queryKey: ["savings_tracking_properties", user?.id],

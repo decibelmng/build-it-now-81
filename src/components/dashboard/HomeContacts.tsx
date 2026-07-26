@@ -23,7 +23,7 @@ import LinkedDocuments from "@/components/dashboard/documents/LinkedDocuments";
 import { contactSchema, normalizeWebsiteUrl, validateForm } from "@/lib/schemas";
 import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 const roles = [
@@ -57,7 +57,7 @@ const HomeContacts = () => {
   const queryClient = useQueryClient();
   const canEditAny = useCanEditAnyProperty();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { selectedPropertyId, notifyIfDifferent } = usePropertyFilter();
+  const { selectedPropertyId, notifyIfDifferent } = useCurrentProperty();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ContactForm>(emptyForm);
   const [expandedContact, setExpandedContact] = useState<string | null>(null);

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Info, X, ClipboardList, Shield } from "lucide-react";
 import HomeInventory from "@/components/dashboard/HomeInventory";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import type { Tables } from "@/integrations/supabase/types";
 import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
@@ -20,7 +20,7 @@ interface HomeInventoryPageProps {
 
 const HomeInventoryPage = ({ onNavigate }: HomeInventoryPageProps) => {
   const { user } = useAuth();
-  const { selectedPropertyId } = usePropertyFilter();
+  const { selectedPropertyId } = useCurrentProperty();
   const [activeTab, setActiveTab] = useState<"home_component" | "personal_item">("home_component");
   const [showPersonalBanner, setShowPersonalBanner] = useState(true);
   const [showExpiringSoon, setShowExpiringSoon] = useState(false);

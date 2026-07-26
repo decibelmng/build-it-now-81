@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, Check, Home, Plus, Search } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import { getPropertyDisplayName, getPropertyShortName } from "@/lib/propertyDisplay";
 import { replaceSlugInPath } from "@/lib/propertyRoutes";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ interface PropertySwitcherProps {
 }
 
 const PropertySwitcher = ({ className }: PropertySwitcherProps) => {
-  const { properties, activePropertyId, activeProperty, isLoading } = usePropertyFilter();
+  const { properties, activePropertyId, activeProperty, isLoading } = useCurrentProperty();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);

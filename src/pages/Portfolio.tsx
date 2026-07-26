@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { Home, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useReachableProperties } from "@/hooks/usePropertyFilter";
+import { useReachableProperties } from "@/hooks/useCurrentProperty";
 import { getPropertyDisplayName } from "@/lib/propertyDisplay";
 
 const PortfolioRollup = lazy(() => import("@/components/dashboard/PortfolioRollup"));

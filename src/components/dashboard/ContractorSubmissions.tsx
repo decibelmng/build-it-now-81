@@ -17,7 +17,7 @@ import { matchLogToComponent } from "@/lib/componentMatcher";
 import { SERVICE_CATEGORY_TO_SYSTEM } from "@/lib/homeSystemsRegistry";
 import ComponentUpdateSheet from "@/components/dashboard/ComponentUpdateSheet";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 
 const statusConfig: Record<string, { label: string; icon: React.ElementType; variant: "default" | "secondary" | "destructive" }> = {
   pending: { label: "Pending", icon: Clock, variant: "secondary" },
@@ -33,7 +33,7 @@ const ContractorSubmissions = () => {
   const [tab, setTab] = useState("pending");
   const [overrideExpenseType, setOverrideExpenseType] = useState<string | null>(null);
   const [componentUpdateData, setComponentUpdateData] = useState<any>(null);
-  const { selectedPropertyId } = usePropertyFilter();
+  const { selectedPropertyId } = useCurrentProperty();
 
   const { data: submissions = [] } = useQuery({
     queryKey: ["contractor_submissions", user?.id],

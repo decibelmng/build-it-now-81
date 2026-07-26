@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, LineCh
 import { format, parseISO, startOfMonth, addMonths, isBefore, isAfter } from "date-fns";
 import { CalendarDays, TrendingUp, PieChart as PieIcon, BarChart3, AlertCircle } from "lucide-react";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import { getPropertyShortName } from "@/lib/propertyDisplay";
 
 const COLORS = [
@@ -24,7 +24,7 @@ const COLORS = [
 const AnalyticsInsights = () => {
   const { user } = useAuth();
 
-  const { selectedPropertyId } = usePropertyFilter();
+  const { selectedPropertyId } = useCurrentProperty();
 
   const { data: logsRaw = [] } = useQuery({
     queryKey: ["analytics_logs", user?.id, selectedPropertyId],

@@ -18,7 +18,7 @@ import TaxReportDialog from "@/components/dashboard/TaxReportDialog";
 import HomeValuationSection from "@/components/dashboard/HomeValuationSection";
 import TaxPackageSection from "@/components/dashboard/TaxPackageSection";
 import type { Tables } from "@/integrations/supabase/types";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
 
 const fmtCurrency = (n: number | null | undefined) =>
@@ -45,7 +45,7 @@ const TaxInvestmentPage = () => {
     },
     enabled: !!user,
   });
-  const { selectedPropertyId: globalId } = usePropertyFilter();
+  const { selectedPropertyId: globalId } = useCurrentProperty();
   const [localPropertyId, setLocalPropertyId] = useState<string>("");
   const selectedPropertyId = localPropertyId || globalId || "";
   const setSelectedPropertyId = setLocalPropertyId;

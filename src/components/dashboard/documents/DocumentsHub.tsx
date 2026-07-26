@@ -19,7 +19,7 @@ import {
 } from "./constants";
 import { useCanEditAnyProperty } from "@/hooks/useAccessRole";
 import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
-import { usePropertyFilter } from "@/hooks/usePropertyFilter";
+import { useCurrentProperty } from "@/hooks/useCurrentProperty";
 
 const PAGE_SIZE = 24;
 
@@ -27,7 +27,7 @@ const DocumentsHub = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const canEditAny = useCanEditAnyProperty();
-  const { selectedPropertyId } = usePropertyFilter();
+  const { selectedPropertyId } = useCurrentProperty();
   const [view, setView] = useState<"grid" | "list">("grid");
   const [groupMode, setGroupMode] = useState<"none" | "category" | "system">("none");
   const [filters, setFilters] = useState<Filters>({ ...DEFAULT_FILTERS });
