@@ -19,12 +19,14 @@ import HomeValuationSection from "@/components/dashboard/HomeValuationSection";
 import TaxPackageSection from "@/components/dashboard/TaxPackageSection";
 import type { Tables } from "@/integrations/supabase/types";
 import { useCurrentProperty } from "@/hooks/useCurrentProperty";
-import PropertyFilterBar from "@/components/dashboard/PropertyFilterBar";
+import { MoneyTabs } from "@/components/property/SectionTabs";
 
 const fmtCurrency = (n: number | null | undefined) =>
   n != null ? `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$—";
 
-const TaxInvestmentPage = () => {
+export type MoneyView = "equity" | "basis" | "tax";
+
+const TaxInvestmentPage = ({ view = "basis" }: { view?: MoneyView }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
