@@ -183,15 +183,8 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
       {/* Quick Start Checklist */}
       <QuickStartChecklist onNavigate={(s) => onNavigate?.(s)} />
 
-      {/* Portfolio rollup (multi-property only) */}
-      {properties.length >= 2 && (
-        <PortfolioRollup
-          properties={properties}
-          onSelectProperty={() => onNavigate?.("properties")}
-        />
-      )}
+      {/* No PortfolioRollup here — a single-property page never iterates properties. */}
 
-      <PropertyFilterBar />
 
       {/* Onboarding banner — missing purchase price */}
       {showOnboardingBanner && (
