@@ -31,19 +31,15 @@ const DashboardOverview = lazy(() => import("@/components/dashboard/DashboardOve
 const PropertyCards = lazy(() => import("@/components/dashboard/PropertyCards"));
 const HomeInventoryPage = lazy(() => import("@/components/dashboard/HomeInventoryPage"));
 const HomeSystemsSettings = lazy(() => import("./pages/routes/HomeSystemsRoute"));
+const HomeContacts = lazy(() => import("@/components/dashboard/HomeContacts"));
 const MaintenanceLog = lazy(() => import("@/components/dashboard/MaintenanceLog"));
 const PropertyTimeline = lazy(() => import("@/components/dashboard/PropertyTimeline"));
-const ContractorLinks = lazy(() => import("@/components/dashboard/ContractorLinks"));
+const ActivityContractors = lazy(() => import("./pages/routes/ActivityContractors"));
 const DocumentsHub = lazy(() => import("@/components/dashboard/documents/DocumentsHub"));
 const SavingsTracking = lazy(() => import("@/components/dashboard/SavingsTracking"));
 const TaxInvestmentPage = lazy(() => import("@/components/dashboard/TaxInvestmentPage"));
-const HomeContacts = lazy(() => import("@/components/dashboard/HomeContacts"));
-const PropertyUtilities = lazy(() => import("@/components/dashboard/PropertyUtilities"));
-const RecurringTemplates = lazy(() => import("@/components/dashboard/RecurringTemplates"));
+const MoneyBills = lazy(() => import("./pages/routes/MoneyBills"));
 const PropertySharing = lazy(() => import("@/components/dashboard/PropertySharing"));
-const ExportReports = lazy(() => import("@/components/dashboard/ExportReports"));
-const AnalyticsInsights = lazy(() => import("@/components/dashboard/AnalyticsInsights"));
-const ContractorSubmissions = lazy(() => import("@/components/dashboard/ContractorSubmissions"));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 60_000, retry: 1 } },
@@ -86,7 +82,7 @@ const App = () => {
                   {/* Root shortcut for signed-in users */}
                   <Route path="/home" element={<ProtectedRoute><RootRedirect /></ProtectedRoute>} />
 
-                  {/* Onboarding / admin (unchanged behavior) */}
+                  {/* Onboarding / admin */}
                   <Route path="/persona" element={<ProtectedRoute><PersonaSelection /></ProtectedRoute>} />
                   <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
 
@@ -100,44 +96,55 @@ const App = () => {
                   {/* Explicit lost-access screen */}
                   <Route path="/no-access/:slug" element={<ProtectedRoute><NoAccess /></ProtectedRoute>} />
 
-                  {/* Property-scoped subtree — slug in the URL is the source of scope */}
+                  {/* Property-scoped subtree — slug in URL is the source of scope */}
                   <Route path="/p/:slug" element={<ProtectedRoute><PropertyLayout /></ProtectedRoute>}>
                     <Route index element={<DashboardOverview />} />
+
+                    {/* Home */}
                     <Route path="home" element={<Navigate to="details" replace />} />
                     <Route path="home/details" element={<PropertyCards />} />
                     <Route path="home/systems" element={<HomeSystemsSettings />} />
                     <Route path="home/inventory" element={<HomeInventoryPage />} />
+                    <Route path="home/contacts" element={<HomeContacts />} />
+
+                    {/* Activity */}
                     <Route path="activity" element={<Navigate to="log" replace />} />
                     <Route path="activity/log" element={<MaintenanceLog />} />
                     <Route path="activity/timeline" element={<PropertyTimeline />} />
-                    <Route path="activity/contractors" element={<ContractorLinks />} />
+                    <Route path="activity/contractors" element={<ActivityContractors />} />
+
+                    {/* Money — each subpath renders the appropriate view */}
                     <Route path="money" element={<Navigate to="forecast" replace />} />
                     <Route path="money/forecast" element={<SavingsTracking />} />
-                    <Route path="money/equity" element={<TaxInvestmentPage />} />
-                    <Route path="money/basis" element={<TaxInvestmentPage />} />
-                    <Route path="money/tax" element={<TaxInvestmentPage />} />
+                    <Route path="money/equity" element={<TaxInvestmentPage view="equity" />} />
+                    <Route path="money/basis" element={<TaxInvestmentPage view="basis" />} />
+                    <Route path="money/tax" element={<TaxInvestmentPage view="tax" />} />
+                    <Route path="money/bills" element={<MoneyBills />} />
+
                     <Route path="documents" element={<DocumentsHub />} />
                     <Route path="sharing" element={<PropertySharing />} />
-                    {/* Preserved feature routes not in the primary tab set */}
-                    <Route path="contacts" element={<HomeContacts />} />
-                    <Route path="utilities" element={<PropertyUtilities />} />
-                    <Route path="recurring" element={<RecurringTemplates />} />
-                    <Route path="export" element={<ExportReports />} />
-                    <Route path="analytics" element={<AnalyticsInsights />} />
-                    <Route path="contractor-submissions" element={<ContractorSubmissions />} />
+
+                    {/* Redirects for the retired orphan routes */}
+                    <Route path="contacts" element={<Navigate to="home/contacts" replace />} />
+                    <Route path="utilities" element={<Navigate to="money/bills" replace />} />
+                    <Route path="recurring" element={<Navigate to="money/bills" replace />} />
+                    <Route path="analytics" element={<Navigate to="." replace />} />
+                    <Route path="contractor-submissions" element={<Navigate to="activity/contractors" replace />} />
+                    <Route path="export" element={<Navigate to="/account" replace />} />
                   </Route>
 
-                  {/* Legacy top-level redirects — every old /dashboard?section=X target maps here.
-                      Resolution uses last-visited slug -> only-one-property -> /portfolio. */}
+                  {/* Legacy top-level redirects */}
                   <Route path="/dashboard" element={<ProtectedRoute><LegacyRedirect subpath="" /></ProtectedRoute>} />
                   <Route path="/properties" element={<ProtectedRoute><LegacyRedirect subpath="home/details" /></ProtectedRoute>} />
                   <Route path="/home-details" element={<ProtectedRoute><LegacyRedirect subpath="home/details" /></ProtectedRoute>} />
                   <Route path="/inventory" element={<ProtectedRoute><LegacyRedirect subpath="home/inventory" /></ProtectedRoute>} />
                   <Route path="/systems" element={<ProtectedRoute><LegacyRedirect subpath="home/systems" /></ProtectedRoute>} />
+                  <Route path="/contacts" element={<ProtectedRoute><LegacyRedirect subpath="home/contacts" /></ProtectedRoute>} />
                   <Route path="/maintenance" element={<ProtectedRoute><LegacyRedirect subpath="activity/log" /></ProtectedRoute>} />
                   <Route path="/logs" element={<ProtectedRoute><LegacyRedirect subpath="activity/log" /></ProtectedRoute>} />
                   <Route path="/timeline" element={<ProtectedRoute><LegacyRedirect subpath="activity/timeline" /></ProtectedRoute>} />
                   <Route path="/contractor-links" element={<ProtectedRoute><LegacyRedirect subpath="activity/contractors" /></ProtectedRoute>} />
+                  <Route path="/contractor-submissions" element={<ProtectedRoute><LegacyRedirect subpath="activity/contractors" /></ProtectedRoute>} />
                   <Route path="/documents" element={<ProtectedRoute><LegacyRedirect subpath="documents" /></ProtectedRoute>} />
                   <Route path="/savings" element={<ProtectedRoute><LegacyRedirect subpath="money/forecast" /></ProtectedRoute>} />
                   <Route path="/home-value" element={<ProtectedRoute><LegacyRedirect subpath="money/equity" /></ProtectedRoute>} />
@@ -146,13 +153,11 @@ const App = () => {
                   <Route path="/capital-improvements" element={<ProtectedRoute><LegacyRedirect subpath="money/basis" /></ProtectedRoute>} />
                   <Route path="/tax" element={<ProtectedRoute><LegacyRedirect subpath="money/tax" /></ProtectedRoute>} />
                   <Route path="/tax-investment" element={<ProtectedRoute><LegacyRedirect subpath="money/tax" /></ProtectedRoute>} />
+                  <Route path="/utilities" element={<ProtectedRoute><LegacyRedirect subpath="money/bills" /></ProtectedRoute>} />
+                  <Route path="/recurring" element={<ProtectedRoute><LegacyRedirect subpath="money/bills" /></ProtectedRoute>} />
+                  <Route path="/analytics" element={<ProtectedRoute><LegacyRedirect subpath="" /></ProtectedRoute>} />
+                  <Route path="/export" element={<ProtectedRoute><Navigate to="/account" replace /></ProtectedRoute>} />
                   <Route path="/sharing" element={<ProtectedRoute><LegacyRedirect subpath="sharing" /></ProtectedRoute>} />
-                  <Route path="/contacts" element={<ProtectedRoute><LegacyRedirect subpath="contacts" /></ProtectedRoute>} />
-                  <Route path="/utilities" element={<ProtectedRoute><LegacyRedirect subpath="utilities" /></ProtectedRoute>} />
-                  <Route path="/recurring" element={<ProtectedRoute><LegacyRedirect subpath="recurring" /></ProtectedRoute>} />
-                  <Route path="/analytics" element={<ProtectedRoute><LegacyRedirect subpath="analytics" /></ProtectedRoute>} />
-                  <Route path="/export" element={<ProtectedRoute><LegacyRedirect subpath="export" /></ProtectedRoute>} />
-                  <Route path="/settings" element={<Navigate to="/account" replace />} />
 
                   <Route path="*" element={<NotFound />} />
                 </Routes>
