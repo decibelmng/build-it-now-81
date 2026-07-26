@@ -1,4 +1,4 @@
-import { Home, Wrench, FileText, Users, LogOut, Settings, Search, LayoutDashboard, ClipboardList, Receipt, Shield, Lock, Link2, ShieldCheck } from "lucide-react";
+import { Home, Wrench, FileText, Users, LogOut, Menu, Settings, Search, LayoutDashboard, ClipboardList, Receipt, Shield, Lock, Link2, ShieldCheck, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
