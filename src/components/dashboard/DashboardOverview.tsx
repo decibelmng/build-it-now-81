@@ -332,6 +332,11 @@ const DashboardOverview = ({ onNavigate }: { onNavigate?: (section: string) => v
           )}
         </CardContent>
       </Card>
+
+      {/* Analytics (folded in from the retired /analytics route) */}
+      <div className="mt-8">
+        <AnalyticsInsights />
+      </div>
     </div>
   );
 };
