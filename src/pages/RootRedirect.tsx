@@ -33,6 +33,8 @@ const RootRedirect = ({ subpath }: { subpath?: string }) => {
     try { localStorage.removeItem(LAST_SLUG_KEY); } catch {}
   }
 
+  if (list.length === 0) return <Navigate to="/p/new" replace />;
+
   const target = storedProperty ?? (list.length === 1 ? list[0] : null);
 
   if (target?.slug) {
