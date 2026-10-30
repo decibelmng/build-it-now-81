@@ -1,3 +1,4 @@
+import AddHome from "./pages/AddHome";
 import React, { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -97,6 +98,7 @@ const App = () => {
                   <Route path="/no-access/:slug" element={<ProtectedRoute><NoAccess /></ProtectedRoute>} />
 
                   {/* Property-scoped subtree — slug in URL is the source of scope */}
+                  <Route path="/p/new" element={<ProtectedRoute><AddHome /></ProtectedRoute>} />
                   <Route path="/p/:slug" element={<ProtectedRoute><PropertyLayout /></ProtectedRoute>}>
                     <Route index element={<DashboardOverview />} />
 
